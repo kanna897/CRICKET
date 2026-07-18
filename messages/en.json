@@ -1,0 +1,14 @@
+{
+  "Index": {
+    "title": "Welcome to Crickpulse",
+    "description": "Enterprise Cricket Tournament Management Platform"
+  },
+  "Admin": {
+    "dashboard": "Dashboard",
+    "tournaments": "Tournaments",
+    "teams": "Teams",
+    "players": "Players",
+    "matches": "Matches",
+    "export": "Export Data"
+  }
+}

@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
+import withPWA from "next-pwa";
+import createNextIntlPlugin from 'next-intl/plugin';
 
-const nextConfig: NextConfig = {
-  /* config options here */
+const withNextIntl = createNextIntlPlugin('./i18n.ts');
+
+const config: NextConfig = {
+  turbopack: {},
 };
 
-export default nextConfig;
+export default withPWA({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+  skipWaiting: true,
+})(withNextIntl(config));
