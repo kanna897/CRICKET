@@ -4,7 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const intlMiddleware = createMiddleware({
   locales: ['en', 'ta', 'si'],
-  defaultLocale: 'en'
+  defaultLocale: 'en',
+  localePrefix: 'always'
 });
 
 export async function middleware(request: NextRequest) {
@@ -38,8 +39,12 @@ export async function middleware(request: NextRequest) {
   
   if (isProtectedPath && !session) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/login';
-    redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname);
+    const pathname = request.nextUrl.pathname;
+    const segments = pathname.split('/');
+    const locale = ['en', 'ta', 'si'].includes(segments[1]) ? segments[1] : 'en';
+    
+    redirectUrl.pathname = `/${locale}/login`;
+    redirectUrl.searchParams.set('redirectedFrom', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 

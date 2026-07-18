@@ -3,7 +3,19 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Play, Trophy, Calendar, ChevronRight, Bell } from "lucide-react";
+import { Play, Trophy, ChevronRight, Bell } from "lucide-react";
+import { Database } from "@/types/database.types";
+
+type Match = Database['public']['Tables']['matches']['Row'] & {
+  team1?: { name: string; logo_url: string | null } | null;
+  team2?: { name: string; logo_url: string | null } | null;
+  tournament?: { name: string } | null;
+};
+
+type BallPayload = {
+  runs_scored?: number;
+  wicket_type?: string | null;
+};
 
 // Notification Toast component
 const NotificationToast = ({ message, onClose }: { message: string, onClose: () => void }) => (
@@ -15,7 +27,7 @@ const NotificationToast = ({ message, onClose }: { message: string, onClose: () 
 );
 
 export default function PublicHome() {
-  const [liveMatches, setLiveMatches] = useState<any[]>([]);
+  const [liveMatches, setLiveMatches] = useState<Match[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
 
   const showNotification = (msg: string) => {
@@ -44,7 +56,7 @@ export default function PublicHome() {
     // Subscribe to realtime matches changes
     const matchesChannel = supabase
       .channel('public:matches')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
         fetchLive();
       })
       .subscribe();
@@ -53,7 +65,7 @@ export default function PublicHome() {
     const ballChannel = supabase
       .channel('public:balls')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ball_by_ball' }, payload => {
-        const ball = payload.new as any;
+        const ball = payload.new as BallPayload;
         // Simple notification logic
         if (ball.runs_scored === 6) showNotification("🔥 SIX! Maximum");
         else if (ball.runs_scored === 4) showNotification("🏏 FOUR! Boundary scored");
