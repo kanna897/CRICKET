@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/utils/cn";
@@ -19,7 +19,10 @@ const navigation = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => setMounted(true), []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
@@ -91,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-primary transition-colors"
             >
-              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {mounted && theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
               A

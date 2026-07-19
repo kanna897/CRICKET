@@ -7,14 +7,17 @@ import { Play, Trophy, ChevronRight, Bell } from "lucide-react";
 import { Database } from "@/types/database.types";
 
 type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1?: { name: string; logo_url: string | null } | null;
-  team2?: { name: string; logo_url: string | null } | null;
+  team_a_id: string;
+  team_b_id: string;
+  teamA?: { name: string; logo_url: string | null } | null;
+  teamB?: { name: string; logo_url: string | null } | null;
   tournament?: { name: string } | null;
 };
 
 type BallPayload = {
-  runs_scored?: number;
-  wicket_type?: string | null;
+  runs?: number;
+  is_wicket?: boolean;
+  dismissal_type?: string | null;
 };
 
 // Notification Toast component
@@ -42,11 +45,11 @@ export default function PublicHome() {
         .from('matches')
         .select(`
           *,
-          team1:teams!matches_team1_id_fkey(name, logo_url),
-          team2:teams!matches_team2_id_fkey(name, logo_url),
+          teamA:teams!matches_team_a_id_fkey(name, logo_url),
+          teamB:teams!matches_team_b_id_fkey(name, logo_url),
           tournament:tournaments(name)
         `)
-        .eq('status', 'ongoing');
+        .eq('status', 'live');
       
       if (data) setLiveMatches(data);
     };
@@ -67,9 +70,9 @@ export default function PublicHome() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ball_by_ball' }, payload => {
         const ball = payload.new as BallPayload;
         // Simple notification logic
-        if (ball.runs_scored === 6) showNotification("🔥 SIX! Maximum");
-        else if (ball.runs_scored === 4) showNotification("🏏 FOUR! Boundary scored");
-        else if (ball.wicket_type) showNotification(`❌ WICKET! (${ball.wicket_type})`);
+        if (ball.runs === 6) showNotification("🔥 SIX! Maximum");
+        else if (ball.runs === 4) showNotification("🏏 FOUR! Boundary scored");
+        else if (ball.is_wicket) showNotification(`❌ WICKET! (${ball.dismissal_type || "out"})`);
       })
       .subscribe();
 
@@ -147,15 +150,15 @@ export default function PublicHome() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
-                        {match.team1?.logo_url ? <img src={match.team1.logo_url} className="w-8 h-8 rounded-full bg-muted" /> : <div className="w-8 h-8 rounded-full bg-muted"></div>}
-                        <span className="font-bold">{match.team1?.name}</span>
+                        {match.teamA?.logo_url ? <img src={match.teamA.logo_url} alt="" className="w-8 h-8 rounded-full bg-muted" /> : <div className="w-8 h-8 rounded-full bg-muted"></div>}
+                        <span className="font-bold">{match.teamA?.name}</span>
                       </div>
                       <span className="font-black text-xl tabular-nums">145/4</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
-                        {match.team2?.logo_url ? <img src={match.team2.logo_url} className="w-8 h-8 rounded-full bg-muted" /> : <div className="w-8 h-8 rounded-full bg-muted"></div>}
-                        <span className="font-bold">{match.team2?.name}</span>
+                        {match.teamB?.logo_url ? <img src={match.teamB.logo_url} alt="" className="w-8 h-8 rounded-full bg-muted" /> : <div className="w-8 h-8 rounded-full bg-muted"></div>}
+                        <span className="font-bold">{match.teamB?.name}</span>
                       </div>
                       <span className="font-black text-xl tabular-nums text-muted-foreground">112/8</span>
                     </div>
@@ -164,7 +167,7 @@ export default function PublicHome() {
                   {match.toss_decision && (
                     <div className="mt-4 p-3 bg-muted rounded-lg border border-border/50 text-sm">
                       <span className="font-semibold text-foreground">Toss: </span>
-                      <span className="text-muted-foreground">{match.toss_winner_id === match.team1_id ? match.team1?.name : match.team2?.name} won the toss and elected to {match.toss_decision.toLowerCase()}.</span>
+                      <span className="text-muted-foreground">{match.toss_winner_id === match.team_a_id ? match.teamA?.name : match.teamB?.name} won the toss and elected to {match.toss_decision.toLowerCase()}.</span>
                     </div>
                   )}
 

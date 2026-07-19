@@ -8,6 +8,7 @@ import * as z from "zod";
 import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Upload, Loader2, Trophy } from "lucide-react";
 import Link from "next/link";
+import { uploadImage } from "@/lib/media";
 
 const tournamentSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -48,24 +49,8 @@ export default function NewTournamentPage() {
 
       // Upload logo if exists
       if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop();
-        // eslint-disable-next-line react-hooks/purity
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('logos')
-          .upload(filePath, logoFile);
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('logos')
-          .getPublicUrl(filePath);
-          
-        logo_url = publicUrlData.publicUrl;
+        const { url } = await uploadImage(logoFile, "tournament-logos");
+        logo_url = url;
       }
 
       // Insert Tournament
@@ -74,10 +59,13 @@ export default function NewTournamentPage() {
         .insert([
           {
             name: data.name,
+            tournament_name: data.name,
             venue: data.venue,
             start_date: data.start_date,
+            end_date: data.start_date,
             ball_type: data.ball_type,
             overs: data.overs,
+            overs_per_match: data.overs,
             logo_url,
             status: 'upcoming'
           }

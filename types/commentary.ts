@@ -1,0 +1,20 @@
+export type CommentaryInput = {
+  over: number;
+  ball: number;
+  batterName: string;
+  bowlerName: string;
+  runs: number;
+  extras: number;
+  extrasType?: "wide" | "no_ball" | "bye" | "leg_bye";
+  wicketType?: "bowled" | "caught" | "lbw" | "run_out" | "stumped" | "hit_wicket";
+  teamScore: number;
+  overs: string;
+  requiredRuns?: number;
+  ballsRemaining?: number;
+  partnership?: number;
+  batterScore: number;
+  bowlerRuns: number;
+  bowlerWickets: number;
+  inningsComplete?: boolean;
+  matchResult?: string;
+};

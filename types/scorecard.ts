@@ -1,0 +1,20 @@
+export type ScorecardPlayer = { id: string; name: string; photo_url?: string | null };
+export type ScorecardBall = {
+  id: string;
+  innings_id: string;
+  batsman_id: string | null;
+  bowler_id: string | null;
+  player_out_id?: string | null;
+  runs: number;
+  extras: number;
+  extras_type: string | null;
+  is_legal: boolean;
+  is_wicket: boolean;
+  dismissal_type: string | null;
+  over_number: number;
+  ball_number: number;
+};
+export type ScorecardInnings = { id: string; innings_number: number; batting_team_id: string; bowling_team_id: string; total_runs: number; total_wickets: number; balls_bowled: number; extras: number; target?: number | null };
+export type BattingLine = { playerId: string; name: string; runs: number; balls: number; fours: number; sixes: number; strikeRate: string; dismissal: string };
+export type BowlingLine = { playerId: string; name: string; balls: number; runs: number; wickets: number; wides: number; noBalls: number; economy: string };
+export type InningsScorecard = { batting: BattingLine[]; bowling: BowlingLine[]; extras: number; total: number; wickets: number; overs: string; fallOfWickets: { player: string; score: number; over: string }[] };

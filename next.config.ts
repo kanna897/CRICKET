@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
+import path from "path";
 import withPWA from "next-pwa";
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 const config: NextConfig = {
-  turbopack: {},
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
 };
 
 export default withPWA({
