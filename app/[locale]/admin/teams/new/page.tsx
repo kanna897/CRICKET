@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Upload, Loader2, Shield } from "lucide-react";
 import Link from "next/link";
 import { Database } from "@/types/database.types";
+import { uploadImage } from "@/lib/media";
 
 type Tournament = Database['public']['Tables']['tournaments']['Row'];
 
@@ -68,22 +69,8 @@ export default function NewTeamPage() {
       let logo_url = null;
 
       if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop();
-        // eslint-disable-next-line react-hooks/purity
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('logos')
-          .upload(filePath, logoFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from('logos')
-          .getPublicUrl(filePath);
-          
-        logo_url = publicUrlData.publicUrl;
+        const { url } = await uploadImage(logoFile, "team-logos");
+        logo_url = url;
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,9 +78,13 @@ export default function NewTeamPage() {
         .insert([
           {
             name: data.name,
+            // The live database also retains these legacy fields. Writing both
+            // names keeps old reports compatible while the app uses `name`.
+            team_name: data.name,
             tournament_id: data.tournament_id,
             owner_name: data.owner_name,
             contact_number: data.contact_number,
+            owner_phone: data.contact_number,
             logo_url,
           }
         ]);
@@ -104,7 +95,8 @@ export default function NewTeamPage() {
       router.refresh();
     } catch (error) {
       console.error("Error creating team:", error);
-      alert("Failed to create team. Check console for details.");
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      alert(`Failed to create team: ${message}`);
     } finally {
       setIsSubmitting(false);
     }

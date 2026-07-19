@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import * as htmlToImage from "html-to-image";
-import { Download } from "lucide-react";
+import { Download, Loader2, Upload } from "lucide-react";
+import { uploadImage } from "@/lib/media";
 
 interface PosterProps {
   matchData: {
@@ -20,11 +21,20 @@ interface PosterProps {
 
 export function PosterGenerator({ matchData }: PosterProps) {
   const posterRef = useRef<HTMLDivElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [posterUrl, setPosterUrl] = useState<string | null>(null);
+
+  const createPosterFile = async () => {
+    if (!posterRef.current) throw new Error("Poster is not ready.");
+    const dataUrl = await htmlToImage.toJpeg(posterRef.current, { quality: 0.95 });
+    const blob = await (await fetch(dataUrl)).blob();
+    return new File([blob], `match-${matchData.matchNumber}-summary.jpg`, { type: "image/jpeg" });
+  };
 
   const downloadPoster = async () => {
-    if (!posterRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toJpeg(posterRef.current, { quality: 0.95 });
+      const file = await createPosterFile();
+      const dataUrl = URL.createObjectURL(file);
       const link = document.createElement('a');
       link.download = `match-${matchData.matchNumber}-summary.jpg`;
       link.href = dataUrl;
@@ -35,9 +45,27 @@ export function PosterGenerator({ matchData }: PosterProps) {
     }
   };
 
+  const uploadPoster = async () => {
+    setIsUploading(true);
+    try {
+      const file = await createPosterFile();
+      const { url } = await uploadImage(file, "posters");
+      setPosterUrl(url);
+    } catch (err) {
+      console.error("Error uploading poster", err);
+      alert("Failed to upload poster.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        <button onClick={uploadPoster} disabled={isUploading} className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-60">
+          {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+          {isUploading ? "Uploading…" : "Upload JPG Poster"}
+        </button>
         <button 
           onClick={downloadPoster}
           className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
@@ -46,6 +74,7 @@ export function PosterGenerator({ matchData }: PosterProps) {
           Download JPG Poster
         </button>
       </div>
+      {posterUrl && <a href={posterUrl} target="_blank" rel="noreferrer" className="block text-right text-sm text-primary hover:underline">View uploaded poster</a>}
 
       {/* The Actual Poster DOM Element */}
       <div className="overflow-x-auto bg-muted p-4 rounded-xl flex justify-center">
