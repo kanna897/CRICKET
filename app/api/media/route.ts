@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveApplicationRole } from "@/lib/application-role";
 
 const folders = {
   "tournament-logos": "crickpulse/tournament-logos",
@@ -26,8 +27,10 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: { get: (name) => request.cookies.get(name)?.value, set() {}, remove() {} },
   });
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (!resolveApplicationRole(profile?.role)) return NextResponse.json({ error: "Unauthorized." }, { status: 403 });
 
   const formData = await request.formData();
   const file = formData.get("file");

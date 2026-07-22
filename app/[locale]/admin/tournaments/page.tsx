@@ -5,10 +5,18 @@ import Link from "next/link";
 import { Plus, Search, Trophy, Trash2, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
+import { useAdminAccess } from "@/components/admin-shell";
 
 type Tournament = Database['public']['Tables']['tournaments']['Row'];
 
+function effectiveTournamentStatus(tournament: Tournament) {
+  if (tournament.status !== "upcoming" || !tournament.start_date) return tournament.status;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Colombo" }).format(new Date());
+  return tournament.start_date <= today ? "ongoing" : "upcoming";
+}
+
 export default function TournamentsPage() {
+  const { isMasterAdmin, userId } = useAdminAccess();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -18,6 +26,7 @@ export default function TournamentsPage() {
   const fetchTournaments = useCallback(async () => {
     setLoading(true);
     let query = supabase.from("tournaments").select("*").order("created_at", { ascending: false });
+    if (!isMasterAdmin) query = query.eq("organizer_id", userId);
     
     if (showTrash) {
       query = query.not('deleted_at', 'is', null);
@@ -28,7 +37,7 @@ export default function TournamentsPage() {
     const { data } = await query;
     if (data) setTournaments(data);
     setLoading(false);
-  }, [showTrash]);
+  }, [showTrash, isMasterAdmin, userId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -54,7 +63,7 @@ export default function TournamentsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="admin-themed-page space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tournaments</h1>
@@ -116,7 +125,9 @@ export default function TournamentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTournaments.map((tournament) => (
+                {filteredTournaments.map((tournament) => {
+                  const displayStatus = effectiveTournamentStatus(tournament);
+                  return (
                   <tr key={tournament.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 font-medium flex items-center gap-3">
                       {tournament.logo_url ? (
@@ -133,11 +144,11 @@ export default function TournamentsPage() {
                     <td className="px-6 py-4">{tournament.overs}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tournament.status === 'upcoming' ? 'bg-blue-500/10 text-blue-500' :
-                        tournament.status === 'ongoing' ? 'bg-green-500/10 text-green-500' :
+                        displayStatus === 'upcoming' ? 'bg-blue-500/10 text-blue-400' :
+                        displayStatus === 'ongoing' ? 'bg-green-500/10 text-green-400' :
                         'bg-gray-500/10 text-gray-500'
                       }`}>
-                        {tournament.status}
+                        {displayStatus}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
@@ -166,8 +177,8 @@ export default function TournamentsPage() {
                         </button>
                       )}
                     </td>
-                  </tr>
-                ))}
+                  </tr>);
+                })}
               </tbody>
             </table>
           </div>

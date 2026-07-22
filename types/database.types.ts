@@ -13,6 +13,7 @@ export interface Database {
         Row: {
           id: string
           name: string
+          email: string | null
           logo_url: string | null
           venue: string | null
           start_date: string | null
@@ -21,9 +22,36 @@ export interface Database {
           status: string
           created_at: string
           updated_at: string
+          organizer_id: string
         }
         Insert: Omit<Database['public']['Tables']['tournaments']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['tournaments']['Insert']>
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          id: string
+          name: string
+          phone_number: string | null
+          role: 'master_admin' | 'organizer'
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Database['public']['Tables']['profiles']['Insert'], 'id' | 'role'>>
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          user_id: string
+          role: 'super_admin' | 'tournament_admin' | 'scorer' | 'viewer'
+          tournament_id: string | null
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['user_roles']['Row'], 'id' | 'created_at'>
+        Update: Partial<Omit<Database['public']['Tables']['user_roles']['Insert'], 'user_id'>>
+        Relationships: []
       }
       teams: {
         Row: {
@@ -39,6 +67,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['teams']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['teams']['Insert']>
+        Relationships: []
       }
       players: {
         Row: {
@@ -55,6 +84,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['players']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['players']['Insert']>
+        Relationships: []
       }
       matches: {
         Row: {
@@ -74,6 +104,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['matches']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['matches']['Insert']>
+        Relationships: []
       }
       innings: {
         Row: {
@@ -90,6 +121,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['innings']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['innings']['Insert']>
+        Relationships: []
       }
       ball_by_ball: {
         Row: {
@@ -111,6 +143,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['ball_by_ball']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['ball_by_ball']['Insert']>
+        Relationships: []
       }
       awards: {
         Row: {
@@ -123,6 +156,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['awards']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['awards']['Insert']>
+        Relationships: []
       }
     }
   }

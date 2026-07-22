@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Upload, Loader2, Trophy } from "lucide-react";
 import Link from "next/link";
 import { uploadImage } from "@/lib/media";
+import { useAdminAccess } from "@/components/admin-shell";
 
 const tournamentSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -21,6 +22,7 @@ const tournamentSchema = z.object({
 type TournamentFormValues = z.infer<typeof tournamentSchema>;
 
 export default function NewTournamentPage() {
+  const { userId } = useAdminAccess();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -59,6 +61,7 @@ export default function NewTournamentPage() {
         .insert([
           {
             name: data.name,
+            organizer_id: userId,
             tournament_name: data.name,
             venue: data.venue,
             start_date: data.start_date,

@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Upload, Loader2, User, Pencil, Trash2, Save, X } from "lucide-react";
 import Link from "next/link";
 import { Database } from "@/types/database.types";
 import { uploadImage } from "@/lib/media";
+import { ModernPlayerProfile, type CareerSnapshot } from "@/components/modern-player-profile";
 
 type Player = Database['public']['Tables']['players']['Row'];
 type Team = Database['public']['Tables']['teams']['Row'];
@@ -33,11 +35,41 @@ export default function PlayerProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editValues, setEditValues] = useState<PlayerEditValues | null>(null);
+  const [playerCode, setPlayerCode] = useState("#CP-PLAYER-01");
+  const [career, setCareer] = useState<CareerSnapshot>({ matches: 0, runs: 0, wickets: 0, highScore: 0, average: 0, catches: 0, stumpings: 0, runOuts: 0, recentScores: [] });
 
   useEffect(() => {
     async function fetchPlayer() {
-      const { data } = await supabase.from('players').select('*').eq('id', id).single();
-      if (data) setPlayer(data);
+      const [{ data }, { data: orderedPlayers }] = await Promise.all([
+        (supabase.from('players') as any).select('*').eq('id', id).single(),
+        (supabase.from('players') as any).select('id,name,created_at').order('created_at', { ascending: true }).order('id', { ascending: true }),
+      ]);
+      if (data) {
+        setPlayer(data);
+        const ordered = (orderedPlayers || []) as Array<{ id: string; name: string; created_at: string }>;
+        const sequence = Math.max(1, ordered.findIndex((row) => row.id === data.id) + 1);
+        const shortName = String(data.name).split(/\s+/).map((part: string) => part.replace(/[^a-z0-9]/gi, "").slice(0, 1)).join("").toUpperCase().slice(0, 6) || "PLAYER";
+        setPlayerCode(`#CP-${shortName}-${String(sequence).padStart(2, "0")}`);
+        const { data: ballRows } = await (supabase.from('ball_by_ball') as any).select('innings_id,batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type,player_out_id').or(`batsman_id.eq.${id},bowler_id.eq.${id},fielder_id.eq.${id},player_out_id.eq.${id}`);
+        const balls = (ballRows || []) as Array<{ innings_id: string; batsman_id: string | null; bowler_id: string | null; fielder_id: string | null; runs: number | null; is_wicket: boolean | null; dismissal_type: string | null; player_out_id: string | null }>;
+        const inningsIds = [...new Set(balls.map((ball) => ball.innings_id))];
+        const { data: inningsRows } = inningsIds.length ? await (supabase.from('innings') as any).select('id,match_id').in('id', inningsIds) : { data: [] };
+        const inningsToMatch = new Map(((inningsRows || []) as Array<{ id: string; match_id: string }>).map((row) => [row.id, row.match_id]));
+        const battingRuns = new Map<string, number>();
+        let runs = 0, wickets = 0, dismissals = 0, catches = 0, stumpings = 0, runOuts = 0;
+        balls.forEach((ball) => {
+          const dismissal = (ball.dismissal_type || "").toLowerCase().replaceAll(" ", "_");
+          if (ball.batsman_id === id) { const value = Number(ball.runs || 0); runs += value; battingRuns.set(ball.innings_id, (battingRuns.get(ball.innings_id) || 0) + value); }
+          if (ball.player_out_id === id && !["retired_hurt", "retired_not_out"].includes(dismissal)) dismissals += 1;
+          if (ball.bowler_id === id && ball.is_wicket && !["run_out", "retired_hurt", "obstructing_the_field"].includes(dismissal)) wickets += 1;
+          if (ball.fielder_id === id && dismissal.includes("caught")) catches += 1;
+          if (ball.fielder_id === id && dismissal.includes("stump")) stumpings += 1;
+          if (ball.fielder_id === id && dismissal.includes("run_out")) runOuts += 1;
+        });
+        const scores = [...battingRuns.values()].sort((a, b) => b - a);
+        const recentScores = [...battingRuns.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6).reverse().map((entry) => entry[1]);
+        setCareer({ matches: new Set(inningsIds.map((inningsId) => inningsToMatch.get(inningsId)).filter(Boolean)).size, runs, wickets, highScore: scores[0] || 0, average: dismissals ? runs / dismissals : runs, catches, stumpings, runOuts, recentScores });
+      }
       setLoading(false);
     }
     if (id) fetchPlayer();
@@ -72,6 +104,8 @@ export default function PlayerProfilePage() {
     if (!player || !editValues) return;
     setIsSaving(true);
     try {
+      // Legacy database columns are not represented in the generated local type yet.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('players') as any)
         .update({
           name: editValues.name.trim(),
@@ -129,6 +163,7 @@ export default function PlayerProfilePage() {
       const { url: photo_url } = await uploadImage(file, "player-photos");
 
       const { data: updatedPlayer, error } = await (supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('players') as any)
         .update({ photo_url })
         .eq('id', player.id)
@@ -150,6 +185,7 @@ export default function PlayerProfilePage() {
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>;
   if (!player) return <div className="p-8 text-center text-red-500">Player not found</div>;
+  if (!isEditing) return <ModernPlayerProfile player={player} teams={teams} playerCode={playerCode} career={career} isUploading={isUploading} isDeleting={isDeleting} onEdit={startEditing} onDelete={deletePlayer} onPhotoUpload={handlePhotoUpload} />;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -159,7 +195,7 @@ export default function PlayerProfilePage() {
         </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Player Profile</h1>
-          <p className="text-muted-foreground mt-1">ID: <span className="font-mono">{player.id}</span></p>
+          <p className="text-muted-foreground mt-1">Player ID: <span className="font-mono font-bold text-primary">{playerCode}</span></p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {isEditing ? (
@@ -182,7 +218,7 @@ export default function PlayerProfilePage() {
           <div className="relative group">
             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-muted bg-muted flex items-center justify-center relative">
               {player.photo_url ? (
-                <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
+                <Image src={player.photo_url} alt={player.name} fill sizes="128px" unoptimized className="object-cover" />
               ) : (
                 <User className="w-12 h-12 text-muted-foreground" />
               )}
@@ -197,8 +233,8 @@ export default function PlayerProfilePage() {
           <div>
             <h2 className="text-xl font-bold">{player.name}</h2>
             <p className="text-muted-foreground text-sm font-mono mt-1">{player.phone_number}</p>
-            <span className="inline-block mt-2 px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
-              {player.playing_role || "Unknown Role"}
+            <span className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <span aria-hidden>{profileRoleSymbol(player.playing_role)}</span>{player.playing_role || "Unknown Role"}
             </span>
           </div>
         </div>
@@ -230,22 +266,23 @@ export default function PlayerProfilePage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="p-3 bg-muted rounded-lg text-center">
                 <p className="text-xs text-muted-foreground uppercase font-semibold">Matches</p>
-                <p className="text-2xl font-bold mt-1">0</p>
+                <p className="text-2xl font-bold mt-1">{career.matches}</p>
               </div>
               <div className="p-3 bg-muted rounded-lg text-center">
                 <p className="text-xs text-muted-foreground uppercase font-semibold">Runs</p>
-                <p className="text-2xl font-bold mt-1">0</p>
+                <p className="text-2xl font-bold mt-1">{career.runs}</p>
               </div>
               <div className="p-3 bg-muted rounded-lg text-center">
                 <p className="text-xs text-muted-foreground uppercase font-semibold">Wickets</p>
-                <p className="text-2xl font-bold mt-1">0</p>
+                <p className="text-2xl font-bold mt-1">{career.wickets}</p>
               </div>
               <div className="p-3 bg-muted rounded-lg text-center">
                 <p className="text-xs text-muted-foreground uppercase font-semibold">High Score</p>
-                <p className="text-2xl font-bold mt-1">0</p>
+                <p className="text-2xl font-bold mt-1">{career.highScore}</p>
               </div>
             </div>
-            <p className="text-xs text-center text-muted-foreground mt-4">Statistics will populate once the player participates in matches.</p>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-center sm:grid-cols-4"><SmallCareerStat label="Average" value={career.average.toFixed(1)} /><SmallCareerStat label="Catches" value={career.catches} /><SmallCareerStat label="Stumpings" value={career.stumpings} /><SmallCareerStat label="Run outs" value={career.runOuts} /></div>
+            {!career.matches && <p className="mt-4 text-center text-xs text-muted-foreground">Statistics will populate once the player participates in recorded matches.</p>}
           </div>
         </div>
       </div>
@@ -255,4 +292,16 @@ export default function PlayerProfilePage() {
 
 function EditField({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="space-y-1 block"><span className="text-muted-foreground">{label}</span>{children}</label>;
+}
+
+function SmallCareerStat({ label, value }: { label: string; value: string | number }) {
+  return <div className="rounded-lg border border-border bg-muted/50 p-2"><p className="text-[.65rem] font-bold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 font-black text-primary">{value}</p></div>;
+}
+
+function profileRoleSymbol(role?: string | null) {
+  const value = (role || "").toLowerCase();
+  if (value.includes("wicket")) return "🧤";
+  if (value.includes("all")) return "🏏🔴";
+  if (value.includes("bowl")) return "🔴";
+  return "🏏";
 }

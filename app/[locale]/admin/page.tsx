@@ -5,6 +5,9 @@ import { Trophy, Users, PlayCircle, Activity } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { CrickpulseLogo } from "@/components/crickpulse-logo";
+import { useAdminAccess } from "@/components/admin-shell";
+import { DashboardLivePanels } from "@/components/dashboard-live-panels";
 
 const data = [
   { name: "Mon", matches: 4 },
@@ -17,6 +20,7 @@ const data = [
 ];
 
 export default function AdminDashboard() {
+  const { isMasterAdmin, userId } = useAdminAccess();
   const [stats, setStats] = useState({
     tournaments: 0,
     teams: 0,
@@ -26,11 +30,21 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function loadStats() {
+      let tournamentQuery = supabase.from('tournaments').select('*').is('deleted_at', null);
+      if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq('organizer_id', userId);
+      const { data: manageableTournaments } = await tournamentQuery;
+      const tournamentIds = (manageableTournaments || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
+      if (!tournamentIds.length) {
+        setStats({ tournaments: 0, teams: 0, matches: 0, players: 0 });
+        return;
+      }
+      const { data: manageableTeams } = await supabase.from('teams').select('*').in('tournament_id', tournamentIds).is('deleted_at', null);
+      const teamIds = (manageableTeams || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
       const [tData, teamData, mData, pData] = await Promise.all([
-        supabase.from('tournaments').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('teams').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('matches').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('players').select('*', { count: 'exact', head: true }).is('deleted_at', null)
+        supabase.from('tournaments').select('*', { count: 'exact', head: true }).in('id', tournamentIds).is('deleted_at', null),
+        supabase.from('teams').select('*', { count: 'exact', head: true }).in('tournament_id', tournamentIds).is('deleted_at', null),
+        supabase.from('matches').select('*', { count: 'exact', head: true }).in('tournament_id', tournamentIds).is('deleted_at', null),
+        teamIds.length ? supabase.from('players').select('*', { count: 'exact', head: true }).in('team_id', teamIds).is('deleted_at', null) : Promise.resolve({ count: 0 })
       ]);
 
       setStats({
@@ -41,13 +55,12 @@ export default function AdminDashboard() {
       });
     }
     loadStats();
-  }, []);
+  }, [isMasterAdmin, userId]);
 
   return (
-    <div className="space-y-6">
+    <div className="admin-themed-page dashboard-page space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Overview of your tournament ecosystem.</p>
+        <div className="dashboard-brand-hero"><CrickpulseLogo variant="primary" className="dashboard-hero-logo h-44 w-72 sm:h-48 sm:w-96" /><div className="dashboard-hero-copy"><h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1><p className="text-muted-foreground mt-1">Overview of your tournament ecosystem.</p></div></div>
       </div>
 
       {/* Stats Grid */}
@@ -101,6 +114,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      <DashboardLivePanels />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm lg:col-span-2">
@@ -108,15 +123,15 @@ export default function AdminDashboard() {
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#71717a'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#71717a'}} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#bae6fd" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#356b86'}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#356b86'}} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', borderRadius: '8px', border: 'none', color: '#fff' }}
-                  itemStyle={{ color: '#fff' }}
-                  cursor={{ fill: 'rgba(24, 24, 27, 0.05)' }}
+                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #7dd3fc', color: '#082f49' }}
+                  itemStyle={{ color: '#0369a1' }}
+                  cursor={{ fill: 'rgba(14, 165, 233, 0.08)' }}
                 />
-                <Bar dataKey="matches" fill="currentColor" className="fill-primary" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="matches" fill="#159bd7" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

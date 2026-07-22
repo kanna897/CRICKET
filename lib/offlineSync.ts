@@ -45,6 +45,18 @@ export const getOfflineQueue = async (): Promise<unknown[]> => {
   }
 };
 
+export type OfflineQueueItem<T = unknown> = { id: number; matchId: string; payload: T; timestamp: number };
+
+export const removeOfflineQueueItem = async (id: number) => {
+  const db = await initDB();
+  return new Promise<boolean>((resolve, reject) => {
+    const transaction = db.transaction('matchQueue', 'readwrite');
+    transaction.objectStore('matchQueue').delete(id);
+    transaction.oncomplete = () => resolve(true);
+    transaction.onerror = () => reject(transaction.error);
+  });
+};
+
 export const clearOfflineQueue = async () => {
   try {
     const db = await initDB();

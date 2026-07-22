@@ -5,33 +5,36 @@ import Link from "next/link";
 import { Plus, Search, Shield } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
+import { useAdminAccess } from "@/components/admin-shell";
 
 type Team = Database['public']['Tables']['teams']['Row'];
 
 export default function TeamsPage() {
+  const { isMasterAdmin, userId } = useAdminAccess();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     async function fetchTeams() {
-      const { data } = await supabase
-        .from("teams")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let tournamentQuery = supabase.from("tournaments").select("*");
+      if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
+      const { data: manageable } = await tournamentQuery;
+      const ids = (manageable || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
+      const { data } = ids.length ? await supabase.from("teams").select("*").in("tournament_id", ids).order("created_at", { ascending: false }) : { data: [] };
 
       if (data) setTeams(data);
       setLoading(false);
     }
     fetchTeams();
-  }, []);
+  }, [isMasterAdmin, userId]);
 
   const filteredTeams = teams.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="space-y-6">
+    <div className="admin-themed-page space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Teams</h1>

@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CRICKPULSE | Enterprise Tournament Management",
   description: "Modern, fast, mobile-friendly cricket tournament management platform",
+  manifest: "/manifest.webmanifest",
+  applicationName: "CrickPulse",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "CrickPulse" },
 };
 
 import { NextIntlClientProvider } from 'next-intl';
