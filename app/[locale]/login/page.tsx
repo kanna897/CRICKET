@@ -1,52 +1,98 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { LockKeyhole, Trophy } from "lucide-react";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
+import { Eye, EyeOff, LockKeyhole, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/lib/supabase";
+import { CrickpulseLogo } from "@/components/crickpulse-logo";
+import { signInWithEmail } from "./actions";
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams<{ locale: string }>();
+  const { resolvedTheme, setTheme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmationSent, setConfirmationSent] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const requestedPath = searchParams.get("redirectedFrom");
   const redirectTo = requestedPath?.startsWith(`/${params.locale}/`)
     ? requestedPath
     : `/${params.locale}/admin`;
+  const accessError = searchParams.get("error") === "unauthorized"
+    ? "This account does not have an administrator role."
+    : searchParams.get("error") === "session"
+      ? "Your sign-in session could not be verified. Please sign in again."
+      : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setConfirmationSent(false);
+    setNeedsConfirmation(false);
     setIsSubmitting(true);
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error: signInError } = await signInWithEmail(normalizedEmail, password);
 
     setIsSubmitting(false);
 
     if (signInError) {
-      setError(signInError.message);
+      if (signInError.toLowerCase().includes("email not confirmed")) {
+        setNeedsConfirmation(true);
+        setError("Your email address is not confirmed yet. Open the confirmation link sent to your inbox, or resend it below.");
+      } else {
+        setError(signInError);
+      }
       return;
     }
 
-    router.replace(redirectTo);
-    router.refresh();
+    // A full navigation lets the auth cookies reach the protected Server
+    // Component before it checks the session. Refreshing immediately after
+    // router.replace() can refresh this login route and cancel the redirect.
+    window.location.assign(redirectTo);
+  }
+
+  async function resendConfirmation() {
+    setError(null);
+    setConfirmationSent(false);
+    setIsResending(true);
+    const normalizedEmail = email.trim().toLowerCase();
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: normalizedEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/${params.locale}/auth/callback`,
+      },
+    });
+    setIsResending(false);
+
+    if (resendError) {
+      setError(resendError.message);
+      return;
+    }
+
+    setConfirmationSent(true);
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-12 text-foreground sm:flex sm:items-center sm:justify-center">
-      <section className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-xl">
+    <main className="register-page min-h-screen px-4 py-12 text-foreground sm:flex sm:items-center sm:justify-center">
+      <div className="register-grid" aria-hidden="true" />
+      <span className="register-orb register-orb-one" aria-hidden="true" />
+      <span className="register-orb register-orb-two" aria-hidden="true" />
+      <span className="register-floating-ball register-floating-ball-one" aria-hidden="true" />
+      <span className="register-floating-ball register-floating-ball-two" aria-hidden="true" />
+      <button type="button" className="register-theme-toggle" onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}>{resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
+      <section className="register-card relative z-10 w-full max-w-md rounded-[1.75rem] border border-white/60 bg-white/90 p-8 shadow-2xl backdrop-blur-xl">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Trophy className="h-6 w-6" aria-hidden="true" />
-          </div>
+          <div className="register-logo-frame"><CrickpulseLogo className="h-16 w-full object-contain" /></div>
           <h1 className="text-2xl font-bold">Admin sign in</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Sign in to manage your cricket tournaments.
@@ -57,7 +103,7 @@ export default function LoginPage() {
           <label className="block space-y-2 text-sm font-medium">
             <span>Email address</span>
             <input
-              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 outline-none transition focus:ring-2 focus:ring-ring"
+              className="form-input"
               type="email"
               autoComplete="email"
               value={email}
@@ -68,24 +114,21 @@ export default function LoginPage() {
 
           <label className="block space-y-2 text-sm font-medium">
             <span>Password</span>
-            <input
-              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 outline-none transition focus:ring-2 focus:ring-ring"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
+            <span className="relative block"><input className="form-input pr-11" type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></span>
           </label>
 
-          {error && (
+          {(error || accessError) && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600" role="alert">
-              {error}
+              {error || accessError}
             </p>
           )}
 
+          {confirmationSent && <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700" role="status">Confirmation email sent. Check your inbox and spam folder.</p>}
+
+          {needsConfirmation && <button type="button" onClick={resendConfirmation} disabled={isResending || !email} className="w-full rounded-xl border border-sky-300 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-60">{isResending ? "Sending…" : "Resend confirmation email"}</button>}
+
           <button
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="register-submit flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
             type="submit"
             disabled={isSubmitting}
           >
@@ -93,6 +136,8 @@ export default function LoginPage() {
             {isSubmitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">New tournament organizer? <Link href={`/${params.locale}/register`} className="font-semibold text-primary hover:underline">Create an account</Link></p>
       </section>
     </main>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +11,7 @@ import { ArrowLeft, Upload, Loader2, Shield } from "lucide-react";
 import Link from "next/link";
 import { Database } from "@/types/database.types";
 import { uploadImage } from "@/lib/media";
+import { useAdminAccess } from "@/components/admin-shell";
 
 type Tournament = Database['public']['Tables']['tournaments']['Row'];
 
@@ -23,6 +25,7 @@ const teamSchema = z.object({
 type TeamFormValues = z.infer<typeof teamSchema>;
 
 export default function NewTeamPage() {
+  const { isMasterAdmin, userId } = useAdminAccess();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -35,11 +38,13 @@ export default function NewTeamPage() {
 
   useEffect(() => {
     async function fetchTournaments() {
-      const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+      if (!isMasterAdmin) query = query.eq('organizer_id', userId);
+      const { data } = await query;
       if (data) setTournaments(data);
     }
     fetchTournaments();
-  }, []);
+  }, [isMasterAdmin, userId]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -103,28 +108,32 @@ export default function NewTeamPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/admin/teams" className="p-2 hover:bg-muted rounded-full transition-colors">
+    <div className="match-theme-surface relative mx-auto max-w-4xl space-y-6 overflow-hidden rounded-[2rem] border border-amber-200/30 bg-[radial-gradient(circle_at_top_right,#1c62ba_0%,#0a1f4a_46%,#050b26_100%)] p-4 pb-8 text-white shadow-2xl sm:p-7">
+      <div className="pointer-events-none absolute -left-24 top-44 h-2 w-[32rem] -rotate-12 bg-gradient-to-r from-transparent via-amber-300/45 to-transparent blur-sm" />
+      <div className="pointer-events-none absolute -right-24 bottom-24 h-2 w-[32rem] -rotate-12 bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent blur-sm" />
+      <div className="relative flex items-center gap-4">
+        <Link href="/admin/teams" aria-label="Back to teams" className="grid h-10 w-10 place-items-center rounded-xl border border-white/20 bg-white/10 text-slate-200 transition hover:-translate-x-0.5 hover:bg-white/15 hover:text-white">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create Team</h1>
-          <p className="text-muted-foreground mt-1">Register a new team for a tournament</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Tournament squad</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight">Create Team</h1>
+          <p className="mt-1 text-sm text-slate-300">Register a new team for a tournament</p>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl shadow-sm p-6">
+      <div className="match-theme-adaptive-card relative overflow-hidden rounded-3xl border border-amber-200/30 bg-[#06122d]/95 shadow-xl shadow-black/25">
+        <div className="h-1 bg-gradient-to-r from-[#e7b84d] via-[#fff2a8] to-cyan-300" />
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Team Logo</label>
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-full border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/50">
+          <div className="border-b border-white/10 bg-gradient-to-r from-[#0d4e9c]/45 to-transparent p-6 sm:p-7">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Team identity</p>
+            <h2 className="mt-1 text-lg font-bold">Logo and branding</h2>
+            <div className="mt-5 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+              <div className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border-2 border-dashed border-cyan-200/45 bg-cyan-300/10 shadow-inner">
                 {logoPreview ? (
-                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                  <Image src={logoPreview} alt="Logo preview" fill sizes="112px" unoptimized className="object-cover" />
                 ) : (
-                  <Shield className="w-8 h-8 text-muted-foreground" />
+                  <Shield className="h-10 w-10 text-cyan-200" />
                 )}
               </div>
               <div>
@@ -137,32 +146,32 @@ export default function NewTeamPage() {
                 />
                 <label 
                   htmlFor="logo-upload" 
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 cursor-pointer"
+                  className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-cyan-200/40 bg-cyan-300/10 px-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Image
                 </label>
-                <p className="text-xs text-muted-foreground mt-2">Recommended: 400x400px JPG or PNG</p>
+                <p className="mt-2 text-xs text-slate-400">Recommended: 400×400px JPG or PNG</p>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 px-6 sm:px-7 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Team Name <span className="text-red-500">*</span></label>
+              <label className="text-sm font-semibold text-slate-100">Team Name <span className="text-amber-300">*</span></label>
               <input 
                 {...register("name")}
-                className="w-full px-3 py-2 bg-transparent border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="h-11 w-full rounded-xl border border-white/15 bg-[#0a1f4a] px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
                 placeholder="e.g. Royal Challengers"
               />
               {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tournament <span className="text-red-500">*</span></label>
+              <label className="text-sm font-semibold text-slate-100">Tournament <span className="text-amber-300">*</span></label>
               <select 
                 {...register("tournament_id")}
-                className="w-full px-3 py-2 bg-transparent border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="h-11 w-full rounded-xl border border-white/15 bg-[#0a1f4a] px-4 text-white outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
               >
                 <option value="">Select a tournament...</option>
                 {tournaments.map(t => (
@@ -173,35 +182,35 @@ export default function NewTeamPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Owner Name</label>
+              <label className="text-sm font-semibold text-slate-100">Owner Name</label>
               <input 
                 {...register("owner_name")}
-                className="w-full px-3 py-2 bg-transparent border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="h-11 w-full rounded-xl border border-white/15 bg-[#0a1f4a] px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
                 placeholder="e.g. John Doe"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Contact Number</label>
+              <label className="text-sm font-semibold text-slate-100">Contact Number</label>
               <input 
                 {...register("contact_number")}
-                className="w-full px-3 py-2 bg-transparent border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="h-11 w-full rounded-xl border border-white/15 bg-[#0a1f4a] px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
                 placeholder="e.g. +1234567890"
               />
             </div>
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t border-border">
+          <div className="flex flex-col-reverse justify-end gap-3 border-t border-white/10 px-6 py-6 sm:flex-row sm:px-7">
             <Link 
               href="/admin/teams"
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white"
             >
               Cancel
             </Link>
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] px-6 text-sm font-black text-[#06122d] shadow-lg shadow-amber-500/15 transition hover:brightness-110 disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Create Team

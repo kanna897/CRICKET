@@ -7,10 +7,12 @@ import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
+import { useAdminAccess } from "@/components/admin-shell";
 
 type Player = Database['public']['Tables']['players']['Row'];
 
 export default function PlayersPage() {
+  const { isMasterAdmin, userId } = useAdminAccess();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -19,14 +21,17 @@ export default function PlayersPage() {
 
   useEffect(() => {
     fetchPlayers();
-  }, []);
+  }, [isMasterAdmin, userId]);
 
   async function fetchPlayers() {
     setLoading(true);
-    const { data } = await supabase
-      .from("players")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let tournamentQuery = supabase.from("tournaments").select("*");
+    if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
+    const { data: tournaments } = await tournamentQuery;
+    const tournamentIds = (tournaments || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
+    const { data: teams } = tournamentIds.length ? await supabase.from("teams").select("*").in("tournament_id", tournamentIds) : { data: [] };
+    const teamIds = (teams || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
+    const { data } = teamIds.length ? await supabase.from("players").select("*").in("team_id", teamIds).order("created_at", { ascending: false }) : { data: [] };
 
     if (data) setPlayers(data);
     setLoading(false);
@@ -129,7 +134,7 @@ export default function PlayersPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="admin-themed-page space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Players</h1>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CalendarPlus, ClipboardList, PlayCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
+import { useAdminAccess } from "@/components/admin-shell";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
@@ -21,6 +22,7 @@ type Match = {
 };
 
 export default function MatchesPage() {
+  const { isMasterAdmin, userId } = useAdminAccess();
   const [matches, setMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -28,24 +30,27 @@ export default function MatchesPage() {
 
   useEffect(() => {
     async function loadMatches() {
-      const [matchesResult, teamsResult, tournamentsResult] = await Promise.all([
-        (supabase.from("matches") as any).select("*").order("created_at", { ascending: false }),
-        supabase.from("teams").select("*").order("name"),
-        supabase.from("tournaments").select("*").order("created_at", { ascending: false }),
-      ]);
+      let tournamentQuery = supabase.from("tournaments").select("*").order("created_at", { ascending: false });
+      if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
+      const tournamentsResult = await tournamentQuery;
+      const ids = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);
+      const [matchesResult, teamsResult] = ids.length ? await Promise.all([
+        (supabase.from("matches") as any).select("*").in("tournament_id", ids).order("created_at", { ascending: false }),
+        supabase.from("teams").select("*").in("tournament_id", ids).order("name"),
+      ]) : [{ data: [] }, { data: [] }];
       if (matchesResult.data) setMatches(matchesResult.data);
       if (teamsResult.data) setTeams(teamsResult.data);
       if (tournamentsResult.data) setTournaments(tournamentsResult.data);
       setLoading(false);
     }
     loadMatches();
-  }, []);
+  }, [isMasterAdmin, userId]);
 
   const teamName = (id: string) => teams.find((team) => team.id === id)?.name || "Unknown team";
   const tournamentName = (id: string | null) => tournaments.find((tournament) => tournament.id === id)?.name || "Independent match";
 
   return (
-    <div className="space-y-6">
+    <div className="admin-themed-page space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div><h1 className="text-3xl font-bold tracking-tight">Matches & Scoring</h1><p className="text-muted-foreground mt-1">Schedule fixtures and start live scoring.</p></div>
         <Link href="/admin/matches/new" className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-10 px-4 text-sm font-medium"><CalendarPlus className="w-4 h-4 mr-2" />Schedule Match</Link>
