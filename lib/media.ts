@@ -1,6 +1,12 @@
 import { supabase } from "@/lib/supabase";
 
-export type MediaKind = "tournament-logos" | "team-logos" | "player-photos" | "posters";
+export type MediaKind =
+  | "tournament-logos"
+  | "team-logos"
+  | "player-photos"
+  | "player-registrations"
+  | "posters"
+  | "banners";
 
 type UploadSignature = {
   cloudName: string;
@@ -21,6 +27,15 @@ function errorMessage(error: ErrorPayload["error"], fallback: string) {
   if (typeof error === "string" && error) return error;
   if (typeof error === "object" && error?.message) return error.message;
   return fallback;
+}
+
+export function cloudinaryPlayerPhotoUrl(url: string) {
+  if (!url.includes("res.cloudinary.com/") || !url.includes("/image/upload/")) return url;
+  if (url.includes("/c_fill,g_auto,w_1200,h_1200,q_auto,f_auto/")) return url;
+  return url.replace(
+    "/image/upload/",
+    "/image/upload/c_fill,g_auto,w_1200,h_1200,q_auto,f_auto/",
+  );
 }
 
 async function readJson<T>(response: Response): Promise<T & ErrorPayload> {
@@ -66,5 +81,8 @@ export async function uploadImage(file: File, kind: MediaKind) {
     throw new Error(errorMessage(upload.error, "Cloudinary upload failed."));
   }
 
-  return { url: upload.secure_url, publicId: upload.public_id };
+  const url = kind === "player-photos" || kind === "player-registrations"
+    ? cloudinaryPlayerPhotoUrl(upload.secure_url)
+    : upload.secure_url;
+  return { url, publicId: upload.public_id };
 }

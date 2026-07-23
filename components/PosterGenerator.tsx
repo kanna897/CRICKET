@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import * as htmlToImage from "html-to-image";
 import { Download, Loader2, Upload } from "lucide-react";
 import { uploadImage } from "@/lib/media";
+import { downloadPosterDataUrl, posterPixelRatio, posterQualityLabel, type PosterQuality } from "@/lib/poster-export";
 
 interface PosterProps {
   matchData: {
@@ -22,26 +23,36 @@ interface PosterProps {
 export function PosterGenerator({ matchData }: PosterProps) {
   const posterRef = useRef<HTMLDivElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [downloading, setDownloading] = useState<PosterQuality | null>(null);
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
 
-  const createPosterFile = async () => {
+  const createPosterFile = async (quality: PosterQuality = "4k") => {
     if (!posterRef.current) throw new Error("Poster is not ready.");
-    const dataUrl = await htmlToImage.toJpeg(posterRef.current, { quality: 0.95 });
+    const dataUrl = await htmlToImage.toJpeg(posterRef.current, {
+      cacheBust: true,
+      quality: 0.99,
+      pixelRatio: posterPixelRatio(posterRef.current, quality),
+      width: 1080,
+      height: 1080,
+      backgroundColor: "#0f172a",
+      style: { transform: "none", transformOrigin: "center", margin: "0" },
+    });
     const blob = await (await fetch(dataUrl)).blob();
-    return new File([blob], `match-${matchData.matchNumber}-summary.jpg`, { type: "image/jpeg" });
+    return new File([blob], `match-${matchData.matchNumber}-${quality}-summary.jpg`, { type: "image/jpeg" });
   };
 
-  const downloadPoster = async () => {
+  const downloadPoster = async (quality: PosterQuality) => {
+    setDownloading(quality);
     try {
-      const file = await createPosterFile();
-      const dataUrl = URL.createObjectURL(file);
-      const link = document.createElement('a');
-      link.download = `match-${matchData.matchNumber}-summary.jpg`;
-      link.href = dataUrl;
-      link.click();
+      const file = await createPosterFile(quality);
+      const objectUrl = URL.createObjectURL(file);
+      await downloadPosterDataUrl(objectUrl, file.name);
+      URL.revokeObjectURL(objectUrl);
     } catch (err) {
       console.error("Error generating poster", err);
       alert("Failed to generate poster.");
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -66,13 +77,12 @@ export function PosterGenerator({ matchData }: PosterProps) {
           {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
           {isUploading ? "Uploading…" : "Upload JPG Poster"}
         </button>
-        <button 
-          onClick={downloadPoster}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Download JPG Poster
-        </button>
+        {(["4k"] as PosterQuality[]).map((quality) => (
+          <button key={quality} onClick={() => void downloadPoster(quality)} disabled={!!downloading} className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-60">
+            <Download className="w-4 h-4 mr-2" />
+            {downloading === quality ? `Creating ${posterQualityLabel(quality)}…` : `Download ${posterQualityLabel(quality)} JPG`}
+          </button>
+        ))}
       </div>
       {posterUrl && <a href={posterUrl} target="_blank" rel="noreferrer" className="block text-right text-sm text-primary hover:underline">View uploaded poster</a>}
 

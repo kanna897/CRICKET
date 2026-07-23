@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, BarChart3, FileText, Radio, Target, TrendingUp } from "lucide-react";
+import { ArrowLeft, BarChart3, Bell, BellOff, FileText, Radio, Target, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { LiveCommentary } from "@/components/live-commentary";
 
@@ -19,10 +19,13 @@ export default function PublicLiveMatch() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [innings, setInnings] = useState<Innings | null>(null);
   const [balls, setBalls] = useState<Ball[]>([]);
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   useEffect(() => {
     if (!id) return;
-    const load = async () => {
+    setAlertsEnabled(localStorage.getItem(`crickpulse-live-alert:${id}`) === "on" && Notification.permission === "granted");
+    const load = async (notify = false) => {
       const { data: matchRow } = await (supabase.from("matches") as any).select("id,team_a_id,team_b_id,overs_per_match,status,winner_id").eq("id", id).maybeSingle();
       if (!matchRow) return;
       const [{ data: teamRows }, { data: inningsRow }] = await Promise.all([
@@ -30,13 +33,26 @@ export default function PublicLiveMatch() {
         (supabase.from("innings") as any).select("id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled,target").eq("match_id", id).order("innings_number", { ascending: false }).limit(1).maybeSingle(),
       ]);
       setMatch(matchRow); setTeams(teamRows || []); setInnings(inningsRow || null);
+      if (notify && inningsRow && localStorage.getItem(`crickpulse-live-alert:${id}`) === "on" && Notification.permission === "granted") {
+        const battingTeam = (teamRows || []).find((team: Team) => team.id === inningsRow.batting_team_id)?.name || "Batting team";
+        const registration = await navigator.serviceWorker?.ready;
+        registration?.active?.postMessage({
+          type: "SHOW_MATCH_NOTIFICATION",
+          payload: {
+            title: `${battingTeam} ${inningsRow.total_runs}/${inningsRow.total_wickets}`,
+            body: `${Math.floor(inningsRow.balls_bowled / 6)}.${inningsRow.balls_bowled % 6} overs · CrickPulse live update`,
+            url: window.location.pathname,
+            tag: `crickpulse-match-${id}`,
+          },
+        });
+      }
       if (inningsRow) {
         const { data: ballRows } = await (supabase.from("ball_by_ball") as any).select("id,over_number,ball_number,runs,extras,extras_type,is_wicket").eq("innings_id", inningsRow.id).order("created_at", { ascending: false }).limit(12);
         setBalls((ballRows || []).reverse());
       } else setBalls([]);
     };
     void load();
-    const channel = supabase.channel(`public-score:${id}`).on("postgres_changes", { event: "*", schema: "public", table: "innings", filter: `match_id=eq.${id}` }, () => { void load(); }).subscribe();
+    const channel = supabase.channel(`public-score:${id}`).on("postgres_changes", { event: "*", schema: "public", table: "innings", filter: `match_id=eq.${id}` }, () => { void load(true); }).subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [id]);
 
@@ -62,10 +78,33 @@ export default function PublicLiveMatch() {
   const currentOverBalls = currentOver ? balls.filter((ball) => ball.over_number === currentOver) : [];
   const ballLabel = (ball: Ball) => ball.is_wicket ? "W" : ball.extras_type === "wide" ? "Wd" : ball.extras_type === "no_ball" ? "NB" : String(ball.runs + ball.extras);
 
+  async function toggleAlerts() {
+    setAlertMessage("");
+    if (alertsEnabled) {
+      localStorage.removeItem(`crickpulse-live-alert:${id}`);
+      setAlertsEnabled(false);
+      setAlertMessage("Live alerts turned off.");
+      return;
+    }
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      setAlertMessage("இந்த browser live notifications support செய்யவில்லை.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      setAlertMessage("Notification permission allow பண்ணினால் மட்டும் live alerts வரும்.");
+      return;
+    }
+    localStorage.setItem(`crickpulse-live-alert:${id}`, "on");
+    setAlertsEnabled(true);
+    setAlertMessage("Live score alerts enabled.");
+  }
+
   if (!match) return <main className="mx-auto max-w-3xl p-6 text-center text-muted-foreground">Loading match...</main>;
 
   return <main className="mx-auto max-w-3xl space-y-4 p-3 sm:p-6">
-    <Link href="/fixtures" className="inline-flex items-center gap-2 px-1 text-sm font-bold text-sky-700 hover:text-sky-900"><ArrowLeft className="h-4 w-4" />Back to matches</Link>
+    <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/fixtures" className="inline-flex items-center gap-2 px-1 text-sm font-bold text-sky-700 hover:text-sky-900"><ArrowLeft className="h-4 w-4" />Back to matches</Link><button type="button" onClick={toggleAlerts} className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-black shadow-sm ${alertsEnabled ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-300 bg-white text-slate-800"}`}>{alertsEnabled?<Bell className="h-4 w-4"/>:<BellOff className="h-4 w-4"/>}{alertsEnabled?"Live alerts on":"Enable live alerts"}</button></div>
+    {alertMessage&&<p role="status" className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-900">{alertMessage}</p>}
     <section className="overflow-hidden rounded-3xl border border-sky-400/30 bg-gradient-to-br from-[#071427] via-[#0a2140] to-[#092f4e] p-5 text-white shadow-xl sm:p-7">
       <div className="mb-5 flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold text-sky-200">{teamName(match.team_a_id)} vs {teamName(match.team_b_id)}</p><p className="mt-1 text-xs text-slate-400">Innings {innings?.innings_number || 1}</p></div><span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ${match.status === "live" ? "bg-red-500 text-white" : "bg-white/10 text-slate-200"}`}><Radio className="h-3.5 w-3.5" />{match.status === "live" ? "LIVE" : match.status.toUpperCase()}</span></div>
       <div className="grid grid-cols-[1fr_auto] items-end gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Batting</p><h1 className="mt-1 text-xl font-black text-cyan-300 sm:text-2xl">{teamName(innings?.batting_team_id)}</h1></div><div className="text-right"><p className="text-5xl font-black tracking-tight sm:text-6xl">{innings ? `${innings.total_runs}/${innings.total_wickets}` : "0/0"}</p><p className="mt-1 font-bold text-emerald-300">{overs} overs</p></div></div>

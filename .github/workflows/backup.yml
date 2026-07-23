@@ -1,0 +1,63 @@
+name: Encrypted production backup
+
+on:
+  schedule:
+    - cron: "20 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate backup secrets
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          test -n "$SUPABASE_DB_URL"
+          test -n "$BACKUP_ENCRYPTION_KEY"
+          test "${#BACKUP_ENCRYPTION_KEY}" -ge 24
+      - name: Create logical database backups
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p backup
+          npx --yes supabase@2.109.1 db dump --db-url "$SUPABASE_DB_URL" -f backup/roles.sql --role-only
+          npx --yes supabase@2.109.1 db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
+          npx --yes supabase@2.109.1 db dump --db-url "$SUPABASE_DB_URL" -f backup/data.sql --data-only --use-copy
+      - name: Export Cloudinary asset manifest
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+        run: |
+          if [ -n "$CLOUDINARY_CLOUD_NAME" ] && [ -n "$CLOUDINARY_API_KEY" ] && [ -n "$CLOUDINARY_API_SECRET" ]; then
+            curl --fail --silent --show-error -u "$CLOUDINARY_API_KEY:$CLOUDINARY_API_SECRET" \
+              "https://api.cloudinary.com/v1_1/$CLOUDINARY_CLOUD_NAME/resources/image?max_results=500" \
+              -o backup/cloudinary-assets.json
+          else
+            printf '{"warning":"Cloudinary backup secrets not configured"}\n' > backup/cloudinary-assets.json
+          fi
+      - name: Encrypt backup bundle
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          tar -czf crickpulse-backup.tar.gz backup
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -in crickpulse-backup.tar.gz -out "crickpulse-backup-$(date -u +%Y-%m-%d).tar.gz.enc" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          rm -rf backup crickpulse-backup.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crickpulse-encrypted-backup-${{ github.run_id }}
+          path: "*.tar.gz.enc"
+          retention-days: 7
+          if-no-files-found: error

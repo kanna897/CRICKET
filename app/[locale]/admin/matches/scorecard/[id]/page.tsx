@@ -107,7 +107,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
 
   if (!match) return <div className="p-10 text-center text-muted-foreground">Loading scorecard...</div>;
 
-  return <main className="max-w-5xl mx-auto space-y-5 pb-12">
+  return <main className="scorecard-shell max-w-5xl mx-auto space-y-5 pb-12">
     <header className="flex flex-wrap items-center justify-between gap-3">
       <Link href={publicMode ? `/match/${id}` : `/admin/matches/score/${id}`} className="control"><ArrowLeft className="w-4 h-4 mr-1" />{publicMode ? "Live match" : "Live scorer"}</Link>
       <div className="flex gap-2">

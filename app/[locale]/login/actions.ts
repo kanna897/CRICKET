@@ -6,5 +6,5 @@ export async function signInWithEmail(email: string, password: string) {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  return { error: error?.message ?? null };
+  return { error: error?.message ?? null, code: error?.code ?? null };
 }

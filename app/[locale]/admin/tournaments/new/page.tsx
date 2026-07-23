@@ -87,7 +87,7 @@ export default function NewTournamentPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="admin-themed-page max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/admin/tournaments" className="p-2 hover:bg-muted rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5" />

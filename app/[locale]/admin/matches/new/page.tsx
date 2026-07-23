@@ -35,7 +35,12 @@ export default function NewMatchPage() {
       const playersResult = teamIds.length ? await supabase.from("players").select("*").in("team_id", teamIds).order("name") : { data: [] };
       if (teamsResult.data) setTeams(teamsResult.data);
       if (playersResult.data) setPlayers(playersResult.data);
-      if (tournamentsResult.data) setTournaments(tournamentsResult.data);
+      if (tournamentsResult.data) {
+        setTournaments(tournamentsResult.data);
+        const requestedTournament = new URLSearchParams(window.location.search).get("tournament");
+        const selected = (tournamentsResult.data as Tournament[]).find((item) => item.id === requestedTournament);
+        if (selected) setForm((current) => ({ ...current, tournament_id: selected.id, overs_per_match: String(selected.overs || current.overs_per_match) }));
+      }
     }
     loadOptions();
   }, [isMasterAdmin, userId]);
@@ -65,6 +70,8 @@ export default function NewMatchPage() {
         match_time: form.match_time || null,
         overs_per_match: Number(form.overs_per_match),
         status: "scheduled",
+        assigned_scorer_id: tournaments.find((tournament) => tournament.id === form.tournament_id)?.organizer_id || userId,
+        scoring_locked: false,
       }).select("id").single();
       if (insertError) throw insertError;
       const squadRows = [

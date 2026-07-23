@@ -144,9 +144,9 @@ export default function TournamentsPage() {
                     <td className="px-6 py-4">{tournament.overs}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        displayStatus === 'upcoming' ? 'bg-blue-500/10 text-blue-400' :
-                        displayStatus === 'ongoing' ? 'bg-green-500/10 text-green-400' :
-                        'bg-gray-500/10 text-gray-500'
+                        displayStatus === 'upcoming' ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300' :
+                        displayStatus === 'ongoing' ? 'bg-green-500/10 text-green-700 dark:text-green-300' :
+                        'bg-gray-500/10 text-gray-700 dark:text-gray-300'
                       }`}>
                         {displayStatus}
                       </span>
