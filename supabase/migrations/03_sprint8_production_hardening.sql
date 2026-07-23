@@ -118,20 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_awards_tournament_id ON public.awards(tournament_
 CREATE INDEX IF NOT EXISTS idx_awards_player_id ON public.awards(player_id);
 
 -- 5. Storage Fixes
-INSERT INTO storage.buckets (id, name, public) VALUES 
-('team-logos', 'team-logos', true),
-('player-photos', 'player-photos', true),
-('tournament-assets', 'tournament-assets', true),
-('posters', 'posters', true)
-ON CONFLICT (id) DO NOTHING;
-
--- Storage Policies
--- Assuming table storage.objects is enabled for RLS (it is by default in Supabase)
-CREATE POLICY "Public Read Storage" ON storage.objects FOR SELECT USING (bucket_id IN ('team-logos', 'player-photos', 'tournament-assets', 'posters'));
-CREATE POLICY "Admin Write Storage" ON storage.objects FOR ALL USING (
-  bucket_id IN ('team-logos', 'player-photos', 'tournament-assets', 'posters') 
-  AND (has_role('super_admin') OR has_role('tournament_admin'))
-);
+-- Media storage is handled by Cloudinary. Supabase stores secure URLs only.
 
 -- 6. Add updated_at Triggers
 CREATE OR REPLACE FUNCTION update_modified_column()

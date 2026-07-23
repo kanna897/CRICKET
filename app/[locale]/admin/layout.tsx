@@ -6,14 +6,17 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 export default async function AdminLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
 
-  if (!user) redirect(`/${locale}/login?error=session`);
+  if (claimsError || !claims?.sub) redirect(`/${locale}/login?error=session`);
+  const userId = claims.sub;
+  const userEmail = typeof claims.email === "string" ? claims.email : null;
 
   const { data: profileData } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", userId)
     .maybeSingle();
   const profile = profileData as { name?: string; display_name?: string; role: string } | null;
   let role = resolveApplicationRole(profile?.role);
@@ -24,7 +27,7 @@ export default async function AdminLayout({ children, params }: { children: Reac
     const { data: legacyAdminRoleData } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("role", "super_admin")
       .maybeSingle();
     const legacyAdminRole = legacyAdminRoleData as { role: string } | null;
@@ -35,5 +38,5 @@ export default async function AdminLayout({ children, params }: { children: Reac
     redirect(`/${locale}/login?error=unauthorized`);
   }
 
-  return <AdminShell userId={user.id} displayName={profile?.name || profile?.display_name || user.email || "Administrator"} role={role}>{children}</AdminShell>;
+  return <AdminShell userId={userId} displayName={profile?.name || profile?.display_name || userEmail || "Administrator"} role={role}>{children}</AdminShell>;
 }

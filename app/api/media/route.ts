@@ -7,7 +7,9 @@ const folders = {
   "tournament-logos": "crickpulse/tournament-logos",
   "team-logos": "crickpulse/team-logos",
   "player-photos": "crickpulse/player-photos",
+  "player-registrations": "crickpulse/player-registrations",
   posters: "crickpulse/posters",
+  banners: "crickpulse/banners",
 } as const;
 
 type MediaKind = keyof typeof folders;

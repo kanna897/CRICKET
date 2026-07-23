@@ -188,7 +188,7 @@ export default function PlayerProfilePage() {
   if (!isEditing) return <ModernPlayerProfile player={player} teams={teams} playerCode={playerCode} career={career} isUploading={isUploading} isDeleting={isDeleting} onEdit={startEditing} onDelete={deletePlayer} onPhotoUpload={handlePhotoUpload} />;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="admin-themed-page max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/admin/players" className="p-2 hover:bg-muted rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5" />

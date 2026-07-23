@@ -32,7 +32,7 @@ export default function NewTeamPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<TeamFormValues>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<TeamFormValues>({
     resolver: zodResolver(teamSchema)
   });
 
@@ -41,10 +41,15 @@ export default function NewTeamPage() {
       let query = supabase.from('tournaments').select('*').order('created_at', { ascending: false });
       if (!isMasterAdmin) query = query.eq('organizer_id', userId);
       const { data } = await query;
-      if (data) setTournaments(data);
+      if (data) {
+        const tournamentRows = data as unknown as Tournament[];
+        setTournaments(tournamentRows);
+        const requestedTournament = new URLSearchParams(window.location.search).get("tournament");
+        if (tournamentRows.some((tournament) => tournament.id === requestedTournament)) setValue("tournament_id", requestedTournament!);
+      }
     }
     fetchTournaments();
-  }, [isMasterAdmin, userId]);
+  }, [isMasterAdmin, userId, setValue]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -112,11 +117,11 @@ export default function NewTeamPage() {
       <div className="pointer-events-none absolute -left-24 top-44 h-2 w-[32rem] -rotate-12 bg-gradient-to-r from-transparent via-amber-300/45 to-transparent blur-sm" />
       <div className="pointer-events-none absolute -right-24 bottom-24 h-2 w-[32rem] -rotate-12 bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent blur-sm" />
       <div className="relative flex items-center gap-4">
-        <Link href="/admin/teams" aria-label="Back to teams" className="grid h-10 w-10 place-items-center rounded-xl border border-white/20 bg-white/10 text-slate-200 transition hover:-translate-x-0.5 hover:bg-white/15 hover:text-white">
+        <Link href="/admin/teams" aria-label="Back to teams" className="grid h-10 w-10 place-items-center rounded-xl border border-white/20 bg-white/10 text-primary transition hover:-translate-x-0.5 hover:bg-white/15 hover:text-white">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Tournament squad</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Tournament squad</p>
           <h1 className="mt-1 text-3xl font-black tracking-tight">Create Team</h1>
           <p className="mt-1 text-sm text-slate-300">Register a new team for a tournament</p>
         </div>
@@ -126,7 +131,7 @@ export default function NewTeamPage() {
         <div className="h-1 bg-gradient-to-r from-[#e7b84d] via-[#fff2a8] to-cyan-300" />
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="border-b border-white/10 bg-gradient-to-r from-[#0d4e9c]/45 to-transparent p-6 sm:p-7">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Team identity</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Team identity</p>
             <h2 className="mt-1 text-lg font-bold">Logo and branding</h2>
             <div className="mt-5 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
               <div className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border-2 border-dashed border-cyan-200/45 bg-cyan-300/10 shadow-inner">
@@ -146,7 +151,7 @@ export default function NewTeamPage() {
                 />
                 <label 
                   htmlFor="logo-upload" 
-                  className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-cyan-200/40 bg-cyan-300/10 px-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                  className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-cyan-200/40 bg-cyan-300/10 px-4 text-sm font-semibold text-primary transition hover:bg-cyan-300/20"
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Image
@@ -158,7 +163,7 @@ export default function NewTeamPage() {
 
           <div className="grid grid-cols-1 gap-6 px-6 sm:px-7 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-100">Team Name <span className="text-amber-300">*</span></label>
+              <label className="text-sm font-semibold text-slate-100">Team Name <span className="text-red-500">*</span></label>
               <input 
                 {...register("name")}
                 className="h-11 w-full rounded-xl border border-white/15 bg-[#0a1f4a] px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
@@ -168,7 +173,7 @@ export default function NewTeamPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-100">Tournament <span className="text-amber-300">*</span></label>
+              <label className="text-sm font-semibold text-slate-100">Tournament <span className="text-red-500">*</span></label>
               <select 
                 {...register("tournament_id")}
                 className="h-11 w-full rounded-xl border border-white/15 bg-[#0a1f4a] px-4 text-white outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
@@ -203,7 +208,7 @@ export default function NewTeamPage() {
           <div className="flex flex-col-reverse justify-end gap-3 border-t border-white/10 px-6 py-6 sm:flex-row sm:px-7">
             <Link 
               href="/admin/teams"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-foreground transition hover:bg-white/10 hover:text-white"
             >
               Cancel
             </Link>

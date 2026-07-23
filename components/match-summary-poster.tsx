@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 import { Download } from "lucide-react";
-import { toJpeg, toPng } from "html-to-image";
+import { toJpeg } from "html-to-image";
 import type { InningsScorecard } from "@/types/scorecard";
+import { downloadPosterDataUrl, posterPixelRatio, posterQualityLabel, type PosterQuality } from "@/lib/poster-export";
 
 type Team = { id: string; name: string; logo_url: string | null; primary_color: string | null };
 type PosterInnings = { batting_team_id: string; total_runs: number; total_wickets: number; balls_bowled: number; summary: InningsScorecard };
@@ -12,7 +13,7 @@ type Tournament = { name: string; logo_url: string | null };
 
 export function MatchSummaryPoster({ teams, innings, result, playerOfMatch, tournament, matchNumber, tossWinnerTeamId, winnerTeamId }: { teams: Team[]; innings: PosterInnings[]; result: string; playerOfMatch?: PlayerOfMatch | null; tournament?: Tournament | null; matchNumber?: number | null; tossWinnerTeamId?: string | null; winnerTeamId?: string | null }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [downloading, setDownloading] = useState<"png" | "jpg" | null>(null);
+  const [downloading, setDownloading] = useState<PosterQuality | null>(null);
   const team = (id: string) => teams.find((item) => item.id === id);
   const winningTeam = teams.find((item) => item.id === winnerTeamId) || teams.find((item) => result.toLowerCase().includes(item.name.toLowerCase()));
   const runs = playerOfMatch?.runs ?? Number(playerOfMatch?.summary.match(/(\d+)\s+runs?/i)?.[1] || 0);
@@ -22,16 +23,13 @@ export function MatchSummaryPoster({ teams, innings, result, playerOfMatch, tour
   const fours = playerOfMatch?.fours ?? 0;
   const sixes = playerOfMatch?.sixes ?? 0;
 
-  const download = async (format: "png" | "jpg") => {
+  const download = async (quality: PosterQuality) => {
     if (!ref.current) return;
-    setDownloading(format);
+    setDownloading(quality);
     try {
-      const options = { cacheBust: true, pixelRatio: 2, backgroundColor: "#07152b" };
-      const dataUrl = format === "png" ? await toPng(ref.current, options) : await toJpeg(ref.current, { ...options, quality: 0.95 });
-      const link = document.createElement("a");
-      link.download = `crickpulse-match-summary.${format}`;
-      link.href = dataUrl;
-      link.click();
+      const options = { cacheBust: true, pixelRatio: posterPixelRatio(ref.current, quality), backgroundColor: "#07152b" };
+      const dataUrl = await toJpeg(ref.current, { ...options, quality: 0.99 });
+      await downloadPosterDataUrl(dataUrl, `crickpulse-${quality}-match-summary.jpg`);
     } finally { setDownloading(null); }
   };
 
@@ -87,6 +85,6 @@ export function MatchSummaryPoster({ teams, innings, result, playerOfMatch, tour
         <div className="mt-auto shrink-0 pt-3"><div className="overflow-hidden rounded-xl border border-amber-200/70 bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] px-5 py-3 text-[#06122d] shadow-lg"><div className="flex items-center justify-center gap-3">{winningTeam?.logo_url && <img src={winningTeam.logo_url} alt="" className="h-10 w-10 rounded-full bg-white object-cover ring-2 ring-white shadow-md" />}<p className="text-center text-xl font-black uppercase tracking-wide">{result}</p></div></div></div>
       </div>
     </div>
-    <div className="flex flex-wrap gap-3"><button onClick={() => download("jpg")} disabled={!!downloading} className="control bg-primary text-primary-foreground"><Download className="w-4 h-4 mr-1" />Download JPG</button></div>
+    <div className="flex flex-wrap gap-3">{(["4k"] as PosterQuality[]).map((quality) => <button key={quality} onClick={() => void download(quality)} disabled={!!downloading} className="control bg-primary text-primary-foreground"><Download className="w-4 h-4 mr-1" />{downloading === quality ? `Creating ${posterQualityLabel(quality)}...` : `Download ${posterQualityLabel(quality)} JPG`}</button>)}</div>
   </section>;
 }

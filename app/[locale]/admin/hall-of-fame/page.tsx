@@ -5,5 +5,5 @@ import { useAdminAccess } from "@/components/admin-shell";
 
 export default function AdminHallOfFamePage() {
   const { userId, isMasterAdmin } = useAdminAccess();
-  return <HallOfFameDashboard admin organizerId={userId} isMasterAdmin={isMasterAdmin} />;
+  return <main className="admin-themed-page"><HallOfFameDashboard admin organizerId={userId} isMasterAdmin={isMasterAdmin} /></main>;
 }

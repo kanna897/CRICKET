@@ -1,5 +1,77 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import { Download, WifiOff, X } from "lucide-react";
-type InstallPrompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:"accepted"|"dismissed"}>};
-export function PwaInstallBanner(){const[prompt,setPrompt]=useState<InstallPrompt|null>(null);const[online,setOnline]=useState(true);const[hidden,setHidden]=useState(false);useEffect(()=>{setOnline(navigator.onLine);if("serviceWorker"in navigator)void navigator.serviceWorker.register("/sw.js");const install=(event:Event)=>{event.preventDefault();setPrompt(event as InstallPrompt)};const on=()=>setOnline(true);const off=()=>setOnline(false);window.addEventListener("beforeinstallprompt",install);window.addEventListener("online",on);window.addEventListener("offline",off);return()=>{window.removeEventListener("beforeinstallprompt",install);window.removeEventListener("online",on);window.removeEventListener("offline",off)}},[]);if(!online)return <div role="status" className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-xs font-black text-slate-950 shadow-xl md:bottom-5"><WifiOff className="h-4 w-4"/>Offline mode · saved pages remain available</div>;if(!prompt||hidden)return null;return <div className="fixed bottom-20 left-3 right-3 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-cyan-300/30 bg-[#07162f] p-3 text-white shadow-2xl md:bottom-5"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-400/15"><Download className="h-5 w-5 text-cyan-300"/></span><div className="min-w-0 flex-1"><p className="font-black">Install CrickPulse</p><p className="text-xs text-white/60">Fast app access and offline-ready pages.</p></div><button onClick={()=>void prompt.prompt().then(()=>setHidden(true))} className="rounded-lg bg-cyan-400 px-3 py-2 text-xs font-black text-slate-950">Install</button><button onClick={()=>setHidden(true)} aria-label="Dismiss install prompt"><X className="h-4 w-4"/></button></div>}
+import { CheckCircle2, Download, RefreshCw, Share, Smartphone, WifiOff, X } from "lucide-react";
+
+type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
+
+export function PwaInstallBanner() {
+  const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
+  const [online, setOnline] = useState(true);
+  const [hidden, setHidden] = useState(true);
+  const [installed, setInstalled] = useState(false);
+  const [iosHelp, setIosHelp] = useState(false);
+  const [updateWorker, setUpdateWorker] = useState<ServiceWorker | null>(null);
+
+  useEffect(() => {
+    setOnline(navigator.onLine);
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    setInstalled(standalone);
+    setHidden(sessionStorage.getItem("crickpulse-install-dismissed") === "1");
+
+    const install = (event: Event) => { event.preventDefault(); setPrompt(event as InstallPrompt); setHidden(false); };
+    const onInstalled = () => { setInstalled(true); setPrompt(null); setHidden(true); };
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("beforeinstallprompt", install);
+    window.addEventListener("appinstalled", onInstalled);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js").then((registration) => {
+        if (registration.waiting) setUpdateWorker(registration.waiting);
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          worker?.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) setUpdateWorker(worker);
+          });
+        });
+      });
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    }
+    return () => {
+      window.removeEventListener("beforeinstallprompt", install);
+      window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  const dismiss = () => { setHidden(true); setIosHelp(false); sessionStorage.setItem("crickpulse-install-dismissed", "1"); };
+  const install = async () => {
+    if (prompt) { await prompt.prompt(); const choice = await prompt.userChoice; if (choice.outcome === "accepted") setHidden(true); return; }
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIos) setIosHelp(true);
+  };
+  if (!online) return <div role="status" className="pwa-status-toast"><WifiOff className="h-4 w-4" /><span><strong>Offline mode</strong><small>Saved public pages are available. Scoring events stay safely queued.</small></span></div>;
+  if (updateWorker) return <div role="status" className="pwa-action-card"><span className="pwa-action-icon"><RefreshCw /></span><div><strong>CrickPulse update ready</strong><small>Refresh once to use the latest version.</small></div><button onClick={() => updateWorker.postMessage({ type: "SKIP_WAITING" })}>Update</button></div>;
+  if (installed || hidden) return null;
+  return <div className="pwa-action-card">
+    <span className="pwa-action-icon"><Smartphone /></span>
+    <div><strong>{iosHelp ? "Add CrickPulse to Home Screen" : "Install CrickPulse"}</strong><small>{iosHelp ? "Tap Share, then choose “Add to Home Screen”." : "Full-screen access, shortcuts and offline-ready public pages."}</small></div>
+    {iosHelp ? <span className="pwa-share-hint"><Share /> Share</span> : <button onClick={() => void install()}><Download />Install</button>}
+    <button className="pwa-dismiss" onClick={dismiss} aria-label="Dismiss install prompt"><X /></button>
+  </div>;
+}
+
+export function PwaInstalledBadge() {
+  const [standalone, setStandalone] = useState(false);
+  useEffect(() => setStandalone(window.matchMedia("(display-mode: standalone)").matches), []);
+  return standalone ? <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500"><CheckCircle2 className="h-4 w-4" />App mode</span> : null;
+}

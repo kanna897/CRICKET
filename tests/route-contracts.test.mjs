@@ -10,7 +10,9 @@ const routes = [
   "app/[locale]/(public)/tournaments/[id]/page.tsx",
   "app/[locale]/(public)/match/[id]/teamsheet/page.tsx",
   "app/[locale]/(public)/compare/page.tsx",
+  "app/[locale]/(public)/register-player/page.tsx",
   "app/[locale]/admin/players/import/page.tsx",
+  "app/[locale]/admin/player-registrations/page.tsx",
   "app/[locale]/admin/settings/page.tsx",
 ];
 
@@ -29,10 +31,54 @@ test("public navigation exposes discovery and comparison", () => {
   const nav = readFileSync(resolve(root, "components/public-nav.tsx"), "utf8");
   assert.match(nav, /\/tournaments/);
   assert.match(nav, /\/compare/);
+  assert.match(nav, /Player Registration/);
+  assert.match(nav, /Hide/);
+  assert.match(nav, /Unhide/);
 });
 
 test("scoring retains offline queue and handover controls", () => {
   const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
   assert.match(scoring, /saveToOfflineQueue/);
   assert.match(scoring, /Scorer Handover/);
+});
+
+test("advanced scorer keeps free-hit, variable extras and mobile controls", () => {
+  const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
+  assert.match(scoring, /freeHitActive/);
+  assert.match(scoring, /Advanced delivery/);
+  assert.match(scoring, /Mobile quick scoring/);
+  assert.match(scoring, /obstructing_field/);
+  assert.match(scoring, /timed_out/);
+  assert.match(scoring, /Voice Score/);
+  assert.match(scoring, /SpeechRecognition/);
+});
+
+test("match analytics exposes phase, batting, bowling and CSV reports", () => {
+  const analytics = readFileSync(resolve(root, "components/match-analytics-dashboard.tsx"), "utf8");
+  assert.match(analytics, /Phase Performance/);
+  assert.match(analytics, /Batting Report/);
+  assert.match(analytics, /Bowling Report/);
+  assert.match(analytics, /Download Analytics CSV/);
+});
+
+test("tournament operations expose readiness and preselected quick actions", () => {
+  const editor = readFileSync(resolve(root, "components/tournament-editor.tsx"), "utf8");
+  const newMatch = readFileSync(resolve(root, "app/[locale]/admin/matches/new/page.tsx"), "utf8");
+  const newTeam = readFileSync(resolve(root, "app/[locale]/admin/teams/new/page.tsx"), "utf8");
+  assert.match(editor, /Tournament command centre/);
+  assert.match(editor, /Tournament squads are operationally ready/);
+  assert.match(editor, /Schedule Match/);
+  assert.match(newMatch, /URLSearchParams/);
+  assert.match(newTeam, /URLSearchParams/);
+});
+
+test("player registration supports hide/unhide and organizer approval", () => {
+  const editor = readFileSync(resolve(root, "components/tournament-editor.tsx"), "utf8");
+  const form = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");
+  const queue = readFileSync(resolve(root, "app/[locale]/admin/player-registrations/page.tsx"), "utf8");
+  assert.match(editor, /player_registration_enabled/);
+  assert.match(editor, /Visible — public players can submit applications/);
+  assert.match(form, /Same jersey number is allowed/);
+  assert.match(form, /consent_given/);
+  assert.match(queue, /Approve & Add/);
 });

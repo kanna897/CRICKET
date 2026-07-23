@@ -40,24 +40,29 @@ export default function LoginPage() {
     setIsSubmitting(true);
     const normalizedEmail = email.trim().toLowerCase();
 
-    const { error: signInError } = await signInWithEmail(normalizedEmail, password);
+    try {
+      const signInResult = await signInWithEmail(normalizedEmail, password);
 
-    setIsSubmitting(false);
-
-    if (signInError) {
-      if (signInError.toLowerCase().includes("email not confirmed")) {
-        setNeedsConfirmation(true);
-        setError("Your email address is not confirmed yet. Open the confirmation link sent to your inbox, or resend it below.");
-      } else {
-        setError(signInError);
+      if (signInResult.error) {
+        if (signInResult.code === "email_not_confirmed") {
+          setNeedsConfirmation(true);
+          setError("Your email address is not confirmed yet. Open the confirmation link sent to your inbox, or resend it below.");
+        } else if (signInResult.code === "invalid_credentials") {
+          setError("The email address or password is incorrect.");
+        } else {
+          setError(signInResult.error);
+        }
+        return;
       }
-      return;
-    }
 
-    // A full navigation lets the auth cookies reach the protected Server
-    // Component before it checks the session. Refreshing immediately after
-    // router.replace() can refresh this login route and cancel the redirect.
-    window.location.assign(redirectTo);
+      // The Server Action writes persistent auth cookies before navigation.
+      window.location.assign(redirectTo);
+    } catch (signInError) {
+      console.error("Unable to reach Supabase Auth", signInError);
+      setError("Unable to connect to the authentication service. Check your internet connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   async function resendConfirmation() {

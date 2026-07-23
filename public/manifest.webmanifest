@@ -1,14 +1,26 @@
 {
+  "id": "/en",
   "name": "CrickPulse Cricket Scoring",
   "short_name": "CrickPulse",
   "description": "Live cricket scoring, tournaments, statistics and public match centre.",
-  "start_url": "/en",
+  "start_url": "/en?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#050b26",
   "theme_color": "#07162f",
   "orientation": "any",
+  "categories": ["sports", "productivity", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
-    { "src": "/brand/crickpulse-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/brand/crickpulse-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Live Matches", "short_name": "Live", "url": "/en/fixtures", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Points Table", "short_name": "Points", "url": "/en/points", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Admin Scoring", "short_name": "Score", "url": "/en/admin/matches", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

@@ -1,31 +1,20 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export type Role = 'super_admin' | 'tournament_admin' | 'scorer' | 'viewer';
+type ServerRole = { role: Role; tournament_id: string | null };
 
 export async function getServerRoles() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub;
+  if (!userId) return [];
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return [];
-
-  const { data } = await supabase
+  const { data: roles } = await supabase
     .from('user_roles')
     .select('role, tournament_id')
-    .eq('user_id', session.user.id);
+    .eq('user_id', userId);
 
-  return data || [];
+  return (roles || []) as ServerRole[];
 }
 
 export async function hasServerRole(role: Role, tournamentId?: string) {

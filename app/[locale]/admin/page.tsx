@@ -1,161 +1,353 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect } from "react";
-import { Trophy, Users, PlayCircle, Activity } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  Activity,
+  ArrowRight,
+  CalendarDays,
+  CircleDot,
+  Clock3,
+  MapPin,
+  Plus,
+  Radio,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  UserCheck,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { CrickpulseLogo } from "@/components/crickpulse-logo";
 import { useAdminAccess } from "@/components/admin-shell";
-import { DashboardLivePanels } from "@/components/dashboard-live-panels";
 
-const data = [
-  { name: "Mon", matches: 4 },
-  { name: "Tue", matches: 3 },
-  { name: "Wed", matches: 5 },
-  { name: "Thu", matches: 2 },
-  { name: "Fri", matches: 6 },
-  { name: "Sat", matches: 12 },
-  { name: "Sun", matches: 10 },
-];
+type Tournament = {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  status: string;
+  start_date: string | null;
+  venue: string | null;
+  created_at: string;
+};
+
+type Team = {
+  id: string;
+  tournament_id: string;
+  name: string;
+  logo_url: string | null;
+};
+
+type Player = { id: string; team_id: string | null };
+type Registration = { id: string; tournament_id: string; status: string; created_at: string };
+
+type Match = {
+  id: string;
+  tournament_id: string;
+  team_a_id: string;
+  team_b_id: string;
+  match_number: number | null;
+  match_date: string | null;
+  match_time: string | null;
+  ground: string | null;
+  status: string;
+  created_at: string;
+};
+
+type Innings = {
+  match_id: string;
+  innings_number: number;
+  batting_team_id: string;
+  total_runs: number;
+  total_wickets: number;
+  balls_bowled: number;
+};
+
+const liveStatuses = ["live", "ongoing", "toss_done"];
+const completedStatuses = ["completed", "finished"];
 
 export default function AdminDashboard() {
   const { isMasterAdmin, userId } = useAdminAccess();
-  const [stats, setStats] = useState({
-    tournaments: 0,
-    teams: 0,
-    matches: 0,
-    players: 0
-  });
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [innings, setInnings] = useState<Innings[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadStats() {
-      let tournamentQuery = supabase.from('tournaments').select('*').is('deleted_at', null);
-      if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq('organizer_id', userId);
-      const { data: manageableTournaments } = await tournamentQuery;
-      const tournamentIds = (manageableTournaments || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-      if (!tournamentIds.length) {
-        setStats({ tournaments: 0, teams: 0, matches: 0, players: 0 });
-        return;
-      }
-      const { data: manageableTeams } = await supabase.from('teams').select('*').in('tournament_id', tournamentIds).is('deleted_at', null);
-      const teamIds = (manageableTeams || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-      const [tData, teamData, mData, pData] = await Promise.all([
-        supabase.from('tournaments').select('*', { count: 'exact', head: true }).in('id', tournamentIds).is('deleted_at', null),
-        supabase.from('teams').select('*', { count: 'exact', head: true }).in('tournament_id', tournamentIds).is('deleted_at', null),
-        supabase.from('matches').select('*', { count: 'exact', head: true }).in('tournament_id', tournamentIds).is('deleted_at', null),
-        teamIds.length ? supabase.from('players').select('*', { count: 'exact', head: true }).in('team_id', teamIds).is('deleted_at', null) : Promise.resolve({ count: 0 })
+    let active = true;
+    async function loadDashboard() {
+      setLoading(true);
+      let tournamentQuery = (supabase.from("tournaments") as any)
+        .select("id,name,logo_url,status,start_date,venue,created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+      if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
+      const { data: tournamentRows } = await tournamentQuery;
+      const scopedTournaments = (tournamentRows || []) as Tournament[];
+      const tournamentIds = scopedTournaments.map((item) => item.id);
+
+      const [teamResult, matchResult] = tournamentIds.length
+        ? await Promise.all([
+            (supabase.from("teams") as any)
+              .select("id,tournament_id,name,logo_url")
+              .in("tournament_id", tournamentIds)
+              .is("deleted_at", null),
+            (supabase.from("matches") as any)
+              .select("id,tournament_id,team_a_id,team_b_id,match_date,match_time,ground,status,created_at")
+              .in("tournament_id", tournamentIds)
+              .order("created_at", { ascending: false })
+              .limit(60),
+          ])
+        : [{ data: [] }, { data: [] }];
+
+      const scopedTeams = (teamResult.data || []) as Team[];
+      const scopedMatches = (matchResult.data || []) as Match[];
+      const teamIds = scopedTeams.map((item) => item.id);
+      const matchIds = scopedMatches.map((item) => item.id);
+      const [playerResult, inningsResult, registrationResult] = await Promise.all([
+        teamIds.length
+          ? (supabase.from("players") as any).select("id,team_id").in("team_id", teamIds).is("deleted_at", null)
+          : Promise.resolve({ data: [] }),
+        matchIds.length
+          ? (supabase.from("innings") as any)
+              .select("match_id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled")
+              .in("match_id", matchIds)
+          : Promise.resolve({ data: [] }),
+        tournamentIds.length
+          ? (supabase.from("player_registrations") as any).select("id,tournament_id,status,created_at").in("tournament_id", tournamentIds).eq("status", "pending")
+          : Promise.resolve({ data: [] }),
       ]);
 
-      setStats({
-        tournaments: tData.count || 0,
-        teams: teamData.count || 0,
-        matches: mData.count || 0,
-        players: pData.count || 0
-      });
+      if (!active) return;
+      setTournaments(scopedTournaments);
+      setTeams(scopedTeams);
+      setPlayers((playerResult.data || []) as Player[]);
+      setMatches(scopedMatches);
+      setInnings((inningsResult.data || []) as Innings[]);
+      setRegistrations((registrationResult.data || []) as Registration[]);
+      setLoading(false);
     }
-    loadStats();
+
+    void loadDashboard();
+    const channel = supabase
+      .channel(`dashboard-v2:${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, loadDashboard)
+      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, loadDashboard)
+      .on("postgres_changes", { event: "*", schema: "public", table: "player_registrations" }, loadDashboard)
+      .subscribe();
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
   }, [isMasterAdmin, userId]);
 
+  const today = new Date().toISOString().slice(0, 10);
+  const liveMatches = matches.filter((match) => liveStatuses.includes(match.status)).slice(0, 2);
+  const upcoming = matches
+    .filter((match) => match.match_date && match.match_date >= today && ![...completedStatuses, "abandoned"].includes(match.status))
+    .sort((a, b) => `${a.match_date}${a.match_time || ""}`.localeCompare(`${b.match_date}${b.match_time || ""}`))
+    .slice(0, 3);
+  const activeTournaments = tournaments.filter((item) => ["active", "ongoing"].includes(item.status)).length;
+  const completedMatches = matches.filter((item) => completedStatuses.includes(item.status)).length;
+  const playerCountByTeam = new Map(teams.map((item) => [item.id, players.filter((player) => player.team_id === item.id).length]));
+  const teamsNeedingPlayers = teams.filter((item) => (playerCountByTeam.get(item.id) || 0) < 6);
+  const incompleteFixtures = matches.filter((item) => !completedStatuses.includes(item.status) && (!item.match_date || !item.ground));
+  const team = (id: string) => teams.find((item) => item.id === id);
+  const tournament = (id: string) => tournaments.find((item) => item.id === id);
+  const latestInnings = (matchId: string) =>
+    innings
+      .filter((item) => item.match_id === matchId)
+      .sort((a, b) => b.innings_number - a.innings_number)[0];
+
+  const recentActivity = useMemo(
+    () =>
+      [
+        ...matches.slice(0, 4).map((match) => ({
+          id: `match-${match.id}`,
+          title: `${team(match.team_a_id)?.name || "Team A"} vs ${team(match.team_b_id)?.name || "Team B"}`,
+          detail: `${tournament(match.tournament_id)?.name || "Tournament"} · ${match.status.replaceAll("_", " ")}`,
+          href: `/admin/matches/score/${match.id}`,
+          createdAt: match.created_at,
+          kind: "match" as const,
+        })),
+        ...tournaments.slice(0, 3).map((item) => ({
+          id: `tournament-${item.id}`,
+          title: item.name,
+          detail: `Tournament · ${item.status}`,
+          href: `/admin/tournaments`,
+          createdAt: item.created_at,
+          kind: "tournament" as const,
+        })),
+      ]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 5),
+    [matches, tournaments, teams],
+  );
+
+  const dashboardDate = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    weekday: "long",
+  }).format(new Date());
+
   return (
-    <div className="admin-themed-page dashboard-page space-y-6">
-      <div>
-        <div className="dashboard-brand-hero"><CrickpulseLogo variant="primary" className="dashboard-hero-logo h-44 w-72 sm:h-48 sm:w-96" /><div className="dashboard-hero-copy"><h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1><p className="text-muted-foreground mt-1">Overview of your tournament ecosystem.</p></div></div>
-      </div>
+    <div className="admin-themed-page dashboard-page dashboard-command-center space-y-5">
+      <header className="dashboard-welcome">
+        <div>
+          <p className="dashboard-eyebrow"><Sparkles className="h-4 w-4" /> Tournament command centre</p>
+          <h1>Welcome back, {isMasterAdmin ? "Admin" : "Organizer"}! <span aria-hidden="true">👋</span></h1>
+          <p>{isMasterAdmin ? "Monitor every competition and organizer workspace." : "Here’s what needs your attention across your tournaments today."}</p>
+        </div>
+        <div className="dashboard-date"><CalendarDays className="h-5 w-5" /><span>{dashboardDate}</span></div>
+      </header>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Tournaments</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.tournaments}</h3>
+      <section className="dashboard-metric-grid" aria-label="Tournament overview">
+        <MetricCard icon={Trophy} tone="green" label="Total Tournaments" value={tournaments.length} detail={`${activeTournaments} active · ${Math.max(tournaments.length - activeTournaments, 0)} other`} loading={loading} />
+        <MetricCard icon={Users} tone="violet" label="Total Teams" value={teams.length} detail={`${teams.length} registered squads`} loading={loading} />
+        <MetricCard icon={ShieldCheck} tone="gold" label="Total Players" value={players.length} detail={`${players.length} available players`} loading={loading} />
+        <MetricCard icon={Activity} tone="blue" label="Matches Played" value={matches.length} detail={`${liveMatches.length} live · ${completedMatches} completed`} loading={loading} />
+      </section>
+
+      <div className="dashboard-main-grid">
+        <div className="space-y-5">
+          <DashboardPanel
+            title="Live Matches"
+            meta={liveMatches.length ? `${liveMatches.length} live now` : "No match live"}
+            href="/admin/matches"
+          >
+            <div className="dashboard-live-grid">
+              {liveMatches.length ? liveMatches.map((match) => (
+                <LiveMatchCard key={match.id} match={match} teamA={team(match.team_a_id)} teamB={team(match.team_b_id)} innings={latestInnings(match.id)} tournamentName={tournament(match.tournament_id)?.name} />
+              )) : (
+                <EmptyState icon={Radio} title="No live matches right now" text="Start a scheduled match when both teams are ready." action="/admin/matches" actionLabel="Open matches" />
+              )}
             </div>
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-              <Trophy className="w-6 h-6" />
-            </div>
+          </DashboardPanel>
+
+          <div className="dashboard-lower-grid">
+            <DashboardPanel title="Recent Tournaments" href="/admin/tournaments">
+              <div className="dashboard-tournament-list">
+                {tournaments.slice(0, 3).map((item) => (
+                  <Link key={item.id} href="/admin/tournaments" className="dashboard-tournament-row">
+                    <TeamMark name={item.name} logo={item.logo_url} size="lg" />
+                    <span className="min-w-0 flex-1">
+                      <strong>{item.name}</strong>
+                      <small>{teams.filter((entry) => entry.tournament_id === item.id).length} teams · {matches.filter((entry) => entry.tournament_id === item.id).length} matches</small>
+                    </span>
+                    <StatusPill status={item.status} />
+                  </Link>
+                ))}
+                {!tournaments.length && <EmptyState icon={Trophy} title="No tournaments yet" text="Create your first tournament to begin." />}
+              </div>
+            </DashboardPanel>
+
+            <DashboardPanel title="Recent Activity" href="/admin/matches">
+              <div className="dashboard-activity-list">
+                {recentActivity.map((item) => (
+                  <Link href={item.href} key={item.id} className="dashboard-activity-row">
+                    <span className="dashboard-activity-icon">{item.kind === "match" ? <Activity /> : <Trophy />}</span>
+                    <span className="min-w-0 flex-1"><strong>{item.title}</strong><small>{item.detail}</small></span>
+                    <ArrowRight />
+                  </Link>
+                ))}
+                {!recentActivity.length && <EmptyState icon={CircleDot} title="Activity will appear here" text="New tournaments and matches are shown automatically." />}
+              </div>
+            </DashboardPanel>
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Teams</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.teams}</h3>
+        <aside className="space-y-5">
+          <DashboardPanel title="Organizer Action Centre" meta={`${registrations.length + teamsNeedingPlayers.length + incompleteFixtures.length} items`}>
+            <div className="dashboard-activity-list">
+              <ActionQueueRow icon={UserCheck} tone="emerald" title={`${registrations.length} registration${registrations.length === 1 ? "" : "s"} waiting`} text="Review applications and assign approved players." href="/admin/player-registrations" action="Review" />
+              <ActionQueueRow icon={Users} tone="violet" title={`${teamsNeedingPlayers.length} squad${teamsNeedingPlayers.length === 1 ? "" : "s"} need players`} text="Teams require at least 6 players for match readiness." href="/admin/teams" action="Fix squads" />
+              <ActionQueueRow icon={ShieldAlert} tone="amber" title={`${incompleteFixtures.length} incomplete fixture${incompleteFixtures.length === 1 ? "" : "s"}`} text="Add missing match date or venue before match day." href="/admin/matches" action="Complete" />
             </div>
-            <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500">
-              <Users className="w-6 h-6" />
+          </DashboardPanel>
+          <DashboardPanel title="Upcoming Matches" href="/admin/matches">
+            <div className="dashboard-upcoming-list">
+              {upcoming.map((match) => (
+                <Link key={match.id} href={`/admin/matches/score/${match.id}`} className="dashboard-upcoming-card">
+                  <div className="dashboard-upcoming-teams">
+                    <TeamMark name={team(match.team_a_id)?.name || "Team A"} logo={team(match.team_a_id)?.logo_url} />
+                    <span><small>Match {match.match_number || "—"}</small><b>VS</b></span>
+                    <TeamMark name={team(match.team_b_id)?.name || "Team B"} logo={team(match.team_b_id)?.logo_url} />
+                  </div>
+                  <p><CalendarDays />{formatDate(match.match_date)} <span>·</span> <Clock3 />{formatTime(match.match_time)}</p>
+                  <p><MapPin />{match.ground || tournament(match.tournament_id)?.name || "Venue TBC"}</p>
+                </Link>
+              ))}
+              {!upcoming.length && <EmptyState icon={CalendarDays} title="Schedule is clear" text="No upcoming matches are currently scheduled." />}
             </div>
-          </div>
-        </div>
+          </DashboardPanel>
 
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Matches Played</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.matches}</h3>
+          <section className="dashboard-quick-actions" aria-labelledby="quick-actions-title">
+            <div><p>Build the next match day</p><h2 id="quick-actions-title">Quick Actions</h2></div>
+            <Link href="/admin/tournaments/new" className="dashboard-action-primary"><Plus />Create Tournament</Link>
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/admin/teams/new"><Users />Add Team</Link>
+              <Link href="/admin/players/new"><UserPlus />Add Player</Link>
             </div>
-            <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
-              <PlayCircle className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Registered Players</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.players}</h3>
-            </div>
-            <div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center text-purple-500">
-              <Activity className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <DashboardLivePanels />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart */}
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm lg:col-span-2">
-          <h3 className="text-lg font-semibold mb-4">Matches This Week</h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#bae6fd" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#356b86'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#356b86'}} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #7dd3fc', color: '#082f49' }}
-                  itemStyle={{ color: '#0369a1' }}
-                  cursor={{ fill: 'rgba(14, 165, 233, 0.08)' }}
-                />
-                <Bar dataKey="matches" fill="#159bd7" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-          <div className="space-y-3">
-            <Link href="/admin/tournaments/new" className="block w-full py-3 px-4 bg-primary text-primary-foreground text-center rounded-lg font-medium hover:bg-primary/90 transition-colors">
-              Create New Tournament
-            </Link>
-            <Link href="/admin/teams/new" className="block w-full py-3 px-4 border border-border text-center rounded-lg font-medium hover:bg-muted transition-colors">
-              Add New Team
-            </Link>
-            <Link href="/admin/matches/new" className="block w-full py-3 px-4 border border-border text-center rounded-lg font-medium hover:bg-muted transition-colors">
-              Start a Match
-            </Link>
-            <Link href="/admin/players/import" className="block w-full py-3 px-4 border border-border text-center rounded-lg font-medium hover:bg-muted transition-colors">
-              Bulk Import Players
-            </Link>
-          </div>
-        </div>
+            <Link href="/admin/matches/new" className="dashboard-action-secondary"><Radio />Create Match</Link>
+          </section>
+        </aside>
       </div>
     </div>
   );
+}
+
+function MetricCard({ icon: Icon, tone, label, value, detail, loading }: { icon: typeof Trophy; tone: string; label: string; value: number; detail: string; loading: boolean }) {
+  return <article className={`dashboard-metric-card dashboard-tone-${tone}`}><span className="dashboard-metric-icon"><Icon /></span><div><p>{label}</p><strong>{loading ? "—" : value}</strong><small>{detail}</small></div></article>;
+}
+
+function DashboardPanel({ title, meta, href, children }: { title: string; meta?: string; href?: string; children: React.ReactNode }) {
+  return <section className="dashboard-panel"><header><div><h2>{title}</h2>{meta && <span><i />{meta}</span>}</div>{href && <Link href={href}>View all <ArrowRight /></Link>}</header>{children}</section>;
+}
+
+function LiveMatchCard({ match, teamA, teamB, innings, tournamentName }: { match: Match; teamA?: Team; teamB?: Team; innings?: Innings; tournamentName?: string }) {
+  const battingTeam = innings?.batting_team_id === teamB?.id ? teamB : teamA;
+  return <article className="dashboard-live-card">
+    <div className="dashboard-live-meta"><span><Radio /> LIVE</span><small>{tournamentName || `Match ${match.match_number || ""}`}</small></div>
+    <div className="dashboard-live-score">
+      <TeamMark name={teamA?.name || "Team A"} logo={teamA?.logo_url} size="lg" />
+      <div><strong>{innings ? `${innings.total_runs}/${innings.total_wickets}` : "0/0"}</strong><span>{innings ? `${Math.floor(innings.balls_bowled / 6)}.${innings.balls_bowled % 6} overs` : "Waiting to begin"}</span></div>
+      <TeamMark name={teamB?.name || "Team B"} logo={teamB?.logo_url} size="lg" />
+    </div>
+    <p>{battingTeam?.name || "Match"} batting now</p>
+    <Link href={`/admin/matches/score/${match.id}`}>Open live scoring <ArrowRight /></Link>
+  </article>;
+}
+
+function TeamMark({ name, logo, size = "md" }: { name: string; logo?: string | null; size?: "md" | "lg" }) {
+  return <span className={`dashboard-team-mark dashboard-team-mark-${size}`}>{logo ? <img src={logo} alt="" /> : <i>{name.slice(0, 2).toUpperCase()}</i>}<b>{name}</b></span>;
+}
+
+function StatusPill({ status }: { status: string }) {
+  return <span className={`dashboard-status dashboard-status-${status.toLowerCase()}`}>{status.replaceAll("_", " ")}</span>;
+}
+
+function EmptyState({ icon: Icon, title, text, action, actionLabel }: { icon: typeof Trophy; title: string; text: string; action?: string; actionLabel?: string }) {
+  return <div className="dashboard-empty"><Icon /><strong>{title}</strong><p>{text}</p>{action && <Link href={action}>{actionLabel}</Link>}</div>;
+}
+
+function ActionQueueRow({ icon: Icon, tone, title, text, href, action }: { icon: typeof Trophy; tone: "emerald" | "violet" | "amber"; title: string; text: string; href: string; action: string }) {
+  const tones = { emerald: "bg-emerald-500/15 text-emerald-500", violet: "bg-violet-500/15 text-violet-500", amber: "bg-amber-500/15 text-amber-500" };
+  return <Link href={href} className="dashboard-activity-row"><span className={`dashboard-activity-icon ${tones[tone]}`}><Icon /></span><span className="min-w-0 flex-1"><strong>{title}</strong><small className="whitespace-normal">{text}</small></span><span className="shrink-0 text-xs font-black text-primary">{action}</span></Link>;
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "Date TBC";
+  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatTime(value: string | null) {
+  if (!value) return "Time TBC";
+  const [hours, minutes] = value.split(":").map(Number);
+  return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }

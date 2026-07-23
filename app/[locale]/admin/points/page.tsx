@@ -7,6 +7,7 @@ import { useAdminAccess } from "@/components/admin-shell";
 import { PointsTablePoster } from "@/components/points-table-poster";
 import { supabase } from "@/lib/supabase";
 import { calculateTournamentStandings, defaultPointsRules, type PointsRules, type StandingRow, type StandingsInnings, type StandingsMatch } from "@/lib/tournament-standings";
+import { QualificationSimulator } from "@/components/qualification-simulator";
 
 type Tournament = { id: string; name: string; logo_url: string | null };
 type Team = { id: string; name: string; logo_url: string | null };
@@ -17,6 +18,7 @@ export default function AdminPointsPage() {
   const [selectedTournament, setSelectedTournament] = useState("");
   const [teams, setTeams] = useState<Team[]>([]);
   const [standings, setStandings] = useState<StandingRow[]>([]);
+  const [matches, setMatches] = useState<StandingsMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [rules, setRules] = useState<PointsRules>(defaultPointsRules);
@@ -57,6 +59,7 @@ export default function AdminPointsPage() {
       (supabase.from("teams") as any).select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
     ]);
     const matches = (matchRows || []) as StandingsMatch[];
+    setMatches(matches);
     const matchIds = matches.map((match) => match.id);
     const inningsResult = matchIds.length ? await (supabase.from("innings") as any).select("match_id,batting_team_id,bowling_team_id,total_runs,total_wickets,balls_bowled").in("match_id", matchIds) : { data: [], error: null };
     const tournamentTeams = (teamRows || []) as Team[];
@@ -81,6 +84,7 @@ export default function AdminPointsPage() {
     {message && <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-700">{message}</p>}
     <PointsTablePoster tournamentName={tournamentName} tournamentLogo={tournamentLogo} rows={standings} teams={teams} />
     <section className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-black">Custom points rules</h2><p className="mt-1 text-xs text-muted-foreground">Preview alternative league rules without changing match results. Saved for this tournament on this device.</p></div><div className="grid grid-cols-3 gap-2"><RuleInput label="Win" value={rules.win} onChange={(value) => updateRule("win", value)} /><RuleInput label="Tie/NR" value={rules.tie} onChange={(value) => updateRule("tie", value)} /><RuleInput label="Loss" value={rules.loss} onChange={(value) => updateRule("loss", value)} /></div></div></section>
+    <QualificationSimulator teams={teams} matches={matches} standings={standings} rules={rules} />
     {!tournaments.length && !loading ? <section className="rounded-2xl border border-dashed border-border bg-card p-12 text-center"><ListOrdered className="mx-auto h-10 w-10 text-muted-foreground" /><p className="mt-3 font-bold">No tournaments available.</p></section> :
       <section className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-sm" aria-hidden="true">
         {loading ? <div className="grid min-h-52 place-items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : <>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ChangeEvent, ReactNode } from "react";
 import { Activity, ArrowLeft, CalendarDays, Camera, Hash, Loader2, Pencil, Phone, Shield, Target, Trash2, Trophy, User } from "lucide-react";
 import type { Database } from "@/types/database.types";
+import { PlayerCareerFilters } from "@/components/player-career-filters";
 
 type Player = Database["public"]["Tables"]["players"]["Row"];
 type Team = Database["public"]["Tables"]["teams"]["Row"];
@@ -32,11 +33,11 @@ export function ModernPlayerProfile({ player, teams, playerCode, career, isUploa
       <div className="pointer-events-none absolute -right-24 bottom-40 h-2 w-[32rem] -rotate-12 bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent blur-sm" />
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/admin/players" aria-label="Back to players" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/20 bg-white/10 text-slate-200 shadow-sm transition hover:-translate-x-0.5 hover:bg-white/15 hover:text-white"><ArrowLeft className="h-4 w-4" /></Link>
-          <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Squad management</p><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Player profile</h1></div>
+          <Link href="/admin/players" aria-label="Back to players" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/20 bg-white/10 text-primary shadow-sm transition hover:-translate-x-0.5 hover:bg-white/15 hover:text-white"><ArrowLeft className="h-4 w-4" /></Link>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Squad management</p><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Player profile</h1></div>
         </div>
         <div className="flex gap-2">
-          <button type="button" onClick={onEdit} className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-cyan-200/40 bg-cyan-300/10 px-4 text-sm font-semibold text-cyan-100 shadow-sm transition hover:bg-cyan-300/20 sm:flex-none"><Pencil className="mr-2 h-4 w-4" />Edit profile</button>
+          <button type="button" onClick={onEdit} className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-cyan-200/40 bg-cyan-300/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-cyan-300/20 sm:flex-none"><Pencil className="mr-2 h-4 w-4" />Edit profile</button>
           <button type="button" onClick={onDelete} disabled={isDeleting} className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 disabled:opacity-50 sm:flex-none">{isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}Delete</button>
         </div>
       </header>
@@ -69,7 +70,7 @@ export function ModernPlayerProfile({ player, teams, playerCode, career, isUploa
       <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-6">
           <section className="match-theme-adaptive-card overflow-hidden rounded-3xl border border-amber-200/30 bg-[#06122d]/95 shadow-xl shadow-black/20">
-            <div className="flex items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#0d4e9c]/50 to-transparent px-6 py-5"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Cricket profile</p><h3 className="mt-1 text-lg font-bold">Playing information</h3></div><Target className="h-5 w-5 text-cyan-200" /></div>
+            <div className="flex items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#0d4e9c]/50 to-transparent px-6 py-5"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Cricket profile</p><h3 className="mt-1 text-lg font-bold">Playing information</h3></div><Target className="h-5 w-5 text-cyan-200" /></div>
             <div className="grid sm:grid-cols-2">
               <ProfileDetail icon={<Activity className="h-5 w-5" />} label="Primary role" value={player.playing_role || "Not specified"} />
               <ProfileDetail icon={<Shield className="h-5 w-5" />} label="Current team" value={currentTeam?.name || "Unassigned"} />
@@ -79,24 +80,25 @@ export function ModernPlayerProfile({ player, teams, playerCode, career, isUploa
           </section>
 
           <section className="match-theme-adaptive-card rounded-3xl border border-amber-200/30 bg-[#06122d]/95 p-6 shadow-xl shadow-black/20">
-            <div className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Performance</p><h3 className="mt-1 text-lg font-bold">Career snapshot</h3></div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[["Matches", career.matches], ["Runs", career.runs], ["Wickets", career.wickets], ["High score", career.highScore]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d2b59] to-[#071735] p-4 shadow-inner"><p className="text-xs font-semibold uppercase tracking-wider text-cyan-100/70">{label}</p><p className="mt-2 text-3xl font-black tracking-tight text-amber-100">{value}</p></div>)}</div>
+            <div className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Performance</p><h3 className="mt-1 text-lg font-bold">Career snapshot</h3></div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[["Matches", career.matches], ["Runs", career.runs], ["Wickets", career.wickets], ["High score", career.highScore]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d2b59] to-[#071735] p-4 shadow-inner"><p className="text-xs font-semibold uppercase tracking-wider text-cyan-100/70">{label}</p><p className="mt-2 text-3xl font-black tracking-tight text-white">{value}</p></div>)}</div>
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"><MiniMetric label="Batting average" value={career.average.toFixed(1)} /><MiniMetric label="Catches" value={career.catches} /><MiniMetric label="Stumpings" value={career.stumpings} /><MiniMetric label="Run outs" value={career.runOuts} /></div>
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/15 p-4"><div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-wider text-cyan-200">Recent batting form</p><span className="text-[.65rem] text-slate-400">Latest innings</span></div><div className="mt-3 flex flex-wrap gap-2">{career.recentScores.length ? career.recentScores.map((score, index) => <span key={`${score}-${index}`} className="grid h-10 w-10 place-items-center rounded-full border border-cyan-300/25 bg-cyan-300/10 font-black text-cyan-100">{score}</span>) : <span className="text-xs text-slate-400">No recorded innings yet.</span>}</div></div>
           </section>
         </div>
 
         <aside className="space-y-6">
-          <section className="match-theme-adaptive-card rounded-3xl border border-amber-200/30 bg-[#06122d]/95 p-6 shadow-xl shadow-black/20"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Profile record</p><h3 className="mt-1 text-lg font-bold">Account details</h3><div className="mt-6 space-y-5"><MetaRow icon={<Hash className="h-4 w-4" />} label="Player ID" value={playerCode} mono /><MetaRow icon={<Phone className="h-4 w-4" />} label="Contact" value={player.phone_number || "Not provided"} /><MetaRow icon={<CalendarDays className="h-4 w-4" />} label="Added on" value={joinedDate} /></div></section>
-          <section className="rounded-3xl border border-cyan-200/30 bg-gradient-to-br from-cyan-300/15 to-[#06122d] p-6 shadow-xl"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-[#06122d]"><Shield className="h-5 w-5" /></span><div><h3 className="font-bold text-amber-100">Player ready</h3><p className="mt-1 text-sm leading-6 text-slate-300">Profile is active and available for team selection and match line-ups.</p></div></div></section>
+          <section className="match-theme-adaptive-card rounded-3xl border border-amber-200/30 bg-[#06122d]/95 p-6 shadow-xl shadow-black/20"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Profile record</p><h3 className="mt-1 text-lg font-bold">Account details</h3><div className="mt-6 space-y-5"><MetaRow icon={<Hash className="h-4 w-4" />} label="Player ID" value={playerCode} mono /><MetaRow icon={<Phone className="h-4 w-4" />} label="Contact" value={player.phone_number || "Not provided"} /><MetaRow icon={<CalendarDays className="h-4 w-4" />} label="Added on" value={joinedDate} /></div></section>
+          <section className="rounded-3xl border border-cyan-200/30 bg-gradient-to-br from-cyan-300/15 to-[#06122d] p-6 shadow-xl"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-cyan-300 to-sky-500 text-[#06122d]"><Shield className="h-5 w-5" /></span><div><h3 className="font-bold text-white">Player ready</h3><p className="mt-1 text-sm leading-6 text-slate-300">Profile is active and available for team selection and match line-ups.</p></div></div></section>
         </aside>
       </div>
+      <PlayerCareerFilters playerId={player.id} />
     </div>
   );
 }
 
 function MiniMetric({ label, value }: { label: string; value: string | number }) {
-  return <div className="rounded-xl border border-white/10 bg-white/[.04] p-3"><p className="text-[.65rem] font-bold uppercase tracking-wider text-slate-400">{label}</p><p className="mt-1 text-xl font-black text-emerald-300">{value}</p></div>;
+  return <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d2b59] to-[#071735] p-4 shadow-inner"><p className="text-xs font-semibold uppercase tracking-wider text-cyan-100/70">{label}</p><p className="mt-2 text-3xl font-black tracking-tight text-white">{value}</p></div>;
 }
 
 function ProfileDetail({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {

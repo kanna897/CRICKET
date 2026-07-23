@@ -1,0 +1,28 @@
+name: Production health monitor
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+      MONITOR_ALERT_WEBHOOK: ${{ secrets.MONITOR_ALERT_WEBHOOK }}
+    steps:
+      - name: Check production health
+        run: |
+          test -n "$PRODUCTION_URL"
+          curl --fail --silent --show-error --max-time 15 --retry 2 "$PRODUCTION_URL/api/health"
+      - name: Notify webhook on failure
+        if: failure() && env.MONITOR_ALERT_WEBHOOK != ''
+        run: |
+          curl --fail --silent --show-error -X POST -H "Content-Type: application/json" \
+            --data "{\"text\":\"CrickPulse production health check failed: ${PRODUCTION_URL}/api/health\"}" \
+            "$MONITOR_ALERT_WEBHOOK"

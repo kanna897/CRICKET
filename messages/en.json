@@ -1,14 +1,71 @@
 {
-  "Index": {
-    "title": "Welcome to Crickpulse",
-    "description": "Enterprise Cricket Tournament Management Platform"
+  "PublicNav": {
+    "home": "Home", "tournaments": "Tournaments", "teams": "Teams", "matches": "Matches",
+    "rankings": "Rankings", "points": "Points Table", "compare": "Compare",
+    "playerRegistration": "Player Registration", "adminLogin": "Admin Login",
+    "theme": "Toggle light and dark theme", "language": "Language"
   },
   "Admin": {
-    "dashboard": "Dashboard",
-    "tournaments": "Tournaments",
-    "teams": "Teams",
-    "players": "Players",
-    "matches": "Matches",
-    "export": "Export Data"
+    "dashboard": "Dashboard", "tournaments": "Tournaments", "teams": "Teams",
+    "players": "Players", "registrations": "Registrations", "matches": "Matches & Scoring",
+    "bracket": "Knockout Bracket", "points": "Points Table", "scoreImport": "Score Import",
+    "statistics": "Statistics", "compare": "Compare", "awards": "Awards",
+    "settings": "Settings", "organizers": "Organizers", "signOut": "Sign out",
+    "masterAdmin": "Master Admin", "organizer": "Organizer", "search": "Search"
+  },
+  "Registration": {
+    "eyebrow": "Join the competition", "title": "Player Registration",
+    "description": "Create your cricket identity and submit it securely for organizer approval.",
+    "personal": "Personal identity", "cricket": "Cricket profile", "tournament": "Tournament selection",
+    "submit": "Submit Registration", "submitted": "Registration submitted",
+    "status": "Check registration status"
+  },
+  "Fixtures": {
+    "eyebrow": "CRICKPULSE", "title": "Match Fixtures",
+    "description": "View live, upcoming and completed matches.",
+    "dateTbc": "Date TBC", "venueTbc": "Venue TBC", "overs": "overs",
+    "liveView": "Live View", "scorecard": "Scorecard", "empty": "No fixtures yet."
+  },
+  "TeamsPage": {
+    "eyebrow": "Tournament teams", "title": "Teams & Squads",
+    "players": "players", "empty": "No teams available."
+  },
+  "TeamDetail": {
+    "allTeams": "All teams", "squad": "Team squad", "team": "Team", "player": "Player",
+    "batting": "Batting", "bowling": "Bowling", "fullProfile": "Open full profile",
+    "empty": "No players have been assigned to this team."
+  },
+  "PlayerProfile": {
+    "loading": "Loading player profile…", "notFound": "Player not found.", "back": "Back to squad",
+    "player": "Player", "unassigned": "Unassigned team", "battingMissing": "Batting style not specified",
+    "bowlingMissing": "Bowling style not specified", "matches": "Matches", "runs": "Runs",
+    "wickets": "Wickets", "highScore": "High score", "average": "Average", "fielding": "Fielding",
+    "recent": "Recent batting form", "latest": "Latest recorded innings", "noInnings": "No recorded batting innings yet."
+  },
+  "PointsPage": {
+    "eyebrow": "Tournament standings", "title": "Points Table",
+    "description": "Download and share the official standings poster. Q marks the top-four qualification zone.",
+    "tournament": "Tournament", "refresh": "Refresh standings",
+    "empty": "Points table will appear after teams and completed matches are available.",
+    "fallback": "Tournament"
+  },
+  "Statistics": {
+    "eyebrow": "Performance intelligence", "title": "Tournament Statistics",
+    "description": "Automatic batting and bowling leaders from verified ball-by-ball records.",
+    "tournament": "Tournament", "refresh": "Refresh statistics",
+    "empty": "Statistics appear after ball-by-ball scoring begins.",
+    "creatingPng": "Creating PNG...", "downloadPng": "Download PNG", "exportCsv": "Export CSV",
+    "share": "Share", "printPdf": "Print / Save PDF", "analytics": "CrickPulse Analytics",
+    "performanceChart": "{tournament} Performance Chart", "runs": "Runs", "wickets": "Wickets",
+    "topRuns": "Top Run Scorers", "topWickets": "Top Wicket Takers",
+    "mvpTitle": "Most Valuable Player (MVP) Leaderboard", "mvpDescription": "Automatically calculated from completed matches",
+    "pointsBased": "Points based", "completedMatches": "{count, plural, one {# completed match} other {# completed matches}}",
+    "boundaries": "Boundaries", "maidens": "Maidens", "fielding": "Fielding", "pom": "POM", "mvpPoints": "MVP points",
+    "mvpEmpty": "MVP rankings appear after the first completed match.",
+    "mvpFormula": "1 run = 1 · Four = +1 · Six = +2 · Wicket = +25 · Maiden = +12 · Catch = +8 · Stumping/direct-hit run out = +12 · Player of the Match = +20"
+  },
+  "Common": {
+    "loading": "Loading…", "save": "Save", "cancel": "Cancel", "viewAll": "View all",
+    "back": "Back", "live": "LIVE", "scheduled": "Scheduled", "completed": "Completed"
   }
 }
