@@ -11,9 +11,11 @@ const routes = [
   "app/[locale]/(public)/match/[id]/teamsheet/page.tsx",
   "app/[locale]/(public)/compare/page.tsx",
   "app/[locale]/(public)/register-player/page.tsx",
+  "app/[locale]/(public)/rankings/page.tsx",
   "app/[locale]/admin/players/import/page.tsx",
   "app/[locale]/admin/player-registrations/page.tsx",
   "app/[locale]/admin/settings/page.tsx",
+  "app/[locale]/admin/rankings/page.tsx",
 ];
 
 test("required viewer and admin routes exist", () => {
@@ -40,6 +42,14 @@ test("scoring retains offline queue and handover controls", () => {
   const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
   assert.match(scoring, /saveToOfflineQueue/);
   assert.match(scoring, /Scorer Handover/);
+});
+
+test("match workflow keeps the active locale in admin navigation", () => {
+  const matchList = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
+  const newMatch = readFileSync(resolve(root, "app/[locale]/admin/matches/new/page.tsx"), "utf8");
+  const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
+  const scorecard = readFileSync(resolve(root, "app/[locale]/admin/matches/scorecard/[id]/page.tsx"), "utf8");
+  for (const source of [matchList, newMatch, scoring, scorecard]) assert.match(source, /localePath\(locale,/);
 });
 
 test("advanced scorer keeps free-hit, variable extras and mobile controls", () => {
@@ -81,4 +91,15 @@ test("player registration supports hide/unhide and organizer approval", () => {
   assert.match(form, /Same jersey number is allowed/);
   assert.match(form, /consent_given/);
   assert.match(queue, /Approve & Add/);
+});
+
+test("team and player rankings are available to admins and public viewers", () => {
+  const dashboard = readFileSync(resolve(root, "components/tournament-rankings-dashboard.tsx"), "utf8");
+  const engine = readFileSync(resolve(root, "lib/tournament-rankings.ts"), "utf8");
+  assert.match(dashboard, /Team Ranking/);
+  assert.match(dashboard, /Batsman Ranking/);
+  assert.match(dashboard, /Bowler Ranking/);
+  assert.match(dashboard, /All-rounder Ranking/);
+  assert.match(engine, /result_type === "no_result"/);
+  assert.match(engine, /allRounderPoints/);
 });

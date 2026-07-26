@@ -10,6 +10,9 @@ const intlProxy = createMiddleware({
 
 export async function proxy(request: NextRequest) {
   let response = intlProxy(request);
+  const isAdminRequest = /^\/(?:en|ta|si)\/admin(?:\/|$)/.test(request.nextUrl.pathname);
+  if (!isAdminRequest) return response;
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Activity, ArrowLeft, BarChart3, Download, Loader2, Radar, ShieldCheck, TrendingUp } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/lib/supabase";
+import { isBowlerCreditedWicket, runsChargedToBowler } from "@/lib/cricket-rules";
+import { localePath } from "@/lib/locale-path";
 
 type Match = { id: string; team_a_id: string; team_b_id: string };
 type Team = { id: string; name: string; logo_url: string | null };
@@ -15,7 +17,7 @@ type Ball = { id: string; innings_id: string; over_number: number; ball_number: 
 
 const zonePoints: Record<string, [number, number]> = { straight: [150, 22], cover: [250, 80], point: [278, 145], square_leg: [36, 150], midwicket: [58, 78], fine_leg: [112, 38] };
 
-export function MatchAnalyticsDashboard({ matchId, admin = false, embedded = false }: { matchId: string; admin?: boolean; embedded?: boolean }) {
+export function MatchAnalyticsDashboard({ matchId, locale = "en", admin = false, embedded = false }: { matchId: string; locale?: string; admin?: boolean; embedded?: boolean }) {
   const [match, setMatch] = useState<Match | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -108,8 +110,8 @@ export function MatchAnalyticsDashboard({ matchId, admin = false, embedded = fal
   const bowlerRows = useMemo(() => players.map((player) => {
     const rows = balls.filter((ball) => ball.bowler_id === player.id);
     const legal = rows.filter((ball) => ball.is_legal).length;
-    const conceded = rows.reduce((sum, ball) => sum + ball.runs + (["wide", "no_ball"].includes(ball.extras_type || "") ? ball.extras : 0), 0);
-    const wickets = rows.filter((ball) => ball.is_wicket && ball.dismissal_type !== "run_out").length;
+    const conceded = rows.reduce((sum, ball) => sum + runsChargedToBowler(ball), 0);
+    const wickets = rows.filter(isBowlerCreditedWicket).length;
     return { name: player.name, overs: `${Math.floor(legal / 6)}.${legal % 6}`, runs: conceded, wickets, economy: legal ? (conceded * 6 / legal).toFixed(2) : "0.00", dots: rows.filter((ball) => ball.is_legal && ball.runs + ball.extras === 0).length };
   }).filter((row) => row.overs !== "0.0").sort((a, b) => b.wickets - a.wickets || Number(a.economy) - Number(b.economy)), [balls, players]);
   const downloadReport = () => {
@@ -140,7 +142,7 @@ export function MatchAnalyticsDashboard({ matchId, admin = false, embedded = fal
   if (loading) return <div className={`grid min-h-72 place-items-center rounded-2xl border ${card}`}><Loader2 className="h-9 w-9 animate-spin text-primary" /></div>;
   if (!match) return <p role="alert" className="rounded-xl bg-red-50 p-4 font-bold text-red-700">{message}</p>;
 
-  return <div className="mx-auto max-w-6xl space-y-5">{!embedded && <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><Link href={admin ? `/admin/matches/score/${matchId}` : `/match/${matchId}`} className="inline-flex items-center gap-2 text-sm font-bold text-primary"><ArrowLeft className="h-4 w-4" />Back to match</Link><p className="mt-5 text-sm font-black uppercase tracking-[0.2em] text-primary">Match Centre</p><h1 className="mt-1 text-3xl font-black text-foreground">Advanced Match Analytics</h1><p className="mt-2 text-muted-foreground">{teamName(match.team_a_id)} vs {teamName(match.team_b_id)}</p></div><button type="button" onClick={downloadReport} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 font-black text-primary-foreground shadow-lg"><Download className="h-4 w-4"/>Download Analytics CSV</button></div>}
+  return <div className="mx-auto max-w-6xl space-y-5">{!embedded && <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><Link href={localePath(locale, admin ? `/admin/matches/score/${matchId}` : `/match/${matchId}`)} className="inline-flex items-center gap-2 text-sm font-bold text-primary"><ArrowLeft className="h-4 w-4" />Back to match</Link><p className="mt-5 text-sm font-black uppercase tracking-[0.2em] text-primary">Match Centre</p><h1 className="mt-1 text-3xl font-black text-foreground">Advanced Match Analytics</h1><p className="mt-2 text-muted-foreground">{teamName(match.team_a_id)} vs {teamName(match.team_b_id)}</p></div><button type="button" onClick={downloadReport} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 font-black text-primary-foreground shadow-lg"><Download className="h-4 w-4"/>Download Analytics CSV</button></div>}
     {message && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{message}</p>}
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{inningsSummary.flatMap((row) => [
       <InsightCard key={`${row.innings}-score`} label={`${row.team} · Innings ${row.innings}`} value={`${row.total}/${row.wickets}`} detail={`${row.overs} overs · RR ${row.runRate}`} />,

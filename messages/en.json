@@ -1,12 +1,13 @@
 {
   "PublicNav": {
     "home": "Home", "tournaments": "Tournaments", "teams": "Teams", "matches": "Matches",
-    "rankings": "Rankings", "points": "Points Table", "compare": "Compare",
+    "rankings": "Rankings", "points": "Points Table", "statistics": "Statistics", "awards": "Awards", "compare": "Compare",
     "playerRegistration": "Player Registration", "adminLogin": "Admin Login",
     "theme": "Toggle light and dark theme", "language": "Language"
   },
   "Admin": {
-    "dashboard": "Dashboard", "tournaments": "Tournaments", "teams": "Teams",
+    "rankings": "Team & Player Rankings",
+    "dashboard": "Dashboard", "tournaments": "Tournaments", "clubs": "Clubs & Seasons", "teams": "Teams",
     "players": "Players", "registrations": "Registrations", "matches": "Matches & Scoring",
     "bracket": "Knockout Bracket", "points": "Points Table", "scoreImport": "Score Import",
     "statistics": "Statistics", "compare": "Compare", "awards": "Awards",

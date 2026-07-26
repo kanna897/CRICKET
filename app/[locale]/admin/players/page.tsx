@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Plus, Search, User, Upload, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
-import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import { useAdminAccess } from "@/components/admin-shell";
+import { rowsToCsv } from "@/lib/csv";
 
 type Player = Database['public']['Tables']['players']['Row'];
 
@@ -38,14 +38,15 @@ export default function PlayersPage() {
   }
 
   const handleDownloadTemplate = () => {
-    const ws = XLSX.utils.json_to_sheet([{
-      "Player Name": "John Doe",
-      "Phone Number": "+94771234567",
-      "Playing Role": "Batsman"
-    }]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "crickpulse_player_template.xlsx");
+    const csv = rowsToCsv(
+      ["Player Name", "Phone Number", "Playing Role"],
+      [["John Doe", "+94771234567", "Batsman"]],
+    );
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
+    link.download = "crickpulse_player_template.csv";
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,21 +61,8 @@ export default function PlayersPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let jsonData: any[] = [];
         
-        if (file.name.endsWith('.csv')) {
-          const text = evt.target?.result as string;
-          Papa.parse(text, {
-            header: true,
-            complete: (results) => {
-              jsonData = results.data;
-            }
-          });
-        } else {
-          const bstr = evt.target?.result;
-          const wb = XLSX.read(bstr, { type: 'binary' });
-          const wsname = wb.SheetNames[0];
-          const ws = wb.Sheets[wsname];
-          jsonData = XLSX.utils.sheet_to_json(ws);
-        }
+        const text = evt.target?.result as string;
+        jsonData = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true }).data;
 
         if (jsonData.length === 0) {
           alert("File is empty or invalid format.");
@@ -121,11 +109,7 @@ export default function PlayersPage() {
       }
     };
 
-    if (file.name.endsWith('.csv')) {
-      reader.readAsText(file);
-    } else {
-      reader.readAsBinaryString(file);
-    }
+    reader.readAsText(file);
   };
 
   const filteredPlayers = players.filter(p => 
@@ -145,7 +129,7 @@ export default function PlayersPage() {
             type="file" 
             ref={fileInputRef} 
             className="hidden" 
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            accept=".csv,text/csv"
             onChange={handleFileUpload}
           />
           <button 

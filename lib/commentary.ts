@@ -11,6 +11,14 @@ const dismissalText: Record<NonNullable<CommentaryInput["wicketType"]>, string> 
 
 export function generateCommentary(input: CommentaryInput): string {
   const prefix = `${input.over}.${input.ball}:`;
+  const zoneText: Record<NonNullable<CommentaryInput["shotZone"]>, string> = {
+    straight: "straight down the ground",
+    cover: "through cover",
+    point: "through point",
+    square_leg: "towards square leg",
+    midwicket: "through midwicket",
+    fine_leg: "towards fine leg",
+  };
   let event: string;
   if (input.wicketType) {
     const dismissal = dismissalText[input.wicketType];
@@ -28,6 +36,9 @@ export function generateCommentary(input: CommentaryInput): string {
   else if (input.runs === 4) event = `FOUR! ${input.batterName} scores a boundary.`;
   else if (input.runs === 6) event = `SIX! ${input.batterName} adds six runs.`;
   else event = `${input.batterName} scores ${input.runs} runs.`;
+  if (!input.extrasType && !input.wicketType && input.shotZone) {
+    event += ` Shot played ${zoneText[input.shotZone]}.`;
+  }
 
   const milestones: string[] = [];
   if (input.batterScore === 50 || input.batterScore === 100) milestones.push(`${input.batterName} reaches ${input.batterScore}.`);

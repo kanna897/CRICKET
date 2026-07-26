@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileJson2, History, Loader2, UploadCloud } from "lucide-react";
 import { useAdminAccess } from "@/components/admin-shell";
 import { supabase } from "@/lib/supabase";
-import { groupHistoricalScores, historicalSampleCsv, normalizeName, parseHistoricalScores, type HistoricalMatchGroup } from "@/lib/historical-score-import";
+import { groupHistoricalScores, historicalSampleCsv, normalizeName, parseHistoricalScores, type HistoricalMatchGroup, type HistoricalScoreRow } from "@/lib/historical-score-import";
 
 type Tournament = { id: string; name: string; overs_per_match: number };
 type Team = { id: string; name: string };
@@ -52,8 +52,47 @@ export default function HistoricalScoreImportPage() {
   function findTeam(name: string) { return teams.find((team) => normalizeName(team.name) === normalizeName(name)); }
   async function readFile(file: File) {
     setMessage(""); setImported(0);
-    try { setGroups(groupHistoricalScores(parseHistoricalScores(await file.text(), file.name))); setFilename(file.name); }
+    try {
+      const parsedRows = parseHistoricalScores(await file.text(), file.name);
+      setGroups(groupHistoricalScores(await hydrateHandoverRows(parsedRows)));
+      setFilename(file.name);
+    }
     catch (error) { setGroups([]); setFilename(""); setMessage(error instanceof Error ? error.message : "Unable to read this import file."); }
+  }
+  async function hydrateHandoverRows(rows: HistoricalScoreRow[]) {
+    const cache = new Map<string, { team_a_id:string; team_b_id:string; winner_id:string|null; match_date:string|null; created_at:string; status:string } | null>();
+    const hydrated: HistoricalScoreRow[] = [];
+    for (const row of rows) {
+      if (row.match_date && row.team_a && row.team_b && row.batting_team && Number.isFinite(row.innings_number)) {
+        hydrated.push(row);
+        continue;
+      }
+      if (!cache.has(row.match_ref)) {
+        const { data } = await (supabase.from("matches") as any)
+          .select("team_a_id,team_b_id,winner_id,match_date,created_at,status")
+          .eq("id", row.match_ref)
+          .maybeSingle();
+        cache.set(row.match_ref, data || null);
+      }
+      const matchRow = cache.get(row.match_ref);
+      if (!matchRow) {
+        hydrated.push(row);
+        continue;
+      }
+      const teamA = teams.find((team) => team.id === matchRow.team_a_id);
+      const teamB = teams.find((team) => team.id === matchRow.team_b_id);
+      const batting = teams.find((team) => team.id === row.batting_team_id);
+      const winner = teams.find((team) => team.id === matchRow.winner_id);
+      hydrated.push({
+        ...row,
+        match_date: row.match_date || matchRow.match_date || matchRow.created_at.slice(0, 10),
+        team_a: row.team_a || teamA?.name || "",
+        team_b: row.team_b || teamB?.name || "",
+        batting_team: row.batting_team || batting?.name || "",
+        winner: row.winner || winner?.name || "No Result",
+      });
+    }
+    return hydrated;
   }
   function downloadTemplate() {
     const url = URL.createObjectURL(new Blob([historicalSampleCsv()], { type: "text/csv;charset=utf-8" }));

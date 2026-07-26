@@ -7,7 +7,7 @@ import { Eye, EyeOff, LockKeyhole, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/lib/supabase";
 import { CrickpulseLogo } from "@/components/crickpulse-logo";
-import { signInWithEmail } from "./actions";
+import { signInWithEmail, signInWithForm } from "./actions";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -30,6 +30,10 @@ export default function LoginPage() {
     ? "This account does not have an administrator role."
     : searchParams.get("error") === "session"
       ? "Your sign-in session could not be verified. Please sign in again."
+      : searchParams.get("error") === "credentials"
+        ? "The email address or password is incorrect."
+        : searchParams.get("error") === "confirmation"
+          ? "Your email address is not confirmed yet."
       : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -104,12 +108,15 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form className="space-y-5" action={signInWithForm} onSubmit={handleSubmit}>
+          <input type="hidden" name="locale" value={params.locale} />
+          <input type="hidden" name="redirectTo" value={redirectTo} />
           <label className="block space-y-2 text-sm font-medium">
             <span>Email address</span>
             <input
               className="form-input"
               type="email"
+              name="email"
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -119,7 +126,7 @@ export default function LoginPage() {
 
           <label className="block space-y-2 text-sm font-medium">
             <span>Password</span>
-            <span className="relative block"><input className="form-input pr-11" type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></span>
+            <span className="relative block"><input className="form-input pr-11" type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></span>
           </label>
 
           {(error || accessError) && (

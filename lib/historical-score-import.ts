@@ -9,6 +9,10 @@ export type HistoricalScoreRow = {
   total_runs: number;
   total_wickets: number;
   balls_bowled: number;
+  team_a_id?: string;
+  team_b_id?: string;
+  winner_id?: string;
+  batting_team_id?: string;
 };
 
 export type HistoricalMatchGroup = {
@@ -27,10 +31,14 @@ export function parseHistoricalScores(content: string, filename = ""): Historica
   const trimmed = content.trim();
   if (!trimmed) throw new Error("The selected file is empty.");
   if (filename.toLowerCase().endsWith(".json") || trimmed.startsWith("[") || trimmed.startsWith("{")) {
-    const parsed = JSON.parse(trimmed);
-    const rows = Array.isArray(parsed) ? parsed : parsed.rows;
-    if (!Array.isArray(rows)) throw new Error("JSON must be an array or contain a rows array.");
-    return rows.map(normalizeRow);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      throw new Error("This is not valid JSON. Check for missing commas, quotes or brackets and try again.");
+    }
+    const rows = extractJsonRows(parsed);
+    return rows.flatMap(expandJsonRow).map(normalizeRow);
   }
   const lines = trimmed.split(/\r?\n/).filter(Boolean).map(parseCsvLine);
   const headers = lines.shift()?.map((header) => header.trim().toLowerCase()) || [];
@@ -68,18 +76,53 @@ export function normalizeName(value: string) { return String(value || "").trim()
 export function sameName(a: string, b: string) { return normalizeName(a) === normalizeName(b); }
 
 function normalizeRow(input: Record<string, unknown>): HistoricalScoreRow {
+  const overs = input.overs ?? input.overs_completed ?? input.oversCompleted;
   return {
-    match_ref: String(input.match_ref || "").trim(),
-    match_date: String(input.match_date || "").trim(),
-    team_a: String(input.team_a || "").trim(),
-    team_b: String(input.team_b || "").trim(),
+    match_ref: String(input.match_ref || input.matchRef || input.match_id || input.matchId || "").trim(),
+    match_date: String(input.match_date || input.matchDate || input.date || "").trim(),
+    team_a: String(input.team_a || input.teamA || "").trim(),
+    team_b: String(input.team_b || input.teamB || "").trim(),
     winner: String(input.winner || "").trim(),
-    innings_number: Number(input.innings_number),
-    batting_team: String(input.batting_team || "").trim(),
-    total_runs: Number(input.total_runs),
-    total_wickets: Number(input.total_wickets),
-    balls_bowled: Number(input.balls_bowled),
+    innings_number: Number(input.innings_number ?? input.inningsNumber),
+    batting_team: String(input.batting_team || input.battingTeam || "").trim(),
+    total_runs: Number(input.total_runs ?? input.totalRuns ?? input.runs),
+    total_wickets: Number(input.total_wickets ?? input.totalWickets ?? input.wickets),
+    balls_bowled: Number(input.balls_bowled ?? input.ballsBowled ?? (overs == null ? undefined : oversToBalls(overs))),
+    team_a_id: String(input.team_a_id || input.teamAId || "").trim() || undefined,
+    team_b_id: String(input.team_b_id || input.teamBId || "").trim() || undefined,
+    winner_id: String(input.winner_id || input.winnerId || "").trim() || undefined,
+    batting_team_id: String(input.batting_team_id || input.battingTeamId || "").trim() || undefined,
   };
+}
+
+function extractJsonRows(input: unknown): Record<string, unknown>[] {
+  if (Array.isArray(input)) return input.filter(isJsonObject);
+  if (!isJsonObject(input)) throw new Error("JSON must contain match score objects.");
+
+  for (const key of ["rows", "records", "matches"]) {
+    if (Array.isArray(input[key])) return (input[key] as unknown[]).filter(isJsonObject);
+  }
+  if (Array.isArray(input.data)) return input.data.filter(isJsonObject);
+  if (isJsonObject(input.data)) return extractJsonRows(input.data);
+
+  const looksLikeMatch = ["match_ref", "matchRef", "match_id", "matchId", "team_a", "teamA", "innings"].some((key) => key in input);
+  if (looksLikeMatch) return [input];
+  throw new Error('JSON format not recognized. Use an array, {"rows":[...]}, {"data":[...]}, {"records":[...]} or {"matches":[...]}.');
+}
+
+function expandJsonRow(input: Record<string, unknown>): Record<string, unknown>[] {
+  if (isJsonObject(input.innings)) return [{ ...input, ...input.innings, innings: undefined }];
+  if (!Array.isArray(input.innings)) return [input];
+  return input.innings.filter(isJsonObject).map((innings) => ({ ...input, ...innings, innings: undefined }));
+}
+
+function isJsonObject(input: unknown): input is Record<string, unknown> {
+  return Boolean(input) && typeof input === "object" && !Array.isArray(input);
+}
+
+function oversToBalls(value: unknown) {
+  const [overs = "0", balls = "0"] = String(value ?? "0").split(".");
+  return Math.max(Number.parseInt(overs, 10) || 0, 0) * 6 + Math.min(Math.max(Number.parseInt(balls, 10) || 0, 0), 5);
 }
 
 function parseCsvLine(line: string) {

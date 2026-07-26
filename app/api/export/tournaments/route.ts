@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import * as XLSX from 'xlsx';
+import { rowsToCsv } from '@/lib/csv';
 
 export async function GET() {
   try {
@@ -11,29 +11,22 @@ export async function GET() {
 
     if (tourneyError) throw tourneyError;
 
-    // 2. Format Data for Excel
-    const worksheetData = (tournaments || []).map((t: { id: string; name: string; venue: string; start_date: string; status: string }) => ({
-      'Tournament ID': t.id,
-      'Name': t.name,
-      'Venue': t.venue,
-      'Start Date': new Date(t.start_date).toLocaleDateString(),
-      'Status': t.status.toUpperCase()
-    })) || [];
+    const csv = rowsToCsv(
+      ["Tournament ID", "Name", "Venue", "Start Date", "Status"],
+      (tournaments || []).map((t: { id: string; name: string; venue: string; start_date: string; status: string }) => [
+        t.id,
+        t.name,
+        t.venue,
+        new Date(t.start_date).toISOString().slice(0, 10),
+        t.status.toUpperCase(),
+      ]),
+    );
 
-    // 3. Create Workbook
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tournaments');
-
-    // 4. Generate Buffer
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
-
-    // 5. Return File Download
-    return new NextResponse(excelBuffer, {
+    return new NextResponse(`\uFEFF${csv}`, {
       status: 200,
       headers: {
-        'Content-Disposition': 'attachment; filename="crickpulse_tournaments.xlsx"',
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': 'attachment; filename="crickpulse_tournaments.csv"',
+        'Content-Type': 'text/csv; charset=utf-8',
       }
     });
 

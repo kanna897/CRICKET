@@ -1,4 +1,5 @@
 import type { InningsScorecard, ScorecardBall, ScorecardInnings, ScorecardPlayer } from "@/types/scorecard";
+import { isBowlerCreditedWicket, runsChargedToBowler } from "@/lib/cricket-rules";
 
 const playerName = (players: ScorecardPlayer[], id: string | null) => players.find((player) => player.id === id)?.name || "Player";
 const overs = (balls: number) => `${Math.floor(balls / 6)}.${balls % 6}`;
@@ -16,8 +17,8 @@ export function buildScorecard(innings: ScorecardInnings, balls: ScorecardBall[]
   const bowling = bowlerIds.map((playerId) => {
     const delivered = balls.filter((ball) => ball.bowler_id === playerId);
     const legalBalls = delivered.filter((ball) => ball.is_legal).length;
-    const conceded = delivered.reduce((sum, ball) => sum + ball.runs + (ball.extras_type === "bye" || ball.extras_type === "leg_bye" ? 0 : ball.extras), 0);
-    const wickets = delivered.filter((ball) => ball.is_wicket && ball.dismissal_type !== "run_out").length;
+    const conceded = delivered.reduce((sum, ball) => sum + runsChargedToBowler(ball), 0);
+    const wickets = delivered.filter(isBowlerCreditedWicket).length;
     const wides = delivered.filter((ball) => ball.extras_type === "wide").reduce((sum, ball) => sum + ball.extras, 0);
     const noBalls = delivered.filter((ball) => ball.extras_type === "no_ball").reduce((sum, ball) => sum + ball.extras, 0);
     return { playerId, name: playerName(players, playerId), balls: legalBalls, runs: conceded, wickets, wides, noBalls, economy: legalBalls ? ((conceded * 6) / legalBalls).toFixed(2) : "0.00" };

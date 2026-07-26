@@ -38,14 +38,11 @@ jobs:
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+        run: node scripts/export-cloudinary-manifest.mjs backup/cloudinary-assets.json
+      - name: Create backup inventory and checksums
         run: |
-          if [ -n "$CLOUDINARY_CLOUD_NAME" ] && [ -n "$CLOUDINARY_API_KEY" ] && [ -n "$CLOUDINARY_API_SECRET" ]; then
-            curl --fail --silent --show-error -u "$CLOUDINARY_API_KEY:$CLOUDINARY_API_SECRET" \
-              "https://api.cloudinary.com/v1_1/$CLOUDINARY_CLOUD_NAME/resources/image?max_results=500" \
-              -o backup/cloudinary-assets.json
-          else
-            printf '{"warning":"Cloudinary backup secrets not configured"}\n' > backup/cloudinary-assets.json
-          fi
+          find backup -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > backup/SHA256SUMS
+          du -h backup/*
       - name: Encrypt backup bundle
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -55,9 +52,20 @@ jobs:
             -in crickpulse-backup.tar.gz -out "crickpulse-backup-$(date -u +%Y-%m-%d).tar.gz.enc" \
             -pass env:BACKUP_ENCRYPTION_KEY
           rm -rf backup crickpulse-backup.tar.gz
+      - name: Verify encrypted backup can be decrypted
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          encrypted_file="$(find . -maxdepth 1 -name 'crickpulse-backup-*.tar.gz.enc' -print -quit)"
+          test -n "$encrypted_file"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in "$encrypted_file" -out /tmp/crickpulse-backup-verify.tar.gz \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          tar -tzf /tmp/crickpulse-backup-verify.tar.gz
+          rm -f /tmp/crickpulse-backup-verify.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: crickpulse-encrypted-backup-${{ github.run_id }}
           path: "*.tar.gz.enc"
-          retention-days: 7
+          retention-days: 30
           if-no-files-found: error

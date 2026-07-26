@@ -16,10 +16,12 @@ jobs:
       PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
       MONITOR_ALERT_WEBHOOK: ${{ secrets.MONITOR_ALERT_WEBHOOK }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Check production health
-        run: |
-          test -n "$PRODUCTION_URL"
-          curl --fail --silent --show-error --max-time 15 --retry 2 "$PRODUCTION_URL/api/health"
+        run: node scripts/monitor-production.mjs
       - name: Notify webhook on failure
         if: failure() && env.MONITOR_ALERT_WEBHOOK != ''
         run: |
