@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { buildScorecard } from "@/lib/scorecard";
 import { MatchSummaryPoster } from "@/components/match-summary-poster";
 import type { ScorecardBall, ScorecardInnings, ScorecardPlayer } from "@/types/scorecard";
+import { localePath } from "@/lib/locale-path";
 
 type Team = { id: string; name: string; logo_url: string | null; primary_color: string | null };
 type Tournament = { name: string; logo_url: string | null };
@@ -18,7 +19,7 @@ type Match = {
 };
 
 export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolean }) {
-  const { id } = useParams<{ id: string }>();
+  const { id, locale } = useParams<{ id: string; locale: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<ScorecardPlayer[]>([]);
@@ -109,7 +110,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
 
   return <main className="scorecard-shell max-w-5xl mx-auto space-y-5 pb-12">
     <header className="flex flex-wrap items-center justify-between gap-3">
-      <Link href={publicMode ? `/match/${id}` : `/admin/matches/score/${id}`} className="control"><ArrowLeft className="w-4 h-4 mr-1" />{publicMode ? "Live match" : "Live scorer"}</Link>
+      <Link href={publicMode ? localePath(locale, `/match/${id}`) : localePath(locale, `/admin/matches/score/${id}`)} className="control"><ArrowLeft className="w-4 h-4 mr-1" />{publicMode ? "Live match" : "Live scorer"}</Link>
       <div className="flex gap-2">
         <button onClick={() => setShowSummary(false)} className={`control ${!showSummary ? "bg-primary text-primary-foreground" : ""}`}><FileText className="w-4 h-4 mr-1" />Scorecard</button>
         <button onClick={() => setShowSummary(true)} className={`control ${showSummary ? "bg-primary text-primary-foreground" : ""}`}><Trophy className="w-4 h-4 mr-1" />Match Summary</button>

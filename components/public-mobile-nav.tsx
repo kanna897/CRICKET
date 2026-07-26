@@ -10,7 +10,7 @@ const items = [
   { label: "Matches", href: "/fixtures", icon: Radio, match: (path: string) => path === "/fixtures" || path.startsWith("/match/") },
   { label: "Points", href: "/points", icon: ListOrdered, match: (path: string) => path === "/points" },
   { label: "Teams", href: "/teams", icon: Users, match: (path: string) => path === "/teams" || path.startsWith("/teams/") },
-  { label: "More", href: "/discover", icon: LayoutGrid, match: (path: string) => ["/discover", "/tournaments", "/stats", "/hall-of-fame", "/compare", "/login"].some((value) => path === value || path.startsWith(`${value}/`)) },
+  { label: "More", href: "/discover", icon: LayoutGrid, match: (path: string) => ["/discover", "/tournaments", "/stats", "/rankings", "/hall-of-fame", "/compare", "/login"].some((value) => path === value || path.startsWith(`${value}/`)) },
 ];
 
 export function PublicMobileNav() {

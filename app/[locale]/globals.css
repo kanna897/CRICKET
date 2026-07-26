@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
-html { min-height: 100%; background: var(--background); }
-body { min-height: 100dvh; padding-top: env(safe-area-inset-top); }
+html { min-height: 100%; max-width: 100%; overflow-x: clip; background: var(--background); }
+body { min-height: 100dvh; max-width: 100%; overflow-x: clip; padding-top: env(safe-area-inset-top); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+*, *::before, *::after { box-sizing: border-box; }
+img, video, canvas, svg { max-width: 100%; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 @media (display-mode: standalone) {
   body { overscroll-behavior-y: none; }
@@ -1005,6 +1007,13 @@ html:not(.dark) .admin-theme-shell .admin-themed-page textarea {
   }
 
   /* Medium-large team crests beside the live score. */
+  img[src*="/team-logos/"] {
+    box-sizing: border-box;
+    border-radius: 9999px;
+    background: #fff;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
   [class*="grid-cols-[72px_1fr_72px]"] {
     grid-template-columns: 6rem minmax(0, 1fr) 6rem !important;
   }
@@ -1013,15 +1022,27 @@ html:not(.dark) .admin-theme-shell .admin-themed-page textarea {
     width: 5rem !important;
     height: 5rem !important;
   }
-  [class*="grid-cols-[72px_1fr_72px]"] > div:first-child > * {
-    border: 2px solid #0f9d6a !important;
-    box-shadow: 0 0 0 3px rgb(15 157 106 / 25%);
-  }
-  [class*="grid-cols-[72px_1fr_72px]"] > div:last-child > * {
+  .score-hero-animated img[alt="MYLANKADU GNANAMURUGAN"] {
+    box-sizing: border-box;
     border: 2px solid #facc15 !important;
-    box-shadow: 0 0 0 3px rgb(250 204 21 / 25%);
+    outline: 2px solid rgb(250 204 21 / 38%) !important;
+    outline-offset: 1px;
+    background: #fff !important;
+    padding: 1px;
+    object-fit: contain !important;
+    box-shadow: 0 0 22px rgb(250 204 21 / 78%) !important;
   }
-
+  .score-hero-animated img[alt="THIRUKKUMARAN C.C"] {
+    box-sizing: border-box;
+    border: 2px solid #2563eb !important;
+    outline: 2px solid rgb(37 99 235 / 38%) !important;
+    outline-offset: 1px;
+    background: #fff !important;
+    padding: 0;
+    object-fit: contain !important;
+    object-position: center center !important;
+    box-shadow: 0 0 22px rgb(37 99 235 / 78%) !important;
+  }
   /* Empty player-photo placeholders in the live score. */
   [class~="bg-white/15"] {
     color: transparent !important;
@@ -1727,6 +1748,39 @@ html:not(.dark) .admin-theme-shell .admin-themed-page textarea {
   .wicket-pop-stumped { color: #fffbeb; background: linear-gradient(135deg, #92400e, #f59e0b); box-shadow: 0 0 0 8px rgb(245 158 11 / 23%), 0 18px 36px rgb(146 64 14 / 50%); }
   .wicket-pop-run_out { color: #fff7ed; background: linear-gradient(135deg, #9a3412, #f97316); box-shadow: 0 0 0 8px rgb(249 115 22 / 23%), 0 18px 36px rgb(154 52 18 / 50%); }
   .wicket-pop-hit_wicket { color: #eff6ff; background: linear-gradient(135deg, #172554, #2563eb); box-shadow: 0 0 0 8px rgb(59 130 246 / 23%), 0 18px 36px rgb(23 37 84 / 50%); }
+  .hat-trick-pop {
+    position: fixed;
+    z-index: 100;
+    left: 50%;
+    top: 42%;
+    display: flex;
+    min-width: min(88vw, 28rem);
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    transform: translate(-50%, -50%);
+    border: 4px solid #fde047;
+    border-radius: 2rem 0.65rem 2rem 0.65rem;
+    background: radial-gradient(circle at 50% 0%, #7c3aed, #312e81 48%, #08112b 100%);
+    padding: 1.3rem 2.2rem 1.5rem;
+    color: white;
+    text-align: center;
+    box-shadow: 0 0 0 12px rgb(250 204 21 / 18%), 0 0 70px rgb(168 85 247 / 75%), 0 26px 70px rgb(0 0 0 / 70%);
+    pointer-events: none;
+    animation: hat-trick-pop 2400ms cubic-bezier(.16,.86,.23,1) forwards;
+  }
+  .hat-trick-pop p { position: relative; font-size: .78rem; font-weight: 900; letter-spacing: .24em; color: #fde68a; }
+  .hat-trick-pop strong { position: relative; margin-top: .2rem; font-size: clamp(2.4rem, 9vw, 4.8rem); font-weight: 1000; letter-spacing: .04em; line-height: .95; text-shadow: 0 4px 0 #7c2d12, 0 0 25px #facc15; }
+  .hat-trick-pop small { position: relative; margin-top: .65rem; font-size: 1rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+  .hat-trick-burst {
+    position: absolute;
+    width: 24rem;
+    height: 24rem;
+    border: 3px dashed rgb(253 224 71 / 70%);
+    border-radius: 999px;
+    background: repeating-conic-gradient(from 0deg, rgb(250 204 21 / 28%) 0deg 7deg, transparent 7deg 18deg);
+    animation: hat-trick-spin 1300ms linear infinite;
+  }
   @keyframes boundary-pop {
     0% { opacity: 0; transform: translate(-50%, -38%) scale(0.28) rotate(-9deg); }
     38% { opacity: 1; transform: translate(-50%, -72%) scale(1.14) rotate(2deg); }
@@ -1738,6 +1792,15 @@ html:not(.dark) .admin-theme-shell .admin-themed-page textarea {
     30% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
     65% { opacity: 1; transform: translate(-50%, -58%) scale(0.98) rotate(0); }
     100% { opacity: 0; transform: translate(-50%, -88%) scale(1.04); }
+  }
+  @keyframes hat-trick-pop {
+    0% { opacity: 0; transform: translate(-50%, -35%) scale(.18) rotate(-10deg); }
+    18% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
+    34%, 76% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -70%) scale(1.18); }
+  }
+  @keyframes hat-trick-spin {
+    to { transform: rotate(360deg); }
   }
 
   /* Large shaped Player-of-the-Match stat badge inside the summary poster. */
@@ -2389,6 +2452,43 @@ html.light .admin-theme-shell .live-score-shell > header h1 {
   .dashboard-panel > header { align-items: flex-start; }
 }
 
+/* Native commentary voice menu: keep both the closed value and popup rows legible. */
+.admin-theme-shell .live-score-shell .commentary-voice-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  border-color: rgb(125 211 252 / 55%) !important;
+  background-color: #081a3d !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color-scheme: dark;
+}
+
+.admin-theme-shell .live-score-shell .commentary-voice-select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light .admin-theme-shell .live-score-shell .commentary-voice-select {
+  border-color: #5b8ca6 !important;
+  background: #ffffff !important;
+  color: #082f49 !important;
+  -webkit-text-fill-color: #082f49 !important;
+  color-scheme: light;
+}
+
+html.light .admin-theme-shell .live-score-shell .commentary-voice-select option {
+  background: #ffffff !important;
+  color: #082f49 !important;
+}
+
+html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
+  border-color: rgb(125 211 252 / 55%) !important;
+  background: #081a3d !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color-scheme: dark;
+}
+
 /* Reference-inspired public landing experience */
 .public-landing {
   min-height: 100vh;
@@ -2664,6 +2764,113 @@ html.light .public-landing {
   .landing-stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 0; }
   .landing-stat-strip > div { border-right: 0; }
   .landing-stat-strip > div:last-child { grid-column: 1 / -1; }
+}
+
+/* Phone layout guardrails shared by public, admin, and live-scoring screens. */
+@media (max-width: 767px) {
+  .public-stadium-content,
+  .public-stadium-content > *,
+  .admin-theme-shell,
+  .admin-theme-shell main,
+  .admin-theme-shell main > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .public-stadium-content main,
+  .admin-theme-shell main {
+    overflow-x: clip;
+  }
+
+  .public-stadium-content main > header,
+  .admin-theme-shell main > header {
+    min-width: 0;
+  }
+
+  .public-stadium-content table,
+  .admin-theme-shell main table {
+    font-size: .75rem;
+  }
+
+  .public-stadium-content :is(input, select, textarea),
+  .admin-theme-shell main :is(input, select, textarea) {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 1rem;
+  }
+
+  .public-stadium-content :is(button, a),
+  .admin-theme-shell :is(button, a) {
+    touch-action: manipulation;
+  }
+
+  .admin-theme-shell main {
+    padding: 1rem;
+  }
+
+  .admin-theme-shell main :is(.p-8, .sm\:p-8) {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .public-landing-nav > div {
+    flex-wrap: nowrap;
+    padding-inline: .75rem;
+  }
+
+  .public-landing-nav .public-nav-logo {
+    min-width: 0;
+    padding-inline: 0;
+  }
+
+  .public-landing-nav .public-nav-logo img {
+    width: 8.25rem;
+  }
+
+  .public-nav-actions {
+    flex: 0 0 auto;
+    gap: .35rem;
+  }
+
+  .public-nav-actions label select {
+    width: 4.55rem;
+  }
+
+  .public-nav-actions > .admin-login-nav-action,
+  .public-nav-actions > .player-registration-nav-action,
+  .public-nav-actions > .registration-visibility-action {
+    display: none;
+  }
+
+  .landing-hero {
+    min-height: auto;
+    padding-top: 2rem;
+  }
+
+  .landing-hero-copy h1 {
+    font-size: clamp(2.15rem, 12vw, 2.65rem);
+    overflow-wrap: anywhere;
+  }
+
+  .landing-featured-match {
+    padding: .85rem;
+  }
+
+  .landing-match-score {
+    gap: .35rem;
+  }
+
+  .landing-team-crest img,
+  .landing-team-crest > span {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .landing-bottom-cta > div {
+    align-items: flex-start;
+    padding: .85rem;
+  }
 }
 
 /* Admin performance comparison */

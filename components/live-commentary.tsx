@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type CommentaryBall = { id: string; commentary: string | null; created_at: string };
+const visibleCommentary = (commentary: string | null) => commentary?.replace(/\s*\[zone:[^\]]+\]\s*$/, "") || "";
 
 export function LiveCommentary({ inningsId }: { inningsId: string | null }) {
   const [items, setItems] = useState<CommentaryBall[]>([]);
@@ -20,5 +21,5 @@ export function LiveCommentary({ inningsId }: { inningsId: string | null }) {
     }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [inningsId]);
-  return <section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold text-lg mb-3">Live Commentary</h2>{items.length ? <p className="text-base leading-relaxed">{items[0].commentary}</p> : <p className="text-sm text-muted-foreground">Commentary will appear after the first ball.</p>}</section>;
+  return <section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold text-lg mb-3">Live Commentary</h2>{items.length ? <p className="text-base leading-relaxed">{visibleCommentary(items[0].commentary)}</p> : <p className="text-sm text-muted-foreground">Commentary will appear after the first ball.</p>}</section>;
 }

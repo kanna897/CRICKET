@@ -1,3 +1,5 @@
+import { isBowlerCreditedWicket, runsChargedToBowler } from "@/lib/cricket-rules";
+
 export type StatisticsPlayer = { id: string; name: string; team_id: string | null; photo_url?: string | null };
 export type StatisticsTeam = { id: string; name: string; logo_url?: string | null };
 export type StatisticsInnings = { id: string; match_id: string; batting_team_id: string; bowling_team_id: string };
@@ -59,8 +61,6 @@ export type PlayerTournamentStat = {
   fieldingDismissals: number;
 };
 
-const nonBowlerDismissals = new Set(["run_out", "retired_hurt", "retired_out", "obstructing_field"]);
-
 export function calculateTournamentPlayerStats(players: StatisticsPlayer[], teams: StatisticsTeam[], innings: StatisticsInnings[], balls: StatisticsBall[]): PlayerTournamentStat[] {
   const teamNames = new Map(teams.map((team) => [team.id, team.name]));
   const inningsById = new Map(innings.map((item) => [item.id, item]));
@@ -75,14 +75,14 @@ export function calculateTournamentPlayerStats(players: StatisticsPlayer[], team
     const dismissals = balls.filter((ball) => ball.is_wicket && ball.player_out_id === player.id && ball.dismissal_type !== "retired_hurt").length;
     const inningsScores = new Map<string, number>();
     battingBalls.forEach((ball) => inningsScores.set(ball.innings_id, (inningsScores.get(ball.innings_id) || 0) + ball.runs));
-    const bowlingRuns = bowlingBalls.reduce((sum, ball) => sum + ball.runs + (["bye", "leg_bye"].includes(ball.extras_type || "") ? 0 : ball.extras), 0);
+    const bowlingRuns = bowlingBalls.reduce((sum, ball) => sum + runsChargedToBowler(ball), 0);
     const bowlingLegalBalls = bowlingBalls.filter((ball) => ball.is_legal).length;
-    const creditedWickets = bowlingBalls.filter((ball) => ball.is_wicket && !nonBowlerDismissals.has(ball.dismissal_type || ""));
+    const creditedWickets = bowlingBalls.filter(isBowlerCreditedWicket);
     const bowlingByInnings = new Map<string, { wickets: number; runs: number }>();
     bowlingBalls.forEach((ball) => {
       const current = bowlingByInnings.get(ball.innings_id) || { wickets: 0, runs: 0 };
-      current.runs += ball.runs + (["bye", "leg_bye"].includes(ball.extras_type || "") ? 0 : ball.extras);
-      if (ball.is_wicket && !nonBowlerDismissals.has(ball.dismissal_type || "")) current.wickets += 1;
+      current.runs += runsChargedToBowler(ball);
+      if (isBowlerCreditedWicket(ball)) current.wickets += 1;
       bowlingByInnings.set(ball.innings_id, current);
     });
     const best = [...bowlingByInnings.values()].sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)[0];
