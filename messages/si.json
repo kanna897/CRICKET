@@ -1,11 +1,13 @@
 {
   "PublicNav": {
+    "auction": "Live Auction",
     "home": "මුල් පිටුව", "tournaments": "තරඟාවලි", "teams": "කණ්ඩායම්", "matches": "තරඟ",
     "rankings": "ශ්‍රේණිගත කිරීම්", "points": "ලකුණු සටහන", "statistics": "සංඛ්‍යාලේඛන", "awards": "සම්මාන", "compare": "සංසන්දනය",
     "playerRegistration": "ක්‍රීඩක ලියාපදිංචිය", "adminLogin": "පරිපාලක පිවිසුම",
     "theme": "ආලෝක සහ අඳුරු තේමාව මාරු කරන්න", "language": "භාෂාව"
   },
   "Admin": {
+    "auction": "Live Auction",
     "rankings": "කණ්ඩායම් සහ ක්‍රීඩක ශ්‍රේණිගත කිරීම්",
     "dashboard": "ප්‍රධාන පුවරුව", "tournaments": "තරඟාවලි", "clubs": "ක්‍රීඩා සමාජ සහ වාර", "teams": "කණ්ඩායම්",
     "players": "ක්‍රීඩකයන්", "registrations": "ලියාපදිංචි", "matches": "තරඟ සහ ලකුණු සටහන්",

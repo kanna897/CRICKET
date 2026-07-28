@@ -8,6 +8,7 @@ const folders = {
   "team-logos": "crickpulse/team-logos",
   "player-photos": "crickpulse/player-photos",
   "player-registrations": "crickpulse/player-registrations",
+  "auction-templates": "crickpulse/auction-templates",
   posters: "crickpulse/posters",
   banners: "crickpulse/banners",
 } as const;

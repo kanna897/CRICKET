@@ -129,3 +129,20 @@ test("team and player rankings are available to admins and public viewers", () =
   assert.match(engine, /result_type === "no_result"/);
   assert.match(engine, /allRounderPoints/);
 });
+
+test("live auction is modular, realtime and transaction-backed", () => {
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  const templates = readFileSync(resolve(root, "components/auction-template-manager.tsx"), "utf8");
+  const registration = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260728195216_live_player_auction.sql"), "utf8");
+  assert.match(dashboard, /Live Player Auction/);
+  assert.match(dashboard, /postgres_changes/);
+  assert.match(dashboard, /sell_auction_player/);
+  assert.match(dashboard, /Bulk Card Downloads/);
+  assert.match(templates, /Player Card Templates/);
+  assert.match(templates, /is_visible/);
+  assert.match(registration, /kind: "player"/);
+  assert.match(migration, /assign_tournament_registration_number/);
+  assert.match(migration, /for update/);
+  assert.match(migration, /supabase_realtime/);
+});
