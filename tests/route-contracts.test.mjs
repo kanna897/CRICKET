@@ -97,6 +97,17 @@ test("standalone matches reuse the complete match and scoring workflow", () => {
   assert.match(migration, /private\.can_score_match/);
 });
 
+test("team sheet can register a late player and return to the same match", () => {
+  const teamSheet = readFileSync(resolve(root, "app/[locale]/admin/matches/teamsheet/[id]/page.tsx"), "utf8");
+  const newPlayer = readFileSync(resolve(root, "app/[locale]/admin/players/new/page.tsx"), "utf8");
+  assert.match(teamSheet, /Add Player to/);
+  assert.match(teamSheet, /returnTo=/);
+  assert.match(teamSheet, /team=/);
+  assert.match(newPlayer, /requestedTeam/);
+  assert.match(newPlayer, /requestedReturn/);
+  assert.match(newPlayer, /router\.push\(localePath\(locale, returnPath\)\)/);
+});
+
 test("player registration supports hide/unhide and organizer approval", () => {
   const editor = readFileSync(resolve(root, "components/tournament-editor.tsx"), "utf8");
   const form = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");

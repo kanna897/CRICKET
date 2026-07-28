@@ -10,6 +10,8 @@ import { ArrowLeft, Loader2, Upload, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { uploadImage } from "@/lib/media";
+import { useParams } from "next/navigation";
+import { localePath } from "@/lib/locale-path";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
@@ -25,13 +27,15 @@ const playerSchema = z.object({
 type PlayerFormValues = z.infer<typeof playerSchema>;
 
 export default function NewPlayerPage() {
+  const { locale } = useParams<{ locale: string }>();
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [returnPath, setReturnPath] = useState("/admin/players");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors } } = useForm<PlayerFormValues>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PlayerFormValues>({
     resolver: zodResolver(playerSchema),
     defaultValues: { playing_role: "Batsman" },
   });
@@ -39,10 +43,17 @@ export default function NewPlayerPage() {
   useEffect(() => {
     async function loadTeams() {
       const { data } = await supabase.from("teams").select("*").order("name");
-      if (data) setTeams(data);
+      if (data) {
+        const teamRows = data as unknown as Team[];
+        setTeams(teamRows);
+        const requestedTeam = new URLSearchParams(window.location.search).get("team");
+        const requestedReturn = new URLSearchParams(window.location.search).get("returnTo");
+        if (requestedTeam && teamRows.some((team) => team.id === requestedTeam)) setValue("team_id", requestedTeam);
+        if (requestedReturn?.startsWith("/admin/")) setReturnPath(requestedReturn);
+      }
     }
     loadTeams();
-  }, []);
+  }, [setValue]);
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -91,7 +102,7 @@ export default function NewPlayerPage() {
       const { error } = await (supabase.from("players") as any).insert(payload);
       if (error) throw error;
 
-      router.push("/admin/players");
+      router.push(localePath(locale, returnPath));
       router.refresh();
     } catch (error) {
       console.error("Error creating player:", error);
@@ -109,12 +120,12 @@ export default function NewPlayerPage() {
   return (
     <div className="admin-themed-page max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/admin/players" className="p-2 hover:bg-muted rounded-full transition-colors">
+        <Link href={localePath(locale, returnPath)} className="p-2 hover:bg-muted rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Add Player</h1>
-          <p className="text-muted-foreground mt-1">Add a player to the global directory.</p>
+          <p className="text-muted-foreground mt-1">Add a player and assign them to the correct team.</p>
         </div>
       </div>
 
@@ -178,7 +189,7 @@ export default function NewPlayerPage() {
           </Field>
         </div>
         <div className="pt-4 flex justify-end gap-3 border-t border-border">
-          <Link href="/admin/players" className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input h-10 px-4">Cancel</Link>
+          <Link href={localePath(locale, returnPath)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input h-10 px-4">Cancel</Link>
           <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground h-10 px-4 disabled:opacity-50">
             {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Create Player
           </button>
