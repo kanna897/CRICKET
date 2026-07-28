@@ -1267,6 +1267,25 @@ html:not(.dark) .admin-theme-shell .admin-themed-page textarea {
     background: linear-gradient(135deg, #1553b5, #0a2d6d);
     color: #fff4bc;
   }
+  .live-score-shell .interruption-adjust-button {
+    border-color: #0369a1 !important;
+    background: #ffffff !important;
+    color: #082f49 !important;
+    -webkit-text-fill-color: #082f49 !important;
+    box-shadow: 0 2px 8px rgb(3 105 161 / 18%);
+  }
+  .live-score-shell .interruption-adjust-button:hover {
+    border-color: #075985 !important;
+    background: #e0f2fe !important;
+    color: #082f49 !important;
+    -webkit-text-fill-color: #082f49 !important;
+  }
+  .live-score-shell .interruption-adjust-button:disabled {
+    background: #e2e8f0 !important;
+    color: #334155 !important;
+    -webkit-text-fill-color: #334155 !important;
+    opacity: 0.8;
+  }
   .live-score-shell .control.bg-primary {
     border-color: #f7d56b;
     background: linear-gradient(135deg, #d7a72b, #f7d56b, #bd7b13) !important;
