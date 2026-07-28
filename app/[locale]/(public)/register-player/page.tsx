@@ -11,6 +11,16 @@ type UploadSignature = { cloudName: string; apiKey: string; folder: string; time
 type CloudinaryUpload = { secure_url?: string; error?: { message?: string } };
 const initial = { tournament_id: "", preferred_team_id: "", player_name: "", contact_number: "", playing_role: "batsman", batting_style: "right_hand", bowling_style: "none", jersey_name: "", jersey_number: "", consent_given: false };
 
+async function readJson<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  if (!text) return {} as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(response.ok ? "The server returned an invalid response." : text.slice(0, 180));
+  }
+}
+
 export default function PublicPlayerRegistrationPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -39,14 +49,16 @@ export default function PublicPlayerRegistrationPage() {
     event.preventDefault();
     setMessage("");
     if (!photo) return setMessage("Profile photo is required.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type) || photo.size > 5 * 1024 * 1024) {
+      return setMessage("Upload a JPG, PNG or WebP image smaller than 5 MB.");
+    }
     if (!form.consent_given) return setMessage("Please accept the consent declaration.");
     setSaving(true);
     try {
       const signatureRequest = new FormData();
-      signatureRequest.set("file", photo);
       signatureRequest.set("tournamentId", form.tournament_id);
       const signatureResponse = await fetch("/api/media/player-registration", { method: "POST", body: signatureRequest });
-      const signature = await signatureResponse.json() as UploadSignature;
+      const signature = await readJson<UploadSignature>(signatureResponse);
       if (!signatureResponse.ok) throw new Error(signature.error || "Player photo upload authorization failed.");
 
       const cloudinaryForm = new FormData();
@@ -59,7 +71,7 @@ export default function PublicPlayerRegistrationPage() {
         `https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`,
         { method: "POST", body: cloudinaryForm },
       );
-      const upload = await uploadResponse.json() as CloudinaryUpload;
+      const upload = await readJson<CloudinaryUpload>(uploadResponse);
       if (!uploadResponse.ok || !upload.secure_url) {
         throw new Error(upload.error?.message || "Player photo upload failed.");
       }

@@ -116,6 +116,8 @@ test("player registration supports hide/unhide and organizer approval", () => {
   assert.match(editor, /Visible — public players can submit applications/);
   assert.match(form, /Same jersey number is allowed/);
   assert.match(form, /consent_given/);
+  assert.doesNotMatch(form, /signatureRequest\.set\("file"/);
+  assert.match(form, /readJson<UploadSignature>/);
   assert.match(queue, /Approve & Add/);
 });
 

@@ -2,8 +2,6 @@ import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -16,14 +14,10 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  const file = formData.get("file");
   const tournamentId = formData.get("tournamentId");
 
-  if (!(file instanceof File) || typeof tournamentId !== "string" || !tournamentId) {
+  if (typeof tournamentId !== "string" || !tournamentId) {
     return NextResponse.json({ error: "Invalid player photo upload request." }, { status: 400 });
-  }
-  if (!allowedTypes.has(file.type) || file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: "Upload a JPG, PNG or WebP image smaller than 5 MB." }, { status: 400 });
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
