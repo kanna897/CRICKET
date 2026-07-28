@@ -579,6 +579,8 @@ export default function LiveScorer() {
                 wicketType: dismissalType as "bowled" | "caught" | "lbw" | "run_out" | "stumped" | "hit_wicket" | undefined,
                 teamScore: nextTotalRuns,
                 overs: `${Math.floor(nextBallsBowled / ballsPerOver)}.${nextBallsBowled % ballsPerOver}`,
+                requiredRuns: innings.target ? Math.max(innings.target - nextTotalRuns, 0) : undefined,
+                ballsRemaining: innings.target ? Math.max(effectiveOvers * ballsPerOver - nextBallsBowled, 0) : undefined,
                 batterScore: batterBefore + runs,
                 bowlerRuns,
                 bowlerWickets,
