@@ -1,116 +1,92 @@
 import type { CommentaryInput } from "@/types/commentary";
 
-const dismissalText: Record<NonNullable<CommentaryInput["wicketType"]>, string> = {
-  bowled: "BOWLED! The stumps are disturbed",
-  caught: "CAUGHT! The chance is taken",
-  lbw: "LBW! Trapped in front",
-  run_out: "RUN OUT! Brilliant work in the field",
-  stumped: "STUMPED! Beaten in flight and out of the crease",
-  hit_wicket: "HIT WICKET! An unfortunate way to go",
-};
-
 const zoneText: Record<NonNullable<CommentaryInput["shotZone"]>, string> = {
-  straight: "straight down the ground",
-  cover: "through the covers",
+  straight: "straight",
+  cover: "through cover",
   point: "through point",
-  square_leg: "behind square on the leg side",
-  midwicket: "through midwicket",
+  square_leg: "behind square",
+  midwicket: "over midwicket",
   fine_leg: "over fine leg",
 };
 
-const runWords: Record<number, string> = {
-  1: "a single",
-  2: "two runs",
-  3: "three runs",
-  4: "four runs",
-  5: "five runs",
-  6: "six runs",
+const dismissalText: Record<NonNullable<CommentaryInput["wicketType"]>, string> = {
+  bowled: "bowled",
+  caught: "caught",
+  lbw: "lbw",
+  run_out: "run out",
+  stumped: "stumped",
+  hit_wicket: "hit wicket",
 };
 
-function plural(value: number, singular: string, pluralForm = `${singular}s`) {
-  return `${value} ${value === 1 ? singular : pluralForm}`;
-}
-
-function shotSuffix(input: CommentaryInput) {
+function shot(input: CommentaryInput) {
   return input.shotZone ? ` ${zoneText[input.shotZone]}` : "";
 }
 
 function standardDelivery(input: CommentaryInput) {
-  const shot = shotSuffix(input);
   if (input.runs === 0)
-    return `Nothing on offer — ${input.bowlerName} keeps ${input.batterName} quiet.`;
+    return `Dot. ${input.bowlerName} keeps ${input.batterName} quiet.`;
   if (input.runs === 1)
-    return `${input.batterName} works it${shot} and rotates the strike.`;
+    return `${input.batterName} works it${shot(input)} for one.`;
   if (input.runs === 2)
-    return `${input.batterName} finds the gap${shot}; sharp running brings two.`;
+    return `${input.batterName} finds the gap${shot(input)} for two.`;
   if (input.runs === 3)
-    return `${input.batterName} places it beautifully${shot} and they come back for three.`;
+    return `${input.batterName} places it${shot(input)}; three taken.`;
   if (input.runs === 4)
-    return `FOUR! Exquisite from ${input.batterName} — timed sweetly${shot} and away to the rope.`;
+    return `FOUR! ${input.batterName} drives${shot(input)} to the rope.`;
   if (input.runs === 6)
-    return `SIX! Magnificent striking from ${input.batterName} — launched${shot} and comfortably over the boundary.`;
-  return `${input.batterName} collects ${runWords[input.runs] || plural(input.runs, "run")}${shot}.`;
+    return `SIX! ${input.batterName} launches it${shot(input)}.`;
+  return `${input.batterName} takes ${input.runs}.`;
 }
 
 function extraDelivery(input: CommentaryInput) {
   const total = input.runs + input.extras;
-  const shot = shotSuffix(input);
   if (input.extrasType === "wide")
-    return total === 1
-      ? `WIDE! ${input.bowlerName} strays beyond the batter's reach.`
-      : `WIDE! It beats everyone and they collect ${plural(total, "run")} in all.`;
+    return total === 1 ? "Wide." : `Wide — ${total} added.`;
   if (input.extrasType === "no_ball") {
     if (!input.runs)
-      return total === 1
-        ? `NO BALL! ${input.bowlerName} oversteps — a free hit will follow.`
-        : `NO BALL! ${input.bowlerName} oversteps and ${plural(total, "run")} are added in all.`;
-    return `NO BALL! ${input.bowlerName} oversteps, and ${input.batterName} adds ${runWords[input.runs] || plural(input.runs, "run")}${shot} — ${plural(total, "run")} from the delivery.`;
+      return total === 1 ? "NO BALL! Free hit next." : `NO BALL! ${total} added.`;
+    return `NO BALL! ${input.batterName} adds ${input.runs}${shot(input)}; ${total} total.`;
   }
   if (input.extrasType === "bye")
-    return `${input.extras === 1 ? "A bye" : `${input.extras} byes`} taken as the ball beats both batter and keeper.`;
-  return `${input.extras === 1 ? "A leg bye" : `${input.extras} leg byes`} added off the pads.`;
+    return input.extras === 1 ? "One bye." : `${input.extras} byes.`;
+  return input.extras === 1 ? "One leg bye." : `${input.extras} leg byes.`;
 }
 
-function milestoneCommentary(input: CommentaryInput) {
-  const milestones: string[] = [];
+function milestones(input: CommentaryInput) {
+  const calls: string[] = [];
   if (input.batterScore === 50)
-    milestones.push(`FIFTY for ${input.batterName} — a well-constructed innings.`);
+    calls.push(`FIFTY for ${input.batterName}!`);
   if (input.batterScore === 100)
-    milestones.push(`A magnificent CENTURY for ${input.batterName}!`);
-  if (input.teamScore === 50 || input.teamScore === 100)
-    milestones.push(`The team total reaches ${input.teamScore}.`);
+    calls.push(`CENTURY for ${input.batterName}!`);
   if (input.partnership === 50)
-    milestones.push("That also brings up a valuable fifty-run partnership.");
+    calls.push("Fifty partnership.");
   if (input.bowlerWickets === 3)
-    milestones.push(`${input.bowlerName} now has three wickets.`);
+    calls.push(`Three wickets for ${input.bowlerName}.`);
   if (input.bowlerWickets === 5)
-    milestones.push(`FIVE wickets for ${input.bowlerName} — an outstanding spell.`);
+    calls.push(`FIVE wickets for ${input.bowlerName}!`);
   if (input.inningsComplete)
-    milestones.push("That is the end of the innings.");
+    calls.push("Innings complete.");
   if (input.matchResult)
-    milestones.push(input.matchResult);
-  return milestones;
+    calls.push(input.matchResult);
+  return calls;
 }
 
-function chaseSituation(input: CommentaryInput) {
+function chase(input: CommentaryInput) {
   if (input.requiredRuns === undefined || input.ballsRemaining === undefined || input.requiredRuns <= 0)
     return "";
-  return ` ${plural(input.requiredRuns, "run")} needed from ${plural(input.ballsRemaining, "ball")}.`;
+  return ` • Need ${input.requiredRuns} off ${input.ballsRemaining}.`;
 }
 
 export function generateCommentary(input: CommentaryInput): string {
-  const prefix = `${input.over}.${input.ball}: ${input.bowlerName} to ${input.batterName} —`;
   let event: string;
-
   if (input.wicketType) {
-    event = `${dismissalText[input.wicketType]}. ${input.batterName} has to go${input.wicketType === "run_out" ? "" : `, and ${input.bowlerName} has the breakthrough`}.`;
+    event = `WICKET! ${input.batterName} ${dismissalText[input.wicketType]}${input.wicketType === "run_out" ? "" : ` by ${input.bowlerName}`}.`;
   } else if (input.extrasType) {
     event = extraDelivery(input);
   } else {
     event = standardDelivery(input);
   }
 
-  const milestones = milestoneCommentary(input);
-  const scoreline = ` Score: ${input.teamScore} after ${input.overs} overs.`;
-  return `${prefix} ${event}${scoreline}${chaseSituation(input)}${milestones.length ? ` ${milestones.join(" ")}` : ""}`;
+  const specialCalls = milestones(input);
+  return `${input.over}.${input.ball}: ${event} ${input.teamScore} (${input.overs})${chase(input)}${specialCalls.length ? ` ${specialCalls.join(" ")}` : ""}`;
 }
