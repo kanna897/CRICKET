@@ -2,9 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Crown, Edit3, FileText, Loader2, Printer, RefreshCw, Save, ShieldCheck, Swords, Target, UserRound, UsersRound } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Crown, Edit3, FileText, Loader2, Plus, Printer, RefreshCw, Save, ShieldCheck, Swords, Target, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { localePath } from "@/lib/locale-path";
 
 type Team = { id: string; name: string; logo_url: string | null };
 type Player = { id: string; name: string; team_id: string | null; playing_role: string | null; photo_url: string | null };
@@ -36,8 +37,9 @@ function PlayerAvatar({ player, size = "sm" }: { player: Player; size?: "sm" | "
 }
 
 export default function TeamSheetPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ id: string; locale: string }>();
   const matchId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const returnTo = `/admin/matches/teamsheet/${matchId}`;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +169,7 @@ export default function TeamSheetPage() {
     <div className="admin-themed-page dashboard-page matches-page max-w-6xl mx-auto pb-12 print:max-w-full print:p-0">
       <div className="mb-8 flex items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
-          <Link href="/admin/matches" className="rounded-full bg-muted p-2 hover:bg-muted/80"><ArrowLeft className="h-5 w-5" /></Link>
+          <Link href={localePath(params.locale, "/admin/matches")} className="rounded-full bg-muted p-2 hover:bg-muted/80"><ArrowLeft className="h-5 w-5" /></Link>
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-bold"><FileText className="h-6 w-6 text-primary" /> Playing XI Team Sheet</h1>
             <p className="text-muted-foreground text-sm">Select the players who will take part in this match, then submit the official sheet.</p>
@@ -181,6 +183,7 @@ export default function TeamSheetPage() {
       {!showOfficialSheet ? (
         <div className="bg-card rounded-xl border border-border p-6 shadow-sm print:hidden">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5"><div><h2 className="text-xl font-bold">Choose the Playing XI</h2><p className="text-muted-foreground text-sm">Every team can select {MIN_PLAYERS} to {MAX_PLAYERS} players from its complete squad.</p></div><span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-bold text-primary"><UsersRound className="h-4 w-4" />{teamASelection.length + teamBSelection.length} selected</span></div>
+          <div className="mb-4 flex flex-wrap justify-end gap-2"><Link href={`${localePath(params.locale, "/admin/players/new")}?team=${teamA.id}&returnTo=${encodeURIComponent(returnTo)}`} className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300 bg-white px-3 py-2 text-xs font-black text-sky-800 shadow-sm hover:bg-sky-50"><Plus className="h-4 w-4" />Add Player to {teamA.name}</Link><Link href={`${localePath(params.locale, "/admin/players/new")}?team=${teamB.id}&returnTo=${encodeURIComponent(returnTo)}`} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-black text-emerald-800 shadow-sm hover:bg-emerald-50"><Plus className="h-4 w-4" />Add Player to {teamB.name}</Link></div>
           <div className="grid gap-6 lg:grid-cols-2"><SquadSelector team={teamA} players={teamAPlayers} selected={teamASelection} captainId={teamACaptain} onToggle={(id) => togglePlayer(id, teamASelection, setTeamASelection, teamACaptain, setTeamACaptain)} onCaptainSelect={setTeamACaptain} /><SquadSelector team={teamB} players={teamBPlayers} selected={teamBSelection} captainId={teamBCaptain} onToggle={(id) => togglePlayer(id, teamBSelection, setTeamBSelection, teamBCaptain, setTeamBCaptain)} onCaptainSelect={setTeamBCaptain} /></div>
           <div className="mt-7 flex justify-end border-t border-border pt-5"><button disabled={saving} onClick={savePlayingXI} className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Submit Playing Team Sheet</button></div>
         </div>
