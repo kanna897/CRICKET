@@ -42,27 +42,29 @@ function fitText(value: string, max = 28) {
 export async function generatePlayerCardJpeg(data: PlayerCardData) {
   const [template, photo] = await Promise.all([fetchImage(data.templateUrl), fetchImage(data.photoUrl)]);
   const base = sharp(template).resize(1254, 1254, { fit: "fill" });
+  const portraitMask = Buffer.from(`<svg width="404" height="630" xmlns="http://www.w3.org/2000/svg"><rect width="404" height="630" rx="58" fill="white"/></svg>`);
   const portrait = await sharp(photo)
-    .resize(430, 620, { fit: "cover", position: "attention" })
-    .jpeg({ quality: 94 })
+    .resize(404, 630, { fit: "cover", position: "attention" })
+    .composite([{ input: portraitMask, blend: "dest-in" }])
+    .png()
     .toBuffer();
   const text = Buffer.from(`<svg width="1254" height="1254" xmlns="http://www.w3.org/2000/svg">
     <defs><filter id="shadow"><feDropShadow dx="3" dy="4" stdDeviation="4" flood-opacity=".7"/></filter></defs>
     <style>
-      .name{font:italic 900 62px Arial,sans-serif;fill:#fff;stroke:#071936;stroke-width:2;paint-order:stroke;filter:url(#shadow)}
-      .detail{font:italic 800 39px Arial,sans-serif;fill:#071936}
-      .number{font:900 58px Arial,sans-serif;fill:#fff;stroke:#071936;stroke-width:2;paint-order:stroke}
+      .name{font:italic 900 68px Arial,sans-serif;fill:#fff;stroke:#071936;stroke-width:2;paint-order:stroke;filter:url(#shadow)}
+      .detail{font:italic 900 47px Arial,sans-serif;fill:#071936}
+      .number{font:italic 900 92px Arial,sans-serif;fill:#fff;stroke:#071936;stroke-width:2;paint-order:stroke}
     </style>
-    <text x="650" y="460" class="name">${xml(fitText(data.playerName, 23))}</text>
-    <text x="770" y="585" class="detail">${xml(label(data.playingRole))}</text>
-    <text x="770" y="710" class="detail">${xml(label(data.battingStyle))}</text>
-    <text x="770" y="835" class="detail">${xml(label(data.bowlingStyle))}</text>
-    <text x="790" y="970" class="detail">${xml(fitText(data.mobileNumber, 20))}</text>
-    <text x="220" y="1015" class="number">${xml(String(data.registrationNumber).padStart(2, "0"))}</text>
+    <text x="650" y="455" class="name">${xml(fitText(data.playerName, 20))}</text>
+    <text x="755" y="598" class="detail">${xml(label(data.playingRole))}</text>
+    <text x="755" y="727" class="detail">${xml(label(data.battingStyle))}</text>
+    <text x="755" y="855" class="detail">${xml(label(data.bowlingStyle))}</text>
+    <text x="750" y="985" class="detail">${xml(fitText(data.mobileNumber, 20))}</text>
+    <text x="225" y="1045" class="number">${xml(String(data.registrationNumber).padStart(2, "0"))}</text>
   </svg>`);
   return base
     .composite([
-      { input: portrait, left: 92, top: 365 },
+      { input: portrait, left: 99, top: 342 },
       { input: text, left: 0, top: 0 },
     ])
     .jpeg({ quality: 94, chromaSubsampling: "4:4:4" })
