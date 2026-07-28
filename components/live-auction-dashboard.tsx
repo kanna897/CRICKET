@@ -179,6 +179,11 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     try {
       const bid = Number(winningBid);
       if (!Number.isFinite(bid) || bid < 0) throw new Error("Enter a valid winning bid.");
+      const purse = purses.find((row) => row.team_id === saleTeamId);
+      if (!purse) throw new Error("Configure and save this team's initial purse before confirming the sale.");
+      const availablePurse = Number(purse.initial_purse) - Number(purse.total_spent);
+      if (bid > availablePurse) throw new Error("Winning bid exceeds the team's remaining purse.");
+      const soldTeamName = team(saleTeamId)?.name || "selected team";
       const { error } = await (supabase.rpc as any)("sell_auction_player", {
         p_auction_player_id: selected.id, p_team_id: saleTeamId, p_winning_bid: bid,
       });
@@ -190,7 +195,8 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
         body: JSON.stringify({ kind: "team_player", auctionPlayerId: selected.id }),
       });
       const card = await cardResponse.json() as { generated?: boolean; error?: string; reason?: string };
-      setMessage(card.generated ? "Player sold, assigned, purse updated and team card generated." : `Player sold and assigned. ${card.reason || card.error || ""}`);
+      await load();
+      setMessage(card.generated ? `Player sold and added to ${soldTeamName}. Purse, squad and team card updated.` : `Player sold and added to ${soldTeamName}. ${card.reason || card.error || ""}`);
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Sale confirmation failed."); }
     finally { setBusy(""); }
   }
@@ -236,7 +242,11 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   }
 
   const selectedPurse = purses.find((row) => row.team_id === saleTeamId);
-  const remaining = Number(selectedPurse?.initial_purse || 0) - Number(selectedPurse?.total_spent || 0);
+  const availableBeforeBid = Number(selectedPurse?.initial_purse || 0) - Number(selectedPurse?.total_spent || 0);
+  const enteredBid = winningBid.trim() === "" ? 0 : Number(winningBid);
+  const validEnteredBid = Number.isFinite(enteredBid) && enteredBid >= 0;
+  const remaining = availableBeforeBid - (validEnteredBid ? enteredBid : 0);
+  const saleBlocked = !selectedPurse || !validEnteredBid || winningBid === "" || remaining < 0;
 
   return <div className={`${admin ? "admin-themed-page" : "mx-auto max-w-7xl"} space-y-6`}>
     <header className="flex flex-col gap-4 rounded-3xl border border-primary/20 bg-gradient-to-br from-[#071631] via-[#0b3470] to-[#087b71] p-6 text-white shadow-xl sm:flex-row sm:items-end sm:justify-between">
@@ -295,10 +305,11 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
                   <input className="input" type="number" min="0" step=".01" value={winningBid} onChange={(event) => setWinningBid(event.target.value)} />
                 </label>
               </div>
-              {saleTeamId && <p className="mt-3 rounded-lg bg-muted p-3 text-sm font-bold">Remaining purse: {money(remaining)}</p>}
+              {saleTeamId && !selectedPurse && <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-bold text-amber-900">Team purse is not configured. Set its Initial Purse in Auction Controls and click Save Team Purses.</p>}
+              {saleTeamId && selectedPurse && <div className={`mt-3 rounded-lg border p-3 text-sm font-bold ${remaining < 0 ? "border-red-300 bg-red-50 text-red-800" : "border-emerald-300 bg-emerald-50 text-emerald-900"}`}><p>Available before bid: {money(availableBeforeBid)}</p><p className="mt-1 text-base">Remaining after this bid: {money(remaining)}</p>{remaining < 0 && <p className="mt-1 text-xs">Winning bid exceeds the available purse.</p>}</div>}
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <button disabled={busy === "unsold"} onClick={() => void markUnsold(selected)} className="rounded-xl border border-red-300 px-4 py-3 font-black text-red-600">Mark Unsold</button>
-                <button disabled={busy === "sell"} onClick={() => void confirmSale()} className="rounded-xl bg-emerald-600 px-4 py-3 font-black text-white">{busy === "sell" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}Confirm Sale</button>
+                <button disabled={busy === "sell" || saleBlocked} onClick={() => void confirmSale()} className="rounded-xl bg-emerald-600 px-4 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{busy === "sell" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}Confirm Sale</button>
               </div>
             </>
           )}
