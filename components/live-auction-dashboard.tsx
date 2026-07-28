@@ -312,7 +312,7 @@ function Stat({ label, value, icon }: { label: string; value: string | number; i
   return <article className="rounded-2xl border border-border bg-card p-4 text-foreground shadow-sm"><div className="flex items-center justify-between"><span className="text-xs font-black uppercase tracking-wider text-muted-foreground">{label}</span><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">{icon}</span></div><p className="mt-3 text-2xl font-black">{value}</p></article>;
 }
 function Status({ value }: { value: AuctionPlayer["status"] }) {
-  const style = value === "sold" ? "bg-emerald-500" : value === "live" ? "bg-red-500 animate-pulse" : value === "unsold" ? "bg-slate-700" : "bg-sky-600";
+  const style = value === "sold" ? "bg-emerald-500" : value === "live" ? "bg-red-500 animate-pulse" : value === "unsold" ? "bg-red-600" : "bg-sky-600";
   return <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-[.65rem] font-black uppercase text-white ${style}`}>{value}</span>;
 }
 function SquadPanel({ teams, players }: { teams: Team[]; players: AuctionPlayer[] }) {
