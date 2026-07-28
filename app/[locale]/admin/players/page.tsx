@@ -29,8 +29,10 @@ export default function PlayersPage() {
     if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
     const { data: tournaments } = await tournamentQuery;
     const tournamentIds = (tournaments || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-    const { data: teams } = tournamentIds.length ? await supabase.from("teams").select("*").in("tournament_id", tournamentIds) : { data: [] };
-    const teamIds = (teams || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
+    const { data: teams } = await (supabase.from("teams") as any).select("id,tournament_id,organizer_id");
+    const teamIds = ((teams || []) as Array<{ id: string; tournament_id: string | null; organizer_id: string | null }>)
+      .filter((team) => isMasterAdmin || tournamentIds.includes(team.tournament_id || "") || team.organizer_id === userId)
+      .map((team) => team.id);
     const { data } = teamIds.length ? await supabase.from("players").select("*").in("team_id", teamIds).order("created_at", { ascending: false }) : { data: [] };
 
     if (data) setPlayers(data);

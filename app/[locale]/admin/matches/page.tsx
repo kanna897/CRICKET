@@ -23,6 +23,10 @@ type Match = {
   overs_per_match: number;
   assigned_scorer_id: string | null;
   scoring_locked: boolean;
+  organizer_id: string | null;
+  match_scope: "tournament" | "standalone";
+  match_type: string;
+  title: string | null;
 };
 
 export default function MatchesPage() {
@@ -44,12 +48,19 @@ export default function MatchesPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const tournamentsResult = await tournamentQuery;
       const ids = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);
-      const [matchesResult, teamsResult] = ids.length ? await Promise.all([
-        (supabase.from("matches") as any).select("*").in("tournament_id", ids).order("created_at", { ascending: false }),
-        supabase.from("teams").select("*").in("tournament_id", ids).order("name"),
-      ]) : [{ data: [] }, { data: [] }];
-      if (matchesResult.data) setMatches(matchesResult.data);
-      if (teamsResult.data) setTeams(teamsResult.data);
+      const [matchesResult, teamsResult] = await Promise.all([
+        (supabase.from("matches") as any).select("*").order("created_at", { ascending: false }),
+        (supabase.from("teams") as any).select("*").order("name"),
+      ]);
+      const manageableMatches = ((matchesResult.data || []) as Match[]).filter((match) =>
+        isMasterAdmin || ids.includes(match.tournament_id || "") || match.organizer_id === userId
+      );
+      const manageableTeamIds = new Set(manageableMatches.flatMap((match) => [match.team_a_id, match.team_b_id]));
+      const manageableTeams = (teamsResult.data || []).filter((team: Team & { organizer_id?: string | null }) =>
+        isMasterAdmin || ids.includes(team.tournament_id) || team.organizer_id === userId || manageableTeamIds.has(team.id)
+      );
+      setMatches(manageableMatches);
+      setTeams(manageableTeams);
       if (tournamentsResult.data) setTournaments(tournamentsResult.data);
       setLoading(false);
     }
@@ -58,10 +69,10 @@ export default function MatchesPage() {
 
   const teamName = (id: string) => teams.find((team) => team.id === id)?.name || "Unknown team";
   const tournamentName = (id: string | null) => tournaments.find((tournament) => tournament.id === id)?.name || "Independent match";
-  const tournamentOwner = (id: string | null) => tournaments.find((tournament) => tournament.id === id)?.organizer_id || null;
+  const matchOwner = (match: Match) => match.organizer_id || tournaments.find((tournament) => tournament.id === match.tournament_id)?.organizer_id || null;
   const updateScorer = async (match: Match, assigned: boolean) => {
     setSavingAssignment(match.id); setMessage("");
-    const ownerId = tournamentOwner(match.tournament_id);
+    const ownerId = matchOwner(match);
     const { error } = await (supabase.from("matches") as any).update({ assigned_scorer_id: assigned ? ownerId : null }).eq("id", match.id);
     if (error) setMessage(error.message);
     else setMatches((rows) => rows.map((row) => row.id === match.id ? { ...row, assigned_scorer_id: assigned ? ownerId : null } : row));
@@ -69,7 +80,7 @@ export default function MatchesPage() {
   };
   const toggleLock = async (match: Match) => {
     setSavingAssignment(match.id); setMessage("");
-    const ownerId = tournamentOwner(match.tournament_id);
+    const ownerId = matchOwner(match);
     const nextLocked = !match.scoring_locked;
     const { error } = await (supabase.from("matches") as any).update({ scoring_locked: nextLocked, assigned_scorer_id: nextLocked ? (match.assigned_scorer_id || ownerId) : match.assigned_scorer_id }).eq("id", match.id);
     if (error) setMessage(error.message);
@@ -98,6 +109,9 @@ export default function MatchesPage() {
           date.setDate(date.getDate() + dayOffset);
           rows.push({
             tournament_id: generator.tournamentId,
+            organizer_id: tournament?.organizer_id || userId,
+            match_scope: "tournament",
+            match_type: "tournament",
             team_a_id: teamA.id,
             team_b_id: teamB.id,
             match_date: date.toISOString().slice(0, 10),
@@ -138,11 +152,11 @@ export default function MatchesPage() {
           <div className="py-16 text-center"><ClipboardList className="w-10 h-10 mx-auto text-muted-foreground mb-3" /><h2 className="font-semibold">No matches scheduled</h2><p className="text-sm text-muted-foreground mt-1">Create a fixture to begin scoring.</p></div>
         ) : <div className="divide-y divide-border">
           {matches.map((match) => <div key={match.id} className="p-5 flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
-            <div><p className="text-xs text-muted-foreground mb-1">{tournamentName(match.tournament_id)}</p><h2 className="text-lg font-semibold">{teamName(match.team_a_id)} <span className="text-muted-foreground font-normal">vs</span> {teamName(match.team_b_id)}</h2><p className="text-sm text-muted-foreground mt-1">{match.match_date || "Date TBC"} {match.match_time ? `• ${match.match_time}` : ""} {match.ground ? `• ${match.ground}` : ""} • {match.overs_per_match} overs</p></div>
+            <div><div className="mb-1 flex flex-wrap items-center gap-2"><p className="text-xs text-muted-foreground">{match.match_scope === "standalone" ? (match.title || "Standalone match") : tournamentName(match.tournament_id)}</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${match.match_scope === "standalone" ? "bg-violet-100 text-violet-700" : "bg-sky-100 text-sky-700"}`}>{match.match_type}</span></div><h2 className="text-lg font-semibold">{teamName(match.team_a_id)} <span className="text-muted-foreground font-normal">vs</span> {teamName(match.team_b_id)}</h2><p className="text-sm text-muted-foreground mt-1">{match.match_date || "Date TBC"} {match.match_time ? `• ${match.match_time}` : ""} {match.ground ? `• ${match.ground}` : ""} • {match.overs_per_match} overs</p></div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium capitalize">{match.status}</span>
-              <label className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-2 text-xs font-bold"><ShieldCheck className="h-4 w-4 text-primary" /><select aria-label="Assigned scorer" value={match.assigned_scorer_id ? "owner" : "none"} onChange={(event) => void updateScorer(match, event.target.value === "owner")} disabled={savingAssignment === match.id || match.scoring_locked} className="bg-transparent text-foreground outline-none"><option value="owner">Tournament Organizer</option><option value="none">Not assigned</option></select></label>
-              <button type="button" onClick={() => void toggleLock(match)} disabled={savingAssignment === match.id || (!match.assigned_scorer_id && !tournamentOwner(match.tournament_id))} className={`inline-flex h-9 items-center rounded-md border px-3 text-xs font-black ${match.scoring_locked ? "border-amber-400 bg-amber-500/15 text-amber-600" : "border-input bg-background text-foreground"}`}>{match.scoring_locked ? <LockKeyhole className="mr-1 h-4 w-4" /> : <UnlockKeyhole className="mr-1 h-4 w-4" />}{match.scoring_locked ? "Scorer locked" : "Lock scorer"}</button>
+              <label className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-2 text-xs font-bold"><ShieldCheck className="h-4 w-4 text-primary" /><select aria-label="Assigned scorer" value={match.assigned_scorer_id ? "owner" : "none"} onChange={(event) => void updateScorer(match, event.target.value === "owner")} disabled={savingAssignment === match.id || match.scoring_locked} className="bg-transparent text-foreground outline-none"><option value="owner">Match Organizer</option><option value="none">Not assigned</option></select></label>
+              <button type="button" onClick={() => void toggleLock(match)} disabled={savingAssignment === match.id || (!match.assigned_scorer_id && !matchOwner(match))} className={`inline-flex h-9 items-center rounded-md border px-3 text-xs font-black ${match.scoring_locked ? "border-amber-400 bg-amber-500/15 text-amber-600" : "border-input bg-background text-foreground"}`}>{match.scoring_locked ? <LockKeyhole className="mr-1 h-4 w-4" /> : <UnlockKeyhole className="mr-1 h-4 w-4" />}{match.scoring_locked ? "Scorer locked" : "Lock scorer"}</button>
               {(!match.scoring_locked || isMasterAdmin || match.assigned_scorer_id === userId) ? <Link href={localePath(locale, `/admin/matches/score/${match.id}`)} className="inline-flex items-center rounded-md bg-primary text-primary-foreground h-9 px-3 text-sm font-medium"><PlayCircle className="w-4 h-4 mr-1" />Score</Link> : <span className="inline-flex h-9 items-center rounded-md border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800">Assigned scorer only</span>}
               <Link href={localePath(locale, `/admin/matches/teamsheet/${match.id}`)} className="inline-flex items-center rounded-md border border-input h-9 px-3 text-sm font-medium">Team Sheet</Link>
             </div>

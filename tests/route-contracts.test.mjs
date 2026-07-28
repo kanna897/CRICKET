@@ -82,6 +82,21 @@ test("tournament operations expose readiness and preselected quick actions", () 
   assert.match(newTeam, /URLSearchParams/);
 });
 
+test("standalone matches reuse the complete match and scoring workflow", () => {
+  const newMatch = readFileSync(resolve(root, "app/[locale]/admin/matches/new/page.tsx"), "utf8");
+  const matchList = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
+  const newTeam = readFileSync(resolve(root, "app/[locale]/admin/teams/new/page.tsx"), "utf8");
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260728174838_add_standalone_matches.sql"), "utf8");
+  assert.match(newMatch, /Standalone match/);
+  assert.match(newMatch, /friendly/);
+  assert.match(newMatch, /school/);
+  assert.match(newMatch, /match_squads/);
+  assert.match(matchList, /match_scope/);
+  assert.match(newTeam, /Standalone team/);
+  assert.match(migration, /private\.can_manage_match/);
+  assert.match(migration, /private\.can_score_match/);
+});
+
 test("player registration supports hide/unhide and organizer approval", () => {
   const editor = readFileSync(resolve(root, "components/tournament-editor.tsx"), "utf8");
   const form = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");
