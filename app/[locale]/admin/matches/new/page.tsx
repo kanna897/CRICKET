@@ -9,7 +9,7 @@ import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
 import { localePath } from "@/lib/locale-path";
 
-type Team = Database["public"]["Tables"]["teams"]["Row"];
+type Team = Database["public"]["Tables"]["teams"]["Row"] & { organizer_id?: string | null };
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 type Player = Database["public"]["Tables"]["players"]["Row"];
 
@@ -23,7 +23,7 @@ export default function NewMatchPage() {
   const [teamASquad, setTeamASquad] = useState<string[]>([]);
   const [teamBSquad, setTeamBSquad] = useState<string[]>([]);
   const [form, setForm] = useState({
-    tournament_id: "", team_a_id: "", team_b_id: "", ground: "", match_date: "", match_time: "", overs_per_match: "20",
+    match_scope: "tournament", match_type: "friendly", title: "", tournament_id: "", team_a_id: "", team_b_id: "", ground: "", match_date: "", match_time: "", overs_per_match: "20",
     balls_per_over: "6", wickets_per_innings: "10", last_man_stands: false, allow_wides: true, allow_no_balls: true,
   });
   const [saving, setSaving] = useState(false);
@@ -35,22 +35,27 @@ export default function NewMatchPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const tournamentsResult = await tournamentQuery;
       const tournamentIds = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);
-      const teamsResult = tournamentIds.length ? await supabase.from("teams").select("*").in("tournament_id", tournamentIds).order("name") : { data: [] };
-      const teamIds = (teamsResult.data || [] as Team[]).map((item: Team) => item.id);
+      const teamsResult = await (supabase.from("teams") as any).select("*").order("name");
+      const manageableTeams = ((teamsResult.data || []) as Team[]).filter((team) =>
+        isMasterAdmin || tournamentIds.includes(team.tournament_id) || team.organizer_id === userId
+      );
+      const teamIds = manageableTeams.map((item) => item.id);
       const playersResult = teamIds.length ? await supabase.from("players").select("*").in("team_id", teamIds).order("name") : { data: [] };
-      if (teamsResult.data) setTeams(teamsResult.data);
+      setTeams(manageableTeams);
       if (playersResult.data) setPlayers(playersResult.data);
       if (tournamentsResult.data) {
         setTournaments(tournamentsResult.data);
         const requestedTournament = new URLSearchParams(window.location.search).get("tournament");
         const selected = (tournamentsResult.data as Tournament[]).find((item) => item.id === requestedTournament);
-        if (selected) setForm((current) => ({ ...current, tournament_id: selected.id, overs_per_match: String(selected.overs || current.overs_per_match) }));
+        if (selected) setForm((current) => ({ ...current, match_scope: "tournament", tournament_id: selected.id, overs_per_match: String(selected.overs || current.overs_per_match) }));
       }
     }
     loadOptions();
   }, [isMasterAdmin, userId]);
 
-  const tournamentTeams = form.tournament_id ? teams.filter((team) => team.tournament_id === form.tournament_id) : teams;
+  const availableTeams = form.match_scope === "tournament"
+    ? teams.filter((team) => team.tournament_id === form.tournament_id)
+    : teams;
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const teamPlayers = (teamId: string) => players.filter((player) => player.team_id === teamId);
   const toggleSquadPlayer = (playerId: string, squad: string[], setSquad: (value: string[]) => void) => {
@@ -61,13 +66,20 @@ export default function NewMatchPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!form.tournament_id || !form.team_a_id || !form.team_b_id || !form.match_date) return setError("Select a tournament, both teams, and a match date.");
+    if (form.match_scope === "tournament" && !form.tournament_id) return setError("Select a tournament.");
+    if (form.match_scope === "standalone" && !form.title.trim()) return setError("Enter a title for the standalone match.");
+    if (!form.team_a_id || !form.team_b_id || !form.match_date) return setError("Select both teams and a match date.");
     if (form.team_a_id === form.team_b_id) return setError("Choose two different teams.");
     if (teamASquad.length < 6 || teamASquad.length > 11 || teamBSquad.length < 6 || teamBSquad.length > 11) return setError("Select 6 to 11 players for each team.");
     setSaving(true);
     try {
       const { data: match, error: insertError } = await (supabase.from("matches") as any).insert({
-        tournament_id: form.tournament_id,
+        tournament_id: form.match_scope === "tournament" ? form.tournament_id : null,
+        organizer_id: userId,
+        match_scope: form.match_scope,
+        match_type: form.match_scope === "tournament" ? "tournament" : form.match_type,
+        title: form.match_scope === "standalone" ? form.title.trim() : null,
+        is_public: true,
         team_a_id: form.team_a_id,
         team_b_id: form.team_b_id,
         ground: form.ground || null,
@@ -80,7 +92,9 @@ export default function NewMatchPage() {
         allow_wides: form.allow_wides,
         allow_no_balls: form.allow_no_balls,
         status: "scheduled",
-        assigned_scorer_id: tournaments.find((tournament) => tournament.id === form.tournament_id)?.organizer_id || userId,
+        assigned_scorer_id: form.match_scope === "tournament"
+          ? tournaments.find((tournament) => tournament.id === form.tournament_id)?.organizer_id || userId
+          : userId,
         scoring_locked: false,
       }).select("id").single();
       if (insertError) throw insertError;
@@ -102,11 +116,13 @@ export default function NewMatchPage() {
   };
 
   return <div className="admin-themed-page dashboard-page matches-page team-form-page max-w-3xl mx-auto space-y-6">
-    <div className="flex items-center gap-4"><Link href={localePath(locale, "/admin/matches")} className="p-2 hover:bg-muted rounded-full"><ArrowLeft className="w-5 h-5" /></Link><div><h1 className="text-3xl font-bold">Schedule Match</h1><p className="text-muted-foreground mt-1">Create a fixture before starting live scoring.</p></div></div>
+    <div className="flex items-center gap-4"><Link href={localePath(locale, "/admin/matches")} className="p-2 hover:bg-muted rounded-full"><ArrowLeft className="w-5 h-5" /></Link><div><h1 className="text-3xl font-bold">Schedule Match</h1><p className="text-muted-foreground mt-1">Create a tournament fixture or a one-off standalone match.</p></div></div>
     <form onSubmit={submit} className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-6">
       {error && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      <Field label="Tournament"><select required value={form.tournament_id} onChange={(event) => update("tournament_id", event.target.value)} className="input"><option value="">Select tournament</option>{tournaments.map((tournament) => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select></Field>
-      <div className="grid md:grid-cols-2 gap-5"><Field label="Team A"><select required value={form.team_a_id} onChange={(event) => { const teamId = event.target.value; setForm((current) => ({ ...current, team_a_id: teamId, team_b_id: current.team_b_id === teamId ? "" : current.team_b_id })); setTeamASquad([]); if (form.team_b_id === teamId) setTeamBSquad([]); }} className="input"><option value="">Select team</option>{tournamentTeams.filter((team) => team.id !== form.team_b_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field><Field label="Team B"><select required value={form.team_b_id} onChange={(event) => { const teamId = event.target.value; setForm((current) => ({ ...current, team_b_id: teamId, team_a_id: current.team_a_id === teamId ? "" : current.team_a_id })); setTeamBSquad([]); if (form.team_a_id === teamId) setTeamASquad([]); }} className="input"><option value="">Select team</option>{tournamentTeams.filter((team) => team.id !== form.team_a_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field></div>
+      <fieldset className="space-y-3"><legend className="text-sm font-black">Match mode</legend><div className="grid gap-3 sm:grid-cols-2">{[["tournament", "Tournament match", "Part of points table and tournament fixtures."], ["standalone", "Standalone match", "Friendly, school, club or practice match."]].map(([value, label, help]) => <label key={value} className={`cursor-pointer rounded-xl border p-4 ${form.match_scope === value ? "border-primary bg-primary/10" : "border-border"}`}><input type="radio" name="match_scope" value={value} checked={form.match_scope === value} onChange={() => setForm((current) => ({ ...current, match_scope: value, tournament_id: "", team_a_id: "", team_b_id: "" }))} className="mr-2 accent-primary" /><span className="font-black">{label}</span><span className="mt-1 block text-xs text-muted-foreground">{help}</span></label>)}</div></fieldset>
+      {form.match_scope === "tournament" ? <Field label="Tournament"><select required value={form.tournament_id} onChange={(event) => { update("tournament_id", event.target.value); setTeamASquad([]); setTeamBSquad([]); }} className="input"><option value="">Select tournament</option>{tournaments.map((tournament) => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select></Field> : <div className="grid gap-5 md:grid-cols-2"><Field label="Match Title"><input required value={form.title} onChange={(event) => update("title", event.target.value)} placeholder="e.g. Jaffna Schools Friendly 2026" className="input" /></Field><Field label="Match Type"><select value={form.match_type} onChange={(event) => update("match_type", event.target.value)} className="input"><option value="friendly">Friendly</option><option value="school">School</option><option value="club">Club</option><option value="exhibition">Exhibition</option><option value="practice">Practice</option></select></Field></div>}
+      <div className="grid md:grid-cols-2 gap-5"><Field label="Team A"><select required value={form.team_a_id} onChange={(event) => { const teamId = event.target.value; setForm((current) => ({ ...current, team_a_id: teamId, team_b_id: current.team_b_id === teamId ? "" : current.team_b_id })); setTeamASquad([]); if (form.team_b_id === teamId) setTeamBSquad([]); }} className="input"><option value="">Select team</option>{availableTeams.filter((team) => team.id !== form.team_b_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field><Field label="Team B"><select required value={form.team_b_id} onChange={(event) => { const teamId = event.target.value; setForm((current) => ({ ...current, team_b_id: teamId, team_a_id: current.team_a_id === teamId ? "" : current.team_a_id })); setTeamBSquad([]); if (form.team_a_id === teamId) setTeamASquad([]); }} className="input"><option value="">Select team</option>{availableTeams.filter((team) => team.id !== form.team_a_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field></div>
+      {form.match_scope === "standalone" && availableTeams.length < 2 && <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">Create at least two standalone teams first from Teams → Create Team.</p>}
       <div className="grid md:grid-cols-2 gap-5"><SquadPicker title="Team A Playing Squad" players={teamPlayers(form.team_a_id)} selected={teamASquad} onToggle={(playerId) => toggleSquadPlayer(playerId, teamASquad, setTeamASquad)} /><SquadPicker title="Team B Playing Squad" players={teamPlayers(form.team_b_id)} selected={teamBSquad} onToggle={(playerId) => toggleSquadPlayer(playerId, teamBSquad, setTeamBSquad)} /></div>
       <div className="grid md:grid-cols-3 gap-5"><Field label="Match Date"><input required type="date" value={form.match_date} onChange={(event) => update("match_date", event.target.value)} className="input" /></Field><Field label="Match Time"><input type="time" value={form.match_time} onChange={(event) => update("match_time", event.target.value)} className="input" /></Field><Field label="Overs"><input required min="1" max="100" type="number" value={form.overs_per_match} onChange={(event) => update("overs_per_match", event.target.value)} className="input" /></Field></div>
       <fieldset className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">

@@ -12,12 +12,14 @@ import Link from "next/link";
 import { Database } from "@/types/database.types";
 import { uploadImage } from "@/lib/media";
 import { useAdminAccess } from "@/components/admin-shell";
+import { useParams } from "next/navigation";
+import { localePath } from "@/lib/locale-path";
 
 type Tournament = Database['public']['Tables']['tournaments']['Row'];
 
 const teamSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
-  tournament_id: z.string().min(1, "Tournament selection is required"),
+  tournament_id: z.string().optional(),
   owner_name: z.string().optional(),
   contact_number: z.string().optional(),
 });
@@ -25,6 +27,7 @@ const teamSchema = z.object({
 type TeamFormValues = z.infer<typeof teamSchema>;
 
 export default function NewTeamPage() {
+  const { locale } = useParams<{ locale: string }>();
   const { isMasterAdmin, userId } = useAdminAccess();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,15 +66,17 @@ export default function NewTeamPage() {
     setIsSubmitting(true);
     try {
       // Validation to prevent duplicate team names within the same tournament
-      const { data: existingTeam } = await supabase
+      let duplicateQuery = supabase
         .from('teams')
         .select('id')
-        .eq('tournament_id', data.tournament_id)
-        .eq('name', data.name)
-        .single();
+        .eq('name', data.name);
+      duplicateQuery = data.tournament_id
+        ? duplicateQuery.eq('tournament_id', data.tournament_id)
+        : duplicateQuery.is('tournament_id', null).eq('organizer_id' as any, userId);
+      const { data: existingTeam } = await duplicateQuery.maybeSingle();
         
       if (existingTeam) {
-        alert("A team with this name already exists in the selected tournament.");
+        alert(data.tournament_id ? "A team with this name already exists in the selected tournament." : "You already have a standalone team with this name.");
         setIsSubmitting(false);
         return;
       }
@@ -91,7 +96,8 @@ export default function NewTeamPage() {
             // The live database also retains these legacy fields. Writing both
             // names keeps old reports compatible while the app uses `name`.
             team_name: data.name,
-            tournament_id: data.tournament_id,
+            tournament_id: data.tournament_id || null,
+            organizer_id: userId,
             owner_name: data.owner_name,
             contact_number: data.contact_number,
             owner_phone: data.contact_number,
@@ -101,7 +107,7 @@ export default function NewTeamPage() {
 
       if (insertError) throw insertError;
 
-      router.push('/admin/teams');
+      router.push(localePath(locale, '/admin/teams'));
       router.refresh();
     } catch (error) {
       console.error("Error creating team:", error);
@@ -117,13 +123,13 @@ export default function NewTeamPage() {
       <div className="pointer-events-none absolute -left-24 top-44 h-2 w-[32rem] -rotate-12 bg-gradient-to-r from-transparent via-amber-300/45 to-transparent blur-sm" />
       <div className="pointer-events-none absolute -right-24 bottom-24 h-2 w-[32rem] -rotate-12 bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent blur-sm" />
       <div className="relative flex items-center gap-4">
-        <Link href="/admin/teams" aria-label="Back to teams" className="grid h-10 w-10 place-items-center rounded-xl border border-white/20 bg-white/10 text-primary transition hover:-translate-x-0.5 hover:bg-white/15 hover:text-white">
+        <Link href={localePath(locale, "/admin/teams")} aria-label="Back to teams" className="grid h-10 w-10 place-items-center rounded-xl border border-white/20 bg-white/10 text-primary transition hover:-translate-x-0.5 hover:bg-white/15 hover:text-white">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Tournament squad</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Team setup</p>
           <h1 className="mt-1 text-3xl font-black tracking-tight">Create Team</h1>
-          <p className="mt-1 text-sm text-slate-300">Register a new team for a tournament</p>
+          <p className="mt-1 text-sm text-slate-300">Register a tournament team or a reusable standalone team</p>
         </div>
       </div>
 
@@ -173,17 +179,17 @@ export default function NewTeamPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-100">Tournament <span className="text-red-500">*</span></label>
+              <label className="text-sm font-semibold text-slate-100">Tournament <span className="text-slate-400">(optional)</span></label>
               <select 
                 {...register("tournament_id")}
                 className="h-11 w-full rounded-xl border border-white/15 bg-[#0a1f4a] px-4 text-white outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
               >
-                <option value="">Select a tournament...</option>
+                <option value="">Standalone team (no tournament)</option>
                 {tournaments.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
-              {errors.tournament_id && <p className="text-sm text-red-500">{errors.tournament_id.message}</p>}
+              <p className="text-xs text-slate-400">Leave this empty for friendly, school, club or practice matches.</p>
             </div>
 
             <div className="space-y-2">
@@ -207,7 +213,7 @@ export default function NewTeamPage() {
 
           <div className="flex flex-col-reverse justify-end gap-3 border-t border-white/10 px-6 py-6 sm:flex-row sm:px-7">
             <Link 
-              href="/admin/teams"
+              href={localePath(locale, "/admin/teams")}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-foreground transition hover:bg-white/10 hover:text-white"
             >
               Cancel

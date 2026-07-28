@@ -6,10 +6,13 @@ import { Plus, Search, Shield } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
+import { useParams } from "next/navigation";
+import { localePath } from "@/lib/locale-path";
 
-type Team = Database['public']['Tables']['teams']['Row'];
+type Team = Database['public']['Tables']['teams']['Row'] & { organizer_id?: string | null };
 
 export default function TeamsPage() {
+  const { locale } = useParams<{ locale: string }>();
   const { isMasterAdmin, userId } = useAdminAccess();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,9 +24,8 @@ export default function TeamsPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: manageable } = await tournamentQuery;
       const ids = (manageable || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-      const { data } = ids.length ? await supabase.from("teams").select("*").in("tournament_id", ids).order("created_at", { ascending: false }) : { data: [] };
-
-      if (data) setTeams(data);
+      const { data } = await (supabase.from("teams") as any).select("*").order("created_at", { ascending: false });
+      if (data) setTeams((data as Team[]).filter((team) => isMasterAdmin || ids.includes(team.tournament_id) || team.organizer_id === userId));
       setLoading(false);
     }
     fetchTeams();
@@ -41,7 +43,7 @@ export default function TeamsPage() {
           <p className="text-muted-foreground mt-1">Manage all participating teams.</p>
         </div>
         <Link 
-          href="/admin/teams/new"
+          href={localePath(locale, "/admin/teams/new")}
           className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -81,6 +83,7 @@ export default function TeamsPage() {
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
                   <th className="px-6 py-3 font-medium">Team Name</th>
+                  <th className="px-6 py-3 font-medium">Scope</th>
                   <th className="px-6 py-3 font-medium">Owner</th>
                   <th className="px-6 py-3 font-medium">Contact</th>
                   <th className="px-6 py-3 font-medium text-right">Actions</th>
@@ -99,11 +102,12 @@ export default function TeamsPage() {
                       )}
                       {team.name}
                     </td>
+                    <td className="px-6 py-4"><span className={`rounded-full px-2 py-1 text-xs font-bold ${team.tournament_id ? "bg-sky-100 text-sky-700" : "bg-violet-100 text-violet-700"}`}>{team.tournament_id ? "Tournament" : "Standalone"}</span></td>
                     <td className="px-6 py-4">{team.owner_name || "-"}</td>
                     <td className="px-6 py-4">{team.contact_number || "-"}</td>
                     <td className="px-6 py-4 text-right">
                       <Link 
-                        href={`/admin/teams/${team.id}`}
+                        href={localePath(locale, `/admin/teams/${team.id}`)}
                         className="text-primary hover:underline font-medium"
                       >
                         Manage

@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { PublicNav } from "@/components/public-nav";
 
 type Team = { id: string; name: string; logo_url: string | null };
-type Match = { id: string; team_a_id: string; team_b_id: string; status: string; match_date: string | null; match_time: string | null; ground: string | null; overs_per_match: number };
+type Match = { id: string; team_a_id: string; team_b_id: string; status: string; match_date: string | null; match_time: string | null; ground: string | null; overs_per_match: number; match_scope: "tournament" | "standalone"; match_type: string; title: string | null };
 
 export default function FixturesPage() {
   const t = useTranslations("Fixtures");
@@ -18,7 +18,7 @@ export default function FixturesPage() {
   useEffect(() => {
     void (async () => {
       const [{ data: matchRows }, { data: teamRows }] = await Promise.all([
-        (supabase.from("matches") as any).select("id,team_a_id,team_b_id,status,match_date,match_time,ground,overs_per_match").order("match_date"),
+        (supabase.from("matches") as any).select("id,team_a_id,team_b_id,status,match_date,match_time,ground,overs_per_match,match_scope,match_type,title").eq("is_public", true).order("match_date"),
         (supabase.from("teams") as any).select("id,name,logo_url"),
       ]);
       setMatches(matchRows || []);
