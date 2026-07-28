@@ -9,7 +9,7 @@ import { Eye, EyeOff, Languages, Loader2, Moon, ShieldCheck, Sun } from "lucide-
 import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/lib/supabase";
 
-const publicLinks = [{ href: "", key: "home" }, { href: "/tournaments", key: "tournaments" }, { href: "/teams", key: "teams" }, { href: "/fixtures", key: "matches" }, { href: "/rankings", key: "rankings" }, { href: "/points", key: "points" }, { href: "/stats", key: "statistics" }, { href: "/hall-of-fame", key: "awards" }, { href: "/compare", key: "compare" }] as const;
+const publicLinks = [{ href: "", key: "home" }, { href: "/tournaments", key: "tournaments" }, { href: "/auction", key: "auction" }, { href: "/teams", key: "teams" }, { href: "/fixtures", key: "matches" }, { href: "/rankings", key: "rankings" }, { href: "/points", key: "points" }, { href: "/stats", key: "statistics" }, { href: "/hall-of-fame", key: "awards" }, { href: "/compare", key: "compare" }] as const;
 // Contract labels retained in the English dictionary: Player Registration, Admin Login.
 
 export function PublicNav() {

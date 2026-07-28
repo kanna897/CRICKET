@@ -18,11 +18,13 @@ export default function PlayerRegistrationsPage(){
     setBusy(row.id);
     try{
       if(approve){
-        const {error}=await (supabase.from("players") as any).insert({name:row.player_name,player_name:row.player_name,phone_number:row.contact_number,contact_number:row.contact_number,photo_url:row.photo_url,playing_role:row.playing_role,role:playerRole(row.playing_role),batting_style:row.batting_style,bowling_style:row.bowling_style,jersey_name:row.jersey_name,jersey_number:row.jersey_number,team_id:row.preferred_team_id});
+        const {data:created,error}=await (supabase.from("players") as any).insert({name:row.player_name,player_name:row.player_name,phone_number:row.contact_number,contact_number:row.contact_number,photo_url:row.photo_url,playing_role:row.playing_role,role:playerRole(row.playing_role),batting_style:row.batting_style,bowling_style:row.bowling_style,jersey_name:row.jersey_name,jersey_number:row.jersey_number,team_id:row.preferred_team_id}).select("id").single();
         if(error)throw error;
+        await (supabase.from("auction_players") as any).update({player_id:created.id}).eq("registration_id",row.id);
+        (row as Registration & { player_id?: string }).player_id=created.id;
       }
       const {data:{user}}=await supabase.auth.getUser();
-      const {error}=await (supabase.from("player_registrations") as any).update({status:approve?"approved":"rejected",reviewed_by:user?.id||null,reviewed_at:new Date().toISOString()}).eq("id",row.id);
+      const {error}=await (supabase.from("player_registrations") as any).update({status:approve?"approved":"rejected",player_id:(row as Registration & {player_id?:string}).player_id||null,reviewed_by:user?.id||null,reviewed_at:new Date().toISOString()}).eq("id",row.id);
       if(error)throw error;
       await load();
     }catch(e){const failure=e as {message?:string};alert(failure?.message||"Review failed.")}finally{setBusy("")}

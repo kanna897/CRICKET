@@ -1,11 +1,13 @@
 {
   "PublicNav": {
+    "auction": "Live Auction",
     "home": "முகப்பு", "tournaments": "தொடர்கள்", "teams": "அணிகள்", "matches": "போட்டிகள்",
     "rankings": "தரவரிசை", "points": "புள்ளிப்பட்டியல்", "statistics": "புள்ளிவிவரங்கள்", "awards": "விருதுகள்", "compare": "ஒப்பீடு",
     "playerRegistration": "வீரர் பதிவு", "adminLogin": "நிர்வாக உள்நுழைவு",
     "theme": "ஒளி மற்றும் இருள் தோற்றத்தை மாற்று", "language": "மொழி"
   },
   "Admin": {
+    "auction": "Live Auction",
     "rankings": "அணி மற்றும் வீரர் தரவரிசை",
     "dashboard": "முகப்புப்பலகை", "tournaments": "தொடர்கள்", "clubs": "கழகங்கள் & பருவங்கள்", "teams": "அணிகள்",
     "players": "வீரர்கள்", "registrations": "பதிவுகள்", "matches": "போட்டிகள் மற்றும் ஸ்கோரிங்",

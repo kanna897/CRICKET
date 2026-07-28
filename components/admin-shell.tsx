@@ -3,7 +3,7 @@
 import { createContext, useContext, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, Award, BarChart3, Building2, GitBranch, History, ListOrdered, LogOut, Medal, Menu, Moon, PlayCircle, Scale, Settings, Sun, Trophy, UserCheck, UserPlus, Users, X } from "lucide-react";
+import { Activity, Award, BarChart3, Building2, Gavel, GitBranch, History, ListOrdered, LogOut, Medal, Menu, Moon, PlayCircle, Scale, Settings, Sun, Trophy, UserCheck, UserPlus, Users, X } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { CrickpulseLogo } from "@/components/crickpulse-logo";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +18,7 @@ const baseNavigation = [
   { name: "Teams", translationKey: "teams", href: "/admin/teams", icon: Users },
   { name: "Players", translationKey: "players", href: "/admin/players", icon: UserPlus },
   { name: "Registrations", translationKey: "registrations", href: "/admin/player-registrations", icon: UserCheck },
+  { name: "Live Auction", translationKey: "auction", href: "/admin/auction", icon: Gavel },
   { name: "Matches & Scoring", translationKey: "matches", href: "/admin/matches", icon: PlayCircle },
   { name: "Knockout Bracket", translationKey: "bracket", href: "/admin/bracket", icon: GitBranch },
   { name: "Points Table", translationKey: "points", href: "/admin/points", icon: ListOrdered },
