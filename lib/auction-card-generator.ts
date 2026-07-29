@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
 import sharp, { type OverlayOptions } from "sharp";
+import {
+  normalizePlayerCardLayout,
+  PLAYER_CARD_SIZE,
+  type PlayerCardLayout,
+  type PlayerCardTextLayout,
+} from "@/lib/player-card-layout";
 
 export type PlayerCardData = {
   id: string;
@@ -11,6 +17,7 @@ export type PlayerCardData = {
   bowlingStyle: string;
   mobileNumber: string;
   registrationNumber: number;
+  layout?: PlayerCardLayout;
 };
 
 export type TeamPlayerCardData = PlayerCardData & {
@@ -39,35 +46,54 @@ function fitText(value: string, max = 28) {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+function textAnchor(alignment: PlayerCardTextLayout["textAlignment"]) {
+  return alignment === "center" ? "middle" : alignment === "right" ? "end" : "start";
+}
+
+function fittedFontSize(value: string, field: PlayerCardTextLayout) {
+  const estimatedWidth = Math.max(1, value.length) * field.fontSize * 0.57;
+  return estimatedWidth <= field.maxWidth
+    ? field.fontSize
+    : Math.max(8, Math.floor(field.fontSize * field.maxWidth / estimatedWidth));
+}
+
+function textNode(value: string, field: PlayerCardTextLayout) {
+  const fontSize = fittedFontSize(value, field);
+  const style = [
+    `font-family:${xml(field.fontFamily)}`,
+    `font-size:${fontSize}px`,
+    `font-weight:${field.fontWeight}`,
+    `font-style:${field.italic ? "italic" : "normal"}`,
+    `fill:${field.fontColour}`,
+  ].join(";");
+  return `<text x="${field.x}" y="${field.y}" text-anchor="${textAnchor(field.textAlignment)}" style="${style}">${xml(value)}</text>`;
+}
+
 export async function generatePlayerCardJpeg(data: PlayerCardData) {
+  const layout = normalizePlayerCardLayout(data.layout);
   const [template, photo] = await Promise.all([fetchImage(data.templateUrl), fetchImage(data.photoUrl)]);
-  const base = sharp(template).resize(1254, 1254, { fit: "fill" });
-  const portraitMask = Buffer.from(`<svg width="404" height="630" xmlns="http://www.w3.org/2000/svg"><rect width="404" height="630" rx="58" fill="white"/></svg>`);
+  const base = sharp(template).resize(PLAYER_CARD_SIZE, PLAYER_CARD_SIZE, { fit: "fill" });
+  const portraitMask = Buffer.from(`<svg width="${layout.photo.width}" height="${layout.photo.height}" xmlns="http://www.w3.org/2000/svg"><rect width="${layout.photo.width}" height="${layout.photo.height}" rx="${layout.photo.borderRadius}" fill="white"/></svg>`);
   const portrait = await sharp(photo)
-    .resize(404, 630, { fit: "cover", position: "attention" })
+    .resize(layout.photo.width, layout.photo.height, { fit: "cover", position: "attention" })
     .composite([{ input: portraitMask, blend: "dest-in" }])
     .png()
     .toBuffer();
-  const text = Buffer.from(`<svg width="1254" height="1254" xmlns="http://www.w3.org/2000/svg">
-    <defs><filter id="shadow"><feDropShadow dx="3" dy="4" stdDeviation="4" flood-opacity=".7"/></filter></defs>
-    <style>
-      .name{font:italic 900 68px Arial,sans-serif;fill:#fff;stroke:#071936;stroke-width:2;paint-order:stroke;filter:url(#shadow)}
-      .detail{font:italic 900 47px Arial,sans-serif;fill:#071936}
-      .number{font:italic 900 92px Arial,sans-serif;fill:#fff;stroke:#071936;stroke-width:2;paint-order:stroke}
-    </style>
-    <text x="650" y="455" class="name">${xml(fitText(data.playerName, 20))}</text>
-    <text x="755" y="598" class="detail">${xml(label(data.playingRole))}</text>
-    <text x="755" y="727" class="detail">${xml(label(data.battingStyle))}</text>
-    <text x="755" y="855" class="detail">${xml(label(data.bowlingStyle))}</text>
-    <text x="750" y="985" class="detail">${xml(fitText(data.mobileNumber, 20))}</text>
-    <text x="225" y="1045" class="number">${xml(String(data.registrationNumber).padStart(2, "0"))}</text>
+  const text = Buffer.from(`<svg width="${PLAYER_CARD_SIZE}" height="${PLAYER_CARD_SIZE}" xmlns="http://www.w3.org/2000/svg">
+    ${textNode(data.playerName.trim(), layout.name)}
+    ${textNode(label(data.playingRole), layout.role)}
+    ${textNode(label(data.battingStyle), layout.batting)}
+    ${textNode(label(data.bowlingStyle), layout.bowling)}
+    ${textNode(data.mobileNumber.trim(), layout.phone)}
+    ${textNode(String(data.registrationNumber).padStart(2, "0"), layout.serial)}
   </svg>`);
   return base
     .composite([
-      { input: portrait, left: 99, top: 342 },
+      { input: portrait, left: layout.photo.x, top: layout.photo.y },
       { input: text, left: 0, top: 0 },
     ])
     .jpeg({ quality: 94, chromaSubsampling: "4:4:4" })
+    .withMetadata({ density: 300 })
     .toBuffer();
 }
 

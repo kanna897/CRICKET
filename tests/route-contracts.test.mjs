@@ -148,3 +148,16 @@ test("live auction is modular, realtime and transaction-backed", () => {
   assert.match(migration, /for update/);
   assert.match(migration, /supabase_realtime/);
 });
+
+test("player cards use stored template layouts instead of renderer coordinates", () => {
+  const renderer = readFileSync(resolve(root, "lib/auction-card-generator.ts"), "utf8");
+  const editor = readFileSync(resolve(root, "components/player-card-layout-editor.tsx"), "utf8");
+  const route = readFileSync(resolve(root, "app/api/auction/cards/route.ts"), "utf8");
+  assert.match(renderer, /normalizePlayerCardLayout\(data\.layout\)/);
+  assert.match(renderer, /withMetadata\(\{ density: 300 \}\)/);
+  assert.match(editor, /Configure \{templateName\}/);
+  assert.match(editor, /fontFamily/);
+  assert.match(editor, /fontColour/);
+  assert.match(route, /template_layout/);
+  assert.match(route, /player-cards/);
+});
