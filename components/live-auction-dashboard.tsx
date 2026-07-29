@@ -177,7 +177,9 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   async function uploadPlayerCards(files: FileList | null) {
     if (!admin || !files?.length) return;
-    const selectedFiles = Array.from(files);
+    const selectedFiles = Array.from(files).sort((left, right) =>
+      left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: "base" })
+    );
     if (selectedFiles.length > 500) return setMessage("Upload a maximum of 500 player cards at a time.");
     const invalid = selectedFiles.find((file) =>
       !["image/jpeg", "image/png"].includes(file.type) || file.size > 5 * 1024 * 1024);
@@ -320,11 +322,11 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       </section>}
 
       <section className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
-        <div className="rounded-3xl border border-amber-300/40 bg-gradient-to-br from-[#071631] to-[#0b3470] p-5 text-white shadow-xl"><p className="text-xs font-black uppercase tracking-[.2em] text-amber-300">Current auction player</p>{current ? <div className="mt-4 grid gap-5 sm:grid-cols-[14rem_1fr]"><img src={current.player_card_url || current.photo_url} alt={current.player_name} className="aspect-square w-full rounded-2xl border border-white/20 object-cover"/><div className="flex flex-col justify-center"><span className="font-mono text-3xl font-black text-amber-300">#{String(current.registration_number).padStart(2, "0")}</span><h2 className="mt-2 text-3xl font-black">{current.player_name}</h2><p className="mt-2 capitalize text-slate-200">{pretty(current.playing_role)} · {pretty(current.batting_style)} · {pretty(current.bowling_style)}</p>{admin && <button onClick={() => void openPlayer(current)} className="mt-5 rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950">Sell / Mark Unsold</button>}</div></div> : <div className="grid min-h-64 place-items-center text-center text-slate-300"><div><Gavel className="mx-auto h-12 w-12 text-amber-300"/><p className="mt-3 font-bold">No player is live right now.</p></div></div>}</div>
+        <div className="rounded-3xl border border-amber-300/40 bg-gradient-to-br from-[#071631] to-[#0b3470] p-5 text-white shadow-xl"><p className="text-xs font-black uppercase tracking-[.2em] text-amber-300">Current auction player</p>{current ? <div className="mt-4 grid gap-5 sm:grid-cols-[14rem_1fr]"><img src={current.player_card_url || current.photo_url} alt={current.player_name} className="aspect-square w-full rounded-2xl border border-white/20 object-cover"/><div className="flex flex-col justify-center gap-2"><CardRegion player={current} region="serial"/><CardRegion player={current} region="name"/><CardRegion player={current} region="role"/>{admin && <button onClick={() => void openPlayer(current)} className="mt-3 rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950">Sell / Mark Unsold</button>}</div></div> : <div className="grid min-h-64 place-items-center text-center text-slate-300"><div><Gavel className="mx-auto h-12 w-12 text-amber-300"/><p className="mt-3 font-bold">No player is live right now.</p></div></div>}</div>
         <div className="rounded-3xl border border-border bg-card p-5 text-foreground"><h2 className="text-xl font-black">Team purse & squad status</h2><div className="mt-4 space-y-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); const teamSold = sold.filter((player) => player.winning_team_id === row.id); return <article key={row.id} className="rounded-xl border border-border bg-muted/30 p-4"><div className="flex items-center gap-3">{row.logo_url ? <img src={row.logo_url} alt="" className="h-10 w-10 rounded-full object-contain"/> : <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-black">{row.name[0]}</span>}<div className="min-w-0 flex-1"><h3 className="truncate font-black">{row.name}</h3><p className="text-xs text-muted-foreground">{teamSold.length} purchased players</p></div><strong className="text-sm text-emerald-600">{money(Number(purse?.initial_purse || 0) - Number(purse?.total_spent || 0))} left</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${purse?.initial_purse ? Math.min(100, Number(purse.total_spent) * 100 / Number(purse.initial_purse)) : 0}%` }}/></div></article>})}</div></div>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap gap-2">{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} className="overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/></div><div className="p-2.5"><div className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{player.player_name}</strong><span className="font-mono text-xs font-black text-primary">#{String(player.registration_number).padStart(2,"0")}</span></div><p className="mt-1 truncate text-[.68rem] capitalize text-muted-foreground">{pretty(player.playing_role)}</p>{player.status === "sold" && <p className="mt-1 truncate text-xs font-black text-emerald-600">{team(player.winning_team_id)?.name} · {money(Number(player.winning_bid || 0))}</p>}</div></button>)}</div></section>
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap gap-2">{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} className="overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/></div><div className="flex items-center justify-between gap-2 p-2"><CardRegion player={player} region="name"/><CardRegion player={player} region="serial"/>{player.status === "sold" && <strong className="text-xs text-emerald-600">{money(Number(player.winning_bid || 0))}</strong>}</div></button>)}</div></section>
 
       <section className="grid gap-5 xl:grid-cols-2"><SquadPanel teams={teams} players={sold}/><HistoryPanel history={history} players={players} teams={teams}/></section>
 
@@ -336,9 +338,8 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
         <section className="w-full max-w-xl rounded-3xl border border-border bg-card p-6 text-foreground shadow-2xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-mono text-sm font-black text-primary">#{String(selected.registration_number).padStart(2, "0")}</p>
-              <h2 className="text-2xl font-black">{selected.player_name}</h2>
-              <p className="text-sm capitalize text-muted-foreground">{pretty(selected.playing_role)}</p>
+              <div className="flex items-center gap-2"><CardRegion player={selected} region="serial"/><CardRegion player={selected} region="name"/></div>
+              <div className="mt-1"><CardRegion player={selected} region="role"/></div>
             </div>
             <button onClick={() => setSelected(null)} className="rounded-full bg-muted p-2"><X className="h-5 w-5" /></button>
           </div>
@@ -384,15 +385,17 @@ function Status({ value }: { value: AuctionPlayer["status"] }) {
   return <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-[.65rem] font-black uppercase text-white ${style}`}>{value}</span>;
 }
 function SquadPanel({ teams, players }: { teams: Team[]; players: AuctionPlayer[] }) {
-  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="divide-y divide-border">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[3.75rem_1fr_auto] items-center gap-3 py-3 text-sm"><PlayerPhotoFromCard player={player}/><span className="min-w-0">{player.player_name === "Player" ? <><CardRegion player={player} region="name"/><CardRegion player={player} region="role"/></> : <><strong className="block truncate">{player.player_name}</strong><small className="block capitalize text-muted-foreground">{pretty(player.playing_role)}</small></>}<small className="block font-mono font-black text-primary">S.NO #{String(player.registration_number).padStart(2,"0")}</small></span><strong>{money(Number(player.winning_bid || 0))}</strong></div>)}</div></article>)}</div></section>;
+  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="grid gap-2 py-2 sm:grid-cols-2">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[4.75rem_1fr_auto] items-center gap-3 rounded-xl border border-border bg-background p-3 shadow-sm"><CardRegion player={player} region="photo"/><span className="min-w-0 space-y-1"><CardRegion player={player} region="name"/><CardRegion player={player} region="role"/><CardRegion player={player} region="serial"/></span><span className="rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-sm font-black text-emerald-600">{money(Number(player.winning_bid || 0))}</span></div>)}</div></article>)}</div></section>;
 }
-function PlayerPhotoFromCard({ player }: { player: AuctionPlayer }) {
-  return <span className="relative block h-14 w-14 overflow-hidden rounded-xl border border-border bg-muted"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="absolute -left-[23%] -top-[94%] h-auto w-[310%] max-w-none"/></span>;
-}
-function CardRegion({ player, region }: { player: AuctionPlayer; region: "name" | "role" }) {
+function CardRegion({ player, region }: { player: AuctionPlayer; region: "photo" | "name" | "role" | "serial" }) {
   const image = player.player_card_url || player.photo_url;
-  const position = region === "name" ? "88% 34%" : "92% 51%";
-  return <span aria-label={`${region} shown from uploaded player card`} className={`block bg-no-repeat ${region === "name" ? "h-6 max-w-48" : "mt-0.5 h-5 max-w-40"}`} style={{ backgroundImage: `url(${JSON.stringify(image)})`, backgroundPosition: position, backgroundSize: "220% auto" }}/>;
+  const styles = {
+    photo: { className: "h-[4.25rem] w-[4.25rem] rounded-xl border border-border", position: "11% 45%", size: "308% auto" },
+    name: { className: "h-7 w-48 max-w-full rounded bg-[#09275b]", position: "96% 32%", size: "216% auto" },
+    role: { className: "h-5 w-40 max-w-full rounded bg-white", position: "100% 48%", size: "263% auto" },
+    serial: { className: "h-5 w-20 rounded bg-[#09275b]", position: "22% 85%", size: "490% auto" },
+  }[region];
+  return <span role="img" aria-label={`${region} shown from uploaded player card`} className={`block shrink-0 bg-no-repeat ${styles.className}`} style={{ backgroundImage: `url(${JSON.stringify(image)})`, backgroundPosition: styles.position, backgroundSize: styles.size }}/>;
 }
 function HistoryPanel({ history, players, teams }: { history: HistoryRow[]; players: AuctionPlayer[]; teams: Team[] }) {
   const playerIds = new Set(players.map((player) => player.id));
@@ -400,7 +403,7 @@ function HistoryPanel({ history, players, teams }: { history: HistoryRow[]; play
     playerIds.has(row.auction_player_id)
     && rows.findIndex((candidate) => candidate.auction_player_id === row.auction_player_id) === index
   );
-  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><History className="h-5 w-5 text-primary"/>Auction History</h2><div className="mt-4 max-h-[32rem] divide-y divide-border overflow-y-auto">{latestPlayerActions.map((row) => { const player = players.find((item) => item.id === row.auction_player_id); const team = teams.find((item) => item.id === row.team_id); return <div key={row.id} className="flex items-center gap-3 py-3 text-sm"><Clock3 className="h-4 w-4 shrink-0 text-muted-foreground"/><div className="min-w-0 flex-1"><strong className="truncate">{player?.player_name}</strong><p className="capitalize text-muted-foreground">{row.action}{team ? ` · ${team.name}` : ""}</p></div>{row.bid_amount !== null && <strong>{money(Number(row.bid_amount))}</strong>}<time className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></div>})}</div></section>;
+  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><History className="h-5 w-5 text-primary"/>Auction History</h2><div className="mt-4 max-h-[32rem] divide-y divide-border overflow-y-auto">{latestPlayerActions.map((row) => { const player = players.find((item) => item.id === row.auction_player_id); const team = teams.find((item) => item.id === row.team_id); return player ? <div key={row.id} className="flex items-center gap-3 py-3 text-sm"><Clock3 className="h-4 w-4 shrink-0 text-muted-foreground"/><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><CardRegion player={player} region="name"/><CardRegion player={player} region="serial"/></div><p className="mt-1 capitalize text-muted-foreground">{row.action}{team ? ` · ${team.name}` : ""}</p></div>{row.bid_amount !== null && <strong>{money(Number(row.bid_amount))}</strong>}<time className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></div> : null})}</div></section>;
 }
 function DownloadButton({ label, busy, onClick }: { label: string; busy: boolean; onClick: () => void }) {
   return <button disabled={busy} onClick={onClick} className="control">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}{label}</button>;
@@ -412,13 +415,14 @@ function money(value: number) { return new Intl.NumberFormat("en-LK", { maximumF
 function playerDetailsFromFilename(filename: string) {
   const base = filename.replace(/\.[^.]+$/, "").trim();
   const parts = base.split(/\s+(?:-|–|—)\s+|_+/).map((part) => part.trim()).filter(Boolean);
-  if (parts.length && /^\d+$/.test(parts[0])) parts.shift();
+  const filenameNumber = parts.length && /^\d+$/.test(parts[0]) ? Number(parts.shift()) : null;
   const rolePattern = /^(all[\s_-]?rounder|batsman|batter|bowler|wicket[\s_-]?keeper|player)$/i;
   const rolePart = parts.length > 1 && rolePattern.test(parts.at(-1) || "") ? parts.pop()! : "Player";
   const playerName = parts.join(" - ").trim() || base.replace(/^\d+\s*/, "").trim() || "Player";
   return {
     player_name: playerName,
     playing_role: rolePart.replaceAll("-", " ").replaceAll("_", " "),
+    registration_number: filenameNumber,
   };
 }
 
