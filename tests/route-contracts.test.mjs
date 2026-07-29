@@ -134,19 +134,19 @@ test("team and player rankings are available to admins and public viewers", () =
 
 test("live auction is modular, realtime and transaction-backed", () => {
   const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
-  const templates = readFileSync(resolve(root, "components/auction-template-manager.tsx"), "utf8");
   const registration = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");
-  const migration = readFileSync(resolve(root, "supabase/migrations/20260728195216_live_player_auction.sql"), "utf8");
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260729172101_bulk_auction_player_cards.sql"), "utf8");
   assert.match(dashboard, /Live Player Auction/);
   assert.match(dashboard, /postgres_changes/);
   assert.match(dashboard, /sell_auction_player/);
   assert.match(dashboard, /Bulk Card Downloads/);
-  assert.match(templates, /Player Card Templates/);
-  assert.match(templates, /is_visible/);
-  assert.match(registration, /kind: "player"/);
-  assert.match(migration, /assign_tournament_registration_number/);
+  assert.match(dashboard, /Bulk Player Profile Card Upload/);
+  assert.match(dashboard, /create_bulk_auction_players/);
+  assert.doesNotMatch(registration, /kind: "player"/);
+  assert.match(migration, /drop trigger if exists create_auction_player_for_registration/);
+  assert.match(migration, /source_type in \('registration', 'bulk_upload'\)/);
   assert.match(migration, /for update/);
-  assert.match(migration, /supabase_realtime/);
+  assert.match(migration, /grant execute on function public\.create_bulk_auction_players/);
 });
 
 test("player cards use stored template layouts instead of renderer coordinates", () => {

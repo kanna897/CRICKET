@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Activity, Banknote, CheckCircle2, Clock3, Download, Gavel, History,
-  Loader2, Pause, Play, RefreshCw, ShoppingBag, Trophy, UserRound,
+  ImagePlus, Loader2, Pause, Play, RefreshCw, ShoppingBag, Trophy, UserRound,
   UsersRound, X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { localePath } from "@/lib/locale-path";
+import { uploadImage } from "@/lib/media";
 
 type Tournament = { id: string; name: string; organizer_id?: string | null };
 type Team = { id: string; name: string; logo_url: string | null };
@@ -30,6 +31,7 @@ type AuctionPlayer = {
   sold_at: string | null;
   player_card_url: string | null;
   team_player_card_url: string | null;
+  source_type: "registration" | "bulk_upload";
 };
 type Purse = { tournament_id: string; team_id: string; initial_purse: number; total_spent: number; purchased_count: number };
 type Session = { tournament_id: string; status: "draft" | "live" | "paused" | "completed"; current_auction_player_id: string | null };
@@ -53,6 +55,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   const [saleTeamId, setSaleTeamId] = useState("");
   const [winningBid, setWinningBid] = useState("");
   const [purseDrafts, setPurseDrafts] = useState<Record<string, string>>({});
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
 
   useEffect(() => {
     void (async () => {
@@ -71,7 +74,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     setLoading(true);
     const [teamResult, playerResult, purseResult, historyResult, sessionResult] = await Promise.all([
       (supabase.from("teams") as any).select("id,name,logo_url").eq("tournament_id", tournamentId).is("deleted_at", null).order("name"),
-      (supabase.from("auction_players") as any).select("*").eq("tournament_id", tournamentId).order("registration_number"),
+      (supabase.from("auction_players") as any).select("*").eq("tournament_id", tournamentId).eq("source_type", "bulk_upload").order("registration_number"),
       (supabase.from("auction_team_purses") as any).select("*").eq("tournament_id", tournamentId),
       (supabase.from("auction_history") as any).select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: false }).limit(100),
       (supabase.from("auction_sessions") as any).select("*").eq("tournament_id", tournamentId).maybeSingle(),
@@ -162,6 +165,41 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     await load(); setBusy("");
   }
 
+  async function uploadPlayerCards(files: FileList | null) {
+    if (!admin || !files?.length) return;
+    const selectedFiles = Array.from(files);
+    if (selectedFiles.length > 500) return setMessage("Upload a maximum of 500 player cards at a time.");
+    const invalid = selectedFiles.find((file) =>
+      !["image/jpeg", "image/png"].includes(file.type) || file.size > 5 * 1024 * 1024);
+    if (invalid) return setMessage(`${invalid.name}: upload a JPG or PNG smaller than 5 MB.`);
+
+    setBusy("bulk-upload");
+    setMessage("");
+    setUploadProgress({ completed: 0, total: selectedFiles.length });
+    try {
+      const uploaded = await mapWithConcurrency(selectedFiles, 5, async (file) => {
+        const media = await uploadImage(file, "auction-player-cards");
+        setUploadProgress((currentProgress) => ({
+          ...currentProgress,
+          completed: currentProgress.completed + 1,
+        }));
+        return { card_url: media.url, ...playerDetailsFromFilename(file.name) };
+      });
+      const { data, error } = await (supabase.rpc as any)("create_bulk_auction_players", {
+        p_tournament_id: tournamentId,
+        p_players: uploaded,
+      });
+      if (error) throw error;
+      setMessage(`${data?.length || uploaded.length} player profile cards uploaded and added to Live Auction.`);
+      await load();
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "Bulk player-card upload failed.");
+    } finally {
+      setBusy("");
+      setUploadProgress({ completed: 0, total: 0 });
+    }
+  }
+
   async function openPlayer(player: AuctionPlayer) {
     setSelected(player); setSaleTeamId(player.winning_team_id || ""); setWinningBid(player.winning_bid ? String(player.winning_bid) : "");
     if (admin && player.status === "available") {
@@ -190,13 +228,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       if (error) throw error;
       setSelected(null);
       await load();
-      const cardResponse = await fetch("/api/auction/cards", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "team_player", auctionPlayerId: selected.id }),
-      });
-      const card = await cardResponse.json() as { generated?: boolean; error?: string; reason?: string };
-      await load();
-      setMessage(card.generated ? `Player sold and added to ${soldTeamName}. Purse, squad and team card updated.` : `Player sold and added to ${soldTeamName}. ${card.reason || card.error || ""}`);
+      setMessage(`Player sold and added to ${soldTeamName}. Purse and squad updated.`);
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Sale confirmation failed."); }
     finally { setBusy(""); }
   }
@@ -261,6 +293,22 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
       {admin && <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Auction controls</h2><p className="text-sm text-muted-foreground">Start, pause or complete the public live room.</p></div><div className="flex gap-2"><button className="control" onClick={() => void setSessionStatus("live")}><Play className="mr-2 h-4 w-4"/>Start / Resume</button><button className="control" onClick={() => void setSessionStatus("paused")}><Pause className="mr-2 h-4 w-4"/>Pause</button><button className="control" onClick={() => void setSessionStatus("completed")}><CheckCircle2 className="mr-2 h-4 w-4"/>Complete</button></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); return <label key={row.id} className="rounded-xl border border-border bg-muted/30 p-3 text-sm font-bold"><span className="flex items-center justify-between"><span>{row.name}</span><small className="text-muted-foreground">Spent {money(Number(purse?.total_spent || 0))}</small></span><input type="number" min={Number(purse?.total_spent || 0)} step="0.01" className="input mt-2" value={purseDrafts[row.id] || "0"} onChange={(event) => setPurseDrafts((currentDrafts) => ({ ...currentDrafts, [row.id]: event.target.value }))}/></label>})}</div><button disabled={busy === "purses"} onClick={() => void savePurses()} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground">{busy === "purses" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin"/>}Save Team Purses</button></section>}
 
+      {admin && <section className="rounded-2xl border border-primary/30 bg-card p-5 text-foreground shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[.18em] text-primary">Auction inventory</p>
+            <h2 className="mt-1 text-xl font-black">Bulk Player Profile Card Upload</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Upload 150+ finished JPG/PNG cards. Recommended filename: <strong>03 - KKKKK - All Rounder.jpg</strong>.</p>
+          </div>
+          <label className={`inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl bg-primary px-5 py-3 font-black text-primary-foreground ${busy === "bulk-upload" ? "pointer-events-none opacity-60" : ""}`}>
+            {busy === "bulk-upload" ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <ImagePlus className="mr-2 h-5 w-5"/>}
+            {busy === "bulk-upload" ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}` : "Upload Player Cards"}
+            <input type="file" multiple accept="image/jpeg,image/png" className="sr-only" disabled={busy === "bulk-upload"} onChange={(event) => { void uploadPlayerCards(event.target.files); event.target.value = ""; }} />
+          </label>
+        </div>
+        {busy === "bulk-upload" && <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress.total ? uploadProgress.completed * 100 / uploadProgress.total : 0}%` }}/></div>}
+      </section>}
+
       <section className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
         <div className="rounded-3xl border border-amber-300/40 bg-gradient-to-br from-[#071631] to-[#0b3470] p-5 text-white shadow-xl"><p className="text-xs font-black uppercase tracking-[.2em] text-amber-300">Current auction player</p>{current ? <div className="mt-4 grid gap-5 sm:grid-cols-[14rem_1fr]"><img src={current.player_card_url || current.photo_url} alt={current.player_name} className="aspect-square w-full rounded-2xl border border-white/20 object-cover"/><div className="flex flex-col justify-center"><span className="font-mono text-3xl font-black text-amber-300">#{String(current.registration_number).padStart(2, "0")}</span><h2 className="mt-2 text-3xl font-black">{current.player_name}</h2><p className="mt-2 capitalize text-slate-200">{pretty(current.playing_role)} · {pretty(current.batting_style)} · {pretty(current.bowling_style)}</p>{admin && <button onClick={() => void openPlayer(current)} className="mt-5 rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950">Sell / Mark Unsold</button>}</div></div> : <div className="grid min-h-64 place-items-center text-center text-slate-300"><div><Gavel className="mx-auto h-12 w-12 text-amber-300"/><p className="mt-3 font-bold">No player is live right now.</p></div></div>}</div>
         <div className="rounded-3xl border border-border bg-card p-5 text-foreground"><h2 className="text-xl font-black">Team purse & squad status</h2><div className="mt-4 space-y-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); const teamSold = sold.filter((player) => player.winning_team_id === row.id); return <article key={row.id} className="rounded-xl border border-border bg-muted/30 p-4"><div className="flex items-center gap-3">{row.logo_url ? <img src={row.logo_url} alt="" className="h-10 w-10 rounded-full object-contain"/> : <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-black">{row.name[0]}</span>}<div className="min-w-0 flex-1"><h3 className="truncate font-black">{row.name}</h3><p className="text-xs text-muted-foreground">{teamSold.length} purchased players</p></div><strong className="text-sm text-emerald-600">{money(Number(purse?.initial_purse || 0) - Number(purse?.total_spent || 0))} left</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${purse?.initial_purse ? Math.min(100, Number(purse.total_spent) * 100 / Number(purse.initial_purse)) : 0}%` }}/></div></article>})}</div></div>
@@ -270,7 +318,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
       <section className="grid gap-5 xl:grid-cols-2"><SquadPanel teams={teams} players={sold}/><HistoryPanel history={history} players={players} teams={teams}/></section>
 
-      {admin && <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex items-center gap-3"><Download className="h-6 w-6 text-primary"/><div><h2 className="text-xl font-black">Bulk Card Downloads</h2><p className="text-sm text-muted-foreground">Download generated JPG cards inside a ZIP archive.</p></div></div><div className="mt-4 flex flex-wrap gap-2"><DownloadButton label="All Player Cards" busy={busy === "zip-all"} onClick={() => void downloadZip("all")}/><DownloadButton label="Team Player Cards" busy={busy === "zip-team"} onClick={() => void downloadZip("team")}/><DownloadButton label="Sold Cards" busy={busy === "zip-sold"} onClick={() => void downloadZip("sold")}/><DownloadButton label="Unsold Cards" busy={busy === "zip-unsold"} onClick={() => void downloadZip("unsold")}/></div></section>}
+      {admin && <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex items-center gap-3"><Download className="h-6 w-6 text-primary"/><div><h2 className="text-xl font-black">Bulk Card Downloads</h2><p className="text-sm text-muted-foreground">Download uploaded auction cards inside a ZIP archive.</p></div></div><div className="mt-4 flex flex-wrap gap-2"><DownloadButton label="All Player Cards" busy={busy === "zip-all"} onClick={() => void downloadZip("all")}/><DownloadButton label="Sold Cards" busy={busy === "zip-sold"} onClick={() => void downloadZip("sold")}/><DownloadButton label="Unsold Cards" busy={busy === "zip-unsold"} onClick={() => void downloadZip("unsold")}/></div></section>}
     </>}
 
     {admin && selected && (
@@ -290,7 +338,6 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
             <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-emerald-900">
               <strong>Sold to {team(selected.winning_team_id)?.name}</strong>
               <p>{money(Number(selected.winning_bid || 0))}</p>
-              {selected.team_player_card_url && <a href={selected.team_player_card_url} className="mt-2 inline-block font-bold underline">Download Team Player Card</a>}
             </div>
           ) : (
             <>
@@ -327,7 +374,7 @@ function Status({ value }: { value: AuctionPlayer["status"] }) {
   return <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-[.65rem] font-black uppercase text-white ${style}`}>{value}</span>;
 }
 function SquadPanel({ teams, players }: { teams: Team[]; players: AuctionPlayer[] }) {
-  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="divide-y divide-border">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[3rem_1fr_auto] items-center gap-2 py-2 text-sm"><span className="font-mono font-black text-primary">#{String(player.registration_number).padStart(2,"0")}</span><span><strong>{player.player_name}</strong><small className="block capitalize text-muted-foreground">{pretty(player.playing_role)}</small></span><strong>{money(Number(player.winning_bid || 0))}</strong></div>)}</div></article>)}</div></section>;
+  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="divide-y divide-border">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 py-3 text-sm"><img src={player.photo_url} alt={player.player_name} className="h-12 w-12 rounded-xl border border-border object-cover"/><span className="min-w-0"><strong className="block truncate">{player.player_name}</strong><small className="block capitalize text-muted-foreground">{pretty(player.playing_role)} · #{String(player.registration_number).padStart(2,"0")}</small></span><strong>{money(Number(player.winning_bid || 0))}</strong></div>)}</div></article>)}</div></section>;
 }
 function HistoryPanel({ history, players, teams }: { history: HistoryRow[]; players: AuctionPlayer[]; teams: Team[] }) {
   return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><History className="h-5 w-5 text-primary"/>Auction History</h2><div className="mt-4 max-h-[32rem] divide-y divide-border overflow-y-auto">{history.map((row) => { const player = players.find((item) => item.id === row.auction_player_id); const team = teams.find((item) => item.id === row.team_id); return <div key={row.id} className="flex items-center gap-3 py-3 text-sm"><Clock3 className="h-4 w-4 shrink-0 text-muted-foreground"/><div className="min-w-0 flex-1"><strong className="truncate">{player?.player_name || "Player"}</strong><p className="capitalize text-muted-foreground">{row.action}{team ? ` · ${team.name}` : ""}</p></div>{row.bid_amount !== null && <strong>{money(Number(row.bid_amount))}</strong>}<time className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></div>})}</div></section>;
@@ -338,3 +385,33 @@ function DownloadButton({ label, busy, onClick }: { label: string; busy: boolean
 function Empty({ text }: { text: string }) { return <div className="grid min-h-64 place-items-center rounded-3xl border border-dashed border-border text-muted-foreground">{text}</div>; }
 function pretty(value: string) { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
 function money(value: number) { return new Intl.NumberFormat("en-LK", { maximumFractionDigits: 2 }).format(value || 0); }
+
+function playerDetailsFromFilename(filename: string) {
+  const base = filename.replace(/\.[^.]+$/, "").trim();
+  const parts = base.split(/\s+(?:-|–|—)\s+|_+/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length && /^\d+$/.test(parts[0])) parts.shift();
+  const rolePattern = /^(all[\s_-]?rounder|batsman|batter|bowler|wicket[\s_-]?keeper|player)$/i;
+  const rolePart = parts.length > 1 && rolePattern.test(parts.at(-1) || "") ? parts.pop()! : "Player";
+  const playerName = parts.join(" - ").trim() || base.replace(/^\d+\s*/, "").trim() || "Player";
+  return {
+    player_name: playerName,
+    playing_role: rolePart.replaceAll("-", " ").replaceAll("_", " "),
+  };
+}
+
+async function mapWithConcurrency<T, R>(
+  values: T[],
+  concurrency: number,
+  worker: (value: T) => Promise<R>,
+) {
+  const results = new Array<R>(values.length);
+  let cursor = 0;
+  async function runWorker() {
+    while (cursor < values.length) {
+      const index = cursor++;
+      results[index] = await worker(values[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, () => runWorker()));
+  return results;
+}
