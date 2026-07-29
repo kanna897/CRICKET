@@ -36,7 +36,7 @@ type AuctionPlayer = {
 type Purse = { tournament_id: string; team_id: string; initial_purse: number; total_spent: number; purchased_count: number };
 type Session = { tournament_id: string; status: "draft" | "live" | "paused" | "completed"; current_auction_player_id: string | null };
 type HistoryRow = { id: number; auction_player_id: string; team_id: string | null; bid_amount: number | null; action: string; created_at: string };
-type Filter = "all" | AuctionPlayer["status"];
+type Filter = AuctionPlayer["status"];
 
 export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = false }: { admin?: boolean; userId?: string; isMasterAdmin?: boolean }) {
   const { locale } = useParams<{ locale: string }>();
@@ -47,7 +47,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   const [purses, setPurses] = useState<Purse[]>([]);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [session, setSession] = useState<Session | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>("available");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
@@ -59,9 +59,19 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   useEffect(() => {
     void (async () => {
-      const { data } = await (supabase.from("tournaments") as any)
-        .select("id,name,organizer_id").is("deleted_at", null).order("created_at", { ascending: false });
-      const rows = ((data || []) as Tournament[]).filter((row) => !admin || isMasterAdmin || row.organizer_id === userId);
+      const [tournamentResult, sessionResult] = await Promise.all([
+        (supabase.from("tournaments") as any)
+          .select("id,name,organizer_id").is("deleted_at", null).order("created_at", { ascending: false }),
+        admin
+          ? Promise.resolve({ data: [] })
+          : (supabase.from("auction_sessions") as any).select("tournament_id,status").eq("status", "completed"),
+      ]);
+      const completedTournamentIds = new Set(
+        ((sessionResult.data || []) as Pick<Session, "tournament_id">[]).map((row) => row.tournament_id)
+      );
+      const rows = ((tournamentResult.data || []) as Tournament[]).filter((row) =>
+        (admin ? isMasterAdmin || row.organizer_id === userId : !completedTournamentIds.has(row.id))
+      );
       setTournaments(rows);
       const queryTournament = new URLSearchParams(window.location.search).get("tournament");
       setTournamentId(rows.some((row) => row.id === queryTournament) ? queryTournament! : rows[0]?.id || "");
@@ -122,7 +132,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     lowest: bids.length ? Math.min(...bids) : 0,
     average: bids.length ? bids.reduce((sum, bid) => sum + bid, 0) / bids.length : 0,
   };
-  const filtered = filter === "all" ? players : players.filter((row) => row.status === filter);
+  const filtered = players.filter((row) => row.status === filter);
 
   async function savePurses() {
     if (!admin) return;
@@ -291,7 +301,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Registered" value={stats.registered} icon={<UsersRound/>}/><Stat label="Available" value={stats.available} icon={<UserRound/>}/><Stat label="Sold" value={stats.sold} icon={<ShoppingBag/>}/><Stat label="Unsold" value={stats.unsold} icon={<X/>}/></section>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Highest bid" value={money(stats.highest)} icon={<Trophy/>}/><Stat label="Lowest bid" value={money(stats.lowest)} icon={<Banknote/>}/><Stat label="Average bid" value={money(stats.average)} icon={<Activity/>}/><Stat label="Progress" value={`${stats.registered ? Math.round((stats.sold + stats.unsold) * 100 / stats.registered) : 0}%`} icon={<CheckCircle2/>}/></section>
 
-      {admin && <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Auction controls</h2><p className="text-sm text-muted-foreground">Start, pause or complete the public live room.</p></div><div className="flex gap-2"><button className="control" onClick={() => void setSessionStatus("live")}><Play className="mr-2 h-4 w-4"/>Start / Resume</button><button className="control" onClick={() => void setSessionStatus("paused")}><Pause className="mr-2 h-4 w-4"/>Pause</button><button className="control" onClick={() => void setSessionStatus("completed")}><CheckCircle2 className="mr-2 h-4 w-4"/>Complete</button></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); return <label key={row.id} className="rounded-xl border border-border bg-muted/30 p-3 text-sm font-bold"><span className="flex items-center justify-between"><span>{row.name}</span><small className="text-muted-foreground">Spent {money(Number(purse?.total_spent || 0))}</small></span><input type="number" min={Number(purse?.total_spent || 0)} step="0.01" className="input mt-2" value={purseDrafts[row.id] || "0"} onChange={(event) => setPurseDrafts((currentDrafts) => ({ ...currentDrafts, [row.id]: event.target.value }))}/></label>})}</div><button disabled={busy === "purses"} onClick={() => void savePurses()} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground">{busy === "purses" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin"/>}Save Team Purses</button></section>}
+      {admin && <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Auction controls</h2><p className="text-sm text-muted-foreground">Complete hides this tournament from the public auction list. Start / Resume makes it visible again.</p></div><div className="flex gap-2"><button className="control" onClick={() => void setSessionStatus("live")}><Play className="mr-2 h-4 w-4"/>Start / Resume</button><button className="control" onClick={() => void setSessionStatus("paused")}><Pause className="mr-2 h-4 w-4"/>Pause</button><button className="control" onClick={() => void setSessionStatus("completed")}><CheckCircle2 className="mr-2 h-4 w-4"/>Complete & Hide</button></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); return <label key={row.id} className="rounded-xl border border-border bg-muted/30 p-3 text-sm font-bold"><span className="flex items-center justify-between"><span>{row.name}</span><small className="text-muted-foreground">Spent {money(Number(purse?.total_spent || 0))}</small></span><input type="number" min={Number(purse?.total_spent || 0)} step="0.01" className="input mt-2" value={purseDrafts[row.id] || "0"} onChange={(event) => setPurseDrafts((currentDrafts) => ({ ...currentDrafts, [row.id]: event.target.value }))}/></label>})}</div><button disabled={busy === "purses"} onClick={() => void savePurses()} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground">{busy === "purses" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin"/>}Save Team Purses</button></section>}
 
       {admin && <section className="rounded-2xl border border-primary/30 bg-card p-5 text-foreground shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -314,7 +324,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
         <div className="rounded-3xl border border-border bg-card p-5 text-foreground"><h2 className="text-xl font-black">Team purse & squad status</h2><div className="mt-4 space-y-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); const teamSold = sold.filter((player) => player.winning_team_id === row.id); return <article key={row.id} className="rounded-xl border border-border bg-muted/30 p-4"><div className="flex items-center gap-3">{row.logo_url ? <img src={row.logo_url} alt="" className="h-10 w-10 rounded-full object-contain"/> : <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-black">{row.name[0]}</span>}<div className="min-w-0 flex-1"><h3 className="truncate font-black">{row.name}</h3><p className="text-xs text-muted-foreground">{teamSold.length} purchased players</p></div><strong className="text-sm text-emerald-600">{money(Number(purse?.initial_purse || 0) - Number(purse?.total_spent || 0))} left</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${purse?.initial_purse ? Math.min(100, Number(purse.total_spent) * 100 / Number(purse.initial_purse)) : 0}%` }}/></div></article>})}</div></div>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Registered players</h2><p className="text-sm text-muted-foreground">Click a player card to open the auction action popup.</p></div><div className="flex flex-wrap gap-2">{(["all","available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item}</button>)}</div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} className="overflow-hidden rounded-2xl border border-border bg-background text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/></div><div className="p-4"><div className="flex items-center justify-between gap-2"><strong className="truncate">{player.player_name}</strong><span className="font-mono text-sm font-black text-primary">#{String(player.registration_number).padStart(2,"0")}</span></div><p className="mt-1 text-xs capitalize text-muted-foreground">{pretty(player.playing_role)} · {pretty(player.batting_style)}</p>{player.status === "sold" && <p className="mt-2 text-sm font-black text-emerald-600">{team(player.winning_team_id)?.name} · {money(Number(player.winning_bid || 0))}</p>}</div></button>)}</div></section>
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap gap-2">{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} className="overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/></div><div className="p-2.5"><div className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{player.player_name}</strong><span className="font-mono text-xs font-black text-primary">#{String(player.registration_number).padStart(2,"0")}</span></div><p className="mt-1 truncate text-[.68rem] capitalize text-muted-foreground">{pretty(player.playing_role)}</p>{player.status === "sold" && <p className="mt-1 truncate text-xs font-black text-emerald-600">{team(player.winning_team_id)?.name} · {money(Number(player.winning_bid || 0))}</p>}</div></button>)}</div></section>
 
       <section className="grid gap-5 xl:grid-cols-2"><SquadPanel teams={teams} players={sold}/><HistoryPanel history={history} players={players} teams={teams}/></section>
 
@@ -374,7 +384,15 @@ function Status({ value }: { value: AuctionPlayer["status"] }) {
   return <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-[.65rem] font-black uppercase text-white ${style}`}>{value}</span>;
 }
 function SquadPanel({ teams, players }: { teams: Team[]; players: AuctionPlayer[] }) {
-  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="divide-y divide-border">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 py-3 text-sm"><img src={player.photo_url} alt={player.player_name} className="h-12 w-12 rounded-xl border border-border object-cover"/><span className="min-w-0"><strong className="block truncate">{player.player_name}</strong><small className="block capitalize text-muted-foreground">{pretty(player.playing_role)} · #{String(player.registration_number).padStart(2,"0")}</small></span><strong>{money(Number(player.winning_bid || 0))}</strong></div>)}</div></article>)}</div></section>;
+  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="divide-y divide-border">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[3.75rem_1fr_auto] items-center gap-3 py-3 text-sm"><PlayerPhotoFromCard player={player}/><span className="min-w-0">{player.player_name === "Player" ? <><CardRegion player={player} region="name"/><CardRegion player={player} region="role"/></> : <><strong className="block truncate">{player.player_name}</strong><small className="block capitalize text-muted-foreground">{pretty(player.playing_role)}</small></>}<small className="block font-mono font-black text-primary">S.NO #{String(player.registration_number).padStart(2,"0")}</small></span><strong>{money(Number(player.winning_bid || 0))}</strong></div>)}</div></article>)}</div></section>;
+}
+function PlayerPhotoFromCard({ player }: { player: AuctionPlayer }) {
+  return <span className="relative block h-14 w-14 overflow-hidden rounded-xl border border-border bg-muted"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="absolute -left-[23%] -top-[94%] h-auto w-[310%] max-w-none"/></span>;
+}
+function CardRegion({ player, region }: { player: AuctionPlayer; region: "name" | "role" }) {
+  const image = player.player_card_url || player.photo_url;
+  const position = region === "name" ? "88% 34%" : "92% 51%";
+  return <span aria-label={`${region} shown from uploaded player card`} className={`block bg-no-repeat ${region === "name" ? "h-6 max-w-48" : "mt-0.5 h-5 max-w-40"}`} style={{ backgroundImage: `url(${JSON.stringify(image)})`, backgroundPosition: position, backgroundSize: "220% auto" }}/>;
 }
 function HistoryPanel({ history, players, teams }: { history: HistoryRow[]; players: AuctionPlayer[]; teams: Team[] }) {
   const playerIds = new Set(players.map((player) => player.id));
