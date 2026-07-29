@@ -46,10 +46,6 @@ function fitText(value: string, max = 28) {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-function textAnchor(alignment: PlayerCardTextLayout["textAlignment"]) {
-  return alignment === "center" ? "middle" : alignment === "right" ? "end" : "start";
-}
-
 function fittedFontSize(value: string, field: PlayerCardTextLayout) {
   const estimatedWidth = Math.max(1, value.length) * field.fontSize * 0.57;
   return estimatedWidth <= field.maxWidth
@@ -57,16 +53,31 @@ function fittedFontSize(value: string, field: PlayerCardTextLayout) {
     : Math.max(8, Math.floor(field.fontSize * field.maxWidth / estimatedWidth));
 }
 
-function textNode(value: string, field: PlayerCardTextLayout) {
+async function textLayer(value: string, field: PlayerCardTextLayout): Promise<OverlayOptions> {
   const fontSize = fittedFontSize(value, field);
-  const style = [
-    `font-family:${xml(field.fontFamily)}`,
-    `font-size:${fontSize}px`,
-    `font-weight:${field.fontWeight}`,
-    `font-style:${field.italic ? "italic" : "normal"}`,
-    `fill:${field.fontColour}`,
-  ].join(";");
-  return `<text x="${field.x}" y="${field.y}" text-anchor="${textAnchor(field.textAlignment)}" style="${style}">${xml(value)}</text>`;
+  const pangoFontSize = Math.max(8, Math.round(fontSize * 0.82));
+  const markup = `<span foreground="${field.fontColour}" weight="${field.fontWeight}" style="${field.italic ? "italic" : "normal"}">${xml(value)}</span>`;
+  const input = await sharp({
+    text: {
+      text: markup,
+      font: `${field.fontFamily} ${pangoFontSize}`,
+      width: Math.round(field.maxWidth),
+      align: field.textAlignment === "center" ? "centre" : field.textAlignment,
+      wrap: "none",
+      rgba: true,
+      dpi: 72,
+    },
+  }).png().toBuffer();
+  const left = field.textAlignment === "center"
+    ? Math.round(field.x - field.maxWidth / 2)
+    : field.textAlignment === "right"
+      ? Math.round(field.x - field.maxWidth)
+      : Math.round(field.x);
+  return {
+    input,
+    left: Math.max(0, left),
+    top: Math.max(0, Math.round(field.y - fontSize * 0.92)),
+  };
 }
 
 export async function generatePlayerCardJpeg(data: PlayerCardData) {
@@ -79,18 +90,28 @@ export async function generatePlayerCardJpeg(data: PlayerCardData) {
     .composite([{ input: portraitMask, blend: "dest-in" }])
     .png()
     .toBuffer();
-  const text = Buffer.from(`<svg width="${PLAYER_CARD_SIZE}" height="${PLAYER_CARD_SIZE}" xmlns="http://www.w3.org/2000/svg">
-    ${textNode(data.playerName.trim(), layout.name)}
-    ${textNode(label(data.playingRole), layout.role)}
-    ${textNode(label(data.battingStyle), layout.batting)}
-    ${textNode(label(data.bowlingStyle), layout.bowling)}
-    ${textNode(data.mobileNumber.trim(), layout.phone)}
-    ${textNode(String(data.registrationNumber).padStart(2, "0"), layout.serial)}
+  const placeholderMask = Buffer.from(`<svg width="${PLAYER_CARD_SIZE}" height="${PLAYER_CARD_SIZE}" xmlns="http://www.w3.org/2000/svg">
+    <path d="M535 316 L1020 316 L1028 420 L548 420 Z" fill="#073467"/>
+    <rect x="625" y="454" width="350" height="86" rx="8" fill="#ffffff"/>
+    <rect x="625" y="564" width="350" height="86" rx="8" fill="#ffffff"/>
+    <rect x="625" y="674" width="350" height="86" rx="8" fill="#ffffff"/>
+    <rect x="625" y="784" width="350" height="86" rx="8" fill="#ffffff"/>
+    <path d="M142 832 L350 794 L337 905 L150 923 Z" fill="#f5b814"/>
+    <path d="M160 817 L342 805 L330 892 L154 903 Z" fill="#0a3568"/>
   </svg>`);
+  const textLayers = await Promise.all([
+    textLayer(data.playerName.trim(), layout.name),
+    textLayer(label(data.playingRole), layout.role),
+    textLayer(label(data.battingStyle), layout.batting),
+    textLayer(label(data.bowlingStyle), layout.bowling),
+    textLayer(data.mobileNumber.trim(), layout.phone),
+    textLayer(String(data.registrationNumber).padStart(2, "0"), layout.serial),
+  ]);
   return base
     .composite([
       { input: portrait, left: layout.photo.x, top: layout.photo.y },
-      { input: text, left: 0, top: 0 },
+      { input: placeholderMask, left: 0, top: 0 },
+      ...textLayers,
     ])
     .jpeg({ quality: 94, chromaSubsampling: "4:4:4" })
     .withMetadata({ density: 300 })
