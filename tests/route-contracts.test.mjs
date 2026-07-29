@@ -136,6 +136,7 @@ test("live auction is modular, realtime and transaction-backed", () => {
   const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
   const registration = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");
   const migration = readFileSync(resolve(root, "supabase/migrations/20260729172101_bulk_auction_player_cards.sql"), "utf8");
+  const serialMigration = readFileSync(resolve(root, "supabase/migrations/20260729185741_preserve_bulk_card_serial_numbers.sql"), "utf8");
   assert.match(dashboard, /Live Player Auction/);
   assert.match(dashboard, /postgres_changes/);
   assert.match(dashboard, /sell_auction_player/);
@@ -145,12 +146,15 @@ test("live auction is modular, realtime and transaction-backed", () => {
   assert.match(dashboard, /Complete & Hide/);
   assert.match(dashboard, /latestPlayerActions/);
   assert.match(dashboard, /CardRegion/);
+  assert.match(dashboard, /registration_number: filenameNumber/);
   assert.match(dashboard, /\["available","live","sold","unsold"\]/);
   assert.doesNotMatch(registration, /kind: "player"/);
   assert.match(migration, /drop trigger if exists create_auction_player_for_registration/);
   assert.match(migration, /source_type in \('registration', 'bulk_upload'\)/);
   assert.match(migration, /for update/);
   assert.match(migration, /grant execute on function public\.create_bulk_auction_players/);
+  assert.match(serialMigration, /requested_number/);
+  assert.match(serialMigration, /partition by tournament_id/);
 });
 
 test("player cards use stored template layouts instead of renderer coordinates", () => {
