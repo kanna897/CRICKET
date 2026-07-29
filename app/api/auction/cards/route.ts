@@ -49,7 +49,12 @@ export async function POST(request: NextRequest) {
     if (body.kind === "tournament_players") return await createTournamentPlayerCards(body.tournamentId);
     return NextResponse.json({ error: "Invalid card generation request." }, { status: 400 });
   } catch (reason) {
-    const message = reason instanceof Error ? reason.message : "Card generation failed.";
+    console.error("Auction card generation failed", reason);
+    const message = reason instanceof Error
+      ? reason.message
+      : typeof reason === "object" && reason && "message" in reason
+        ? String(reason.message)
+        : "Card generation failed.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
