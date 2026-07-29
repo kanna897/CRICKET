@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { localePath } from "@/lib/locale-path";
 import { uploadImage } from "@/lib/media";
+import { recognizeAuctionCard } from "@/lib/auction-card-ocr";
 
 type Tournament = { id: string; name: string; organizer_id?: string | null };
 type Team = { id: string; name: string; logo_url: string | null };
@@ -20,6 +21,7 @@ type AuctionPlayer = {
   registration_id: string;
   player_id: string | null;
   registration_number: number;
+  ocr_serial_number: number | null;
   player_name: string;
   photo_url: string;
   playing_role: string;
@@ -52,10 +54,14 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<AuctionPlayer | null>(null);
+  const [editPlayerName, setEditPlayerName] = useState("");
+  const [editPlayingRole, setEditPlayingRole] = useState("");
+  const [editSerial, setEditSerial] = useState("");
   const [saleTeamId, setSaleTeamId] = useState("");
   const [winningBid, setWinningBid] = useState("");
   const [purseDrafts, setPurseDrafts] = useState<Record<string, string>>({});
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
+  const [scanProgress, setScanProgress] = useState({ completed: 0, total: 0 });
 
   useEffect(() => {
     void (async () => {
@@ -177,9 +183,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   async function uploadPlayerCards(files: FileList | null) {
     if (!admin || !files?.length) return;
-    const selectedFiles = Array.from(files).sort((left, right) =>
-      left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: "base" })
-    );
+    const selectedFiles = Array.from(files);
     if (selectedFiles.length > 500) return setMessage("Upload a maximum of 500 player cards at a time.");
     const invalid = selectedFiles.find((file) =>
       !["image/jpeg", "image/png"].includes(file.type) || file.size > 5 * 1024 * 1024);
@@ -212,15 +216,90 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     }
   }
 
+  async function scanPlayerCard(player: AuctionPlayer) {
+    const cardUrl = player.player_card_url || player.photo_url;
+    const recognized = await recognizeAuctionCard(cardUrl);
+    if (!recognized.playerName) throw new Error("Player name could not be read. Use a clear 1080×1080 player card.");
+    const { data, error } = await (supabase.rpc as any)("update_bulk_auction_player_text", {
+      p_auction_player_id: player.id,
+      p_player_name: recognized.playerName,
+      p_playing_role: recognized.playingRole || "Player",
+      p_registration_number: recognized.registrationNumber,
+    });
+    if (error) throw error;
+    return data as AuctionPlayer;
+  }
+
+  async function scanExistingCards() {
+    const pending = players.filter((player) =>
+      player.player_name === "Player" || !player.ocr_serial_number
+    );
+    if (!pending.length) return setMessage("All uploaded cards already have scanned text.");
+    setBusy("ocr-all");
+    setMessage("");
+    setScanProgress({ completed: 0, total: pending.length });
+    let failed = 0;
+    for (const player of pending) {
+      try {
+        await scanPlayerCard(player);
+      } catch {
+        failed += 1;
+      }
+      setScanProgress((progress) => ({ ...progress, completed: progress.completed + 1 }));
+    }
+    await load();
+    setBusy("");
+    setScanProgress({ completed: 0, total: 0 });
+    setMessage(failed
+      ? `${pending.length - failed} cards scanned. ${failed} cards need a clearer image or manual correction.`
+      : `${pending.length} player cards converted to clean text.`);
+  }
+
   async function openPlayer(player: AuctionPlayer) {
-    setSelected(player); setSaleTeamId(player.winning_team_id || ""); setWinningBid(player.winning_bid ? String(player.winning_bid) : "");
-    if (admin && player.status === "available") {
-      setBusy(player.id);
-      const { error } = await (supabase.rpc as any)("set_auction_player_live", { p_auction_player_id: player.id });
-      if (error) setMessage(error.message);
+    let resolvedPlayer = player;
+    setBusy(player.id);
+    setMessage("");
+    try {
+      if (admin && (player.player_name === "Player" || !player.ocr_serial_number)) {
+        resolvedPlayer = await scanPlayerCard(player);
+      }
+      setSelected(resolvedPlayer);
+      setEditPlayerName(resolvedPlayer.player_name);
+      setEditPlayingRole(resolvedPlayer.playing_role);
+      setEditSerial(String(displaySerial(resolvedPlayer)));
+      setSaleTeamId(resolvedPlayer.winning_team_id || "");
+      setWinningBid(resolvedPlayer.winning_bid ? String(resolvedPlayer.winning_bid) : "");
+      if (admin && resolvedPlayer.status === "available") {
+        const { error } = await (supabase.rpc as any)("set_auction_player_live", {
+          p_auction_player_id: resolvedPlayer.id,
+        });
+        if (error) throw error;
+        await load();
+      }
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "Player card text scan failed.");
+    } finally {
       setBusy("");
+    }
+  }
+
+  async function savePlayerText() {
+    if (!selected || !editPlayerName.trim()) return setMessage("Enter the player name.");
+    setBusy("save-player-text");
+    const serial = Number(editSerial);
+    const { data, error } = await (supabase.rpc as any)("update_bulk_auction_player_text", {
+      p_auction_player_id: selected.id,
+      p_player_name: editPlayerName.trim(),
+      p_playing_role: editPlayingRole.trim() || "Player",
+      p_registration_number: Number.isInteger(serial) && serial > 0 ? serial : null,
+    });
+    if (error) setMessage(error.message);
+    else {
+      setSelected(data as AuctionPlayer);
+      setMessage("Player card text saved.");
       await load();
     }
+    setBusy("");
   }
 
   async function confirmSale() {
@@ -317,16 +396,20 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
             {busy === "bulk-upload" ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}` : "Upload Player Cards"}
             <input type="file" multiple accept="image/jpeg,image/png" className="sr-only" disabled={busy === "bulk-upload"} onChange={(event) => { void uploadPlayerCards(event.target.files); event.target.value = ""; }} />
           </label>
+          <button disabled={Boolean(busy)} onClick={() => void scanExistingCards()} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-primary px-5 py-3 font-black text-primary disabled:opacity-60">
+            {busy === "ocr-all" ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <RefreshCw className="mr-2 h-5 w-5"/>}
+            {busy === "ocr-all" ? `Scanning ${scanProgress.completed}/${scanProgress.total}` : "Scan Cards to Text"}
+          </button>
         </div>
         {busy === "bulk-upload" && <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress.total ? uploadProgress.completed * 100 / uploadProgress.total : 0}%` }}/></div>}
       </section>}
 
       <section className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
-        <div className="rounded-3xl border border-amber-300/40 bg-gradient-to-br from-[#071631] to-[#0b3470] p-5 text-white shadow-xl"><p className="text-xs font-black uppercase tracking-[.2em] text-amber-300">Current auction player</p>{current ? <div className="mt-4 grid gap-5 sm:grid-cols-[14rem_1fr]"><img src={current.player_card_url || current.photo_url} alt={current.player_name} className="aspect-square w-full rounded-2xl border border-white/20 object-cover"/><div className="flex flex-col justify-center gap-2"><CardRegion player={current} region="serial"/><CardRegion player={current} region="name"/><CardRegion player={current} region="role"/>{admin && <button onClick={() => void openPlayer(current)} className="mt-3 rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950">Sell / Mark Unsold</button>}</div></div> : <div className="grid min-h-64 place-items-center text-center text-slate-300"><div><Gavel className="mx-auto h-12 w-12 text-amber-300"/><p className="mt-3 font-bold">No player is live right now.</p></div></div>}</div>
+        <div className="rounded-3xl border border-amber-300/40 bg-gradient-to-br from-[#071631] to-[#0b3470] p-5 text-white shadow-xl"><p className="text-xs font-black uppercase tracking-[.2em] text-amber-300">Current auction player</p>{current ? <div className="mt-4 grid gap-5 sm:grid-cols-[14rem_1fr]"><img src={current.player_card_url || current.photo_url} alt={current.player_name} className="aspect-square w-full rounded-2xl border border-white/20 object-cover"/><div className="flex flex-col justify-center"><span className="font-mono text-2xl font-black text-amber-300">S.NO {String(displaySerial(current)).padStart(2, "0")}</span><h2 className="mt-2 text-3xl font-black">{current.player_name}</h2><p className="mt-2 capitalize text-slate-200">{pretty(current.playing_role)}</p>{admin && <button onClick={() => void openPlayer(current)} className="mt-5 rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950">Sell / Mark Unsold</button>}</div></div> : <div className="grid min-h-64 place-items-center text-center text-slate-300"><div><Gavel className="mx-auto h-12 w-12 text-amber-300"/><p className="mt-3 font-bold">No player is live right now.</p></div></div>}</div>
         <div className="rounded-3xl border border-border bg-card p-5 text-foreground"><h2 className="text-xl font-black">Team purse & squad status</h2><div className="mt-4 space-y-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); const teamSold = sold.filter((player) => player.winning_team_id === row.id); return <article key={row.id} className="rounded-xl border border-border bg-muted/30 p-4"><div className="flex items-center gap-3">{row.logo_url ? <img src={row.logo_url} alt="" className="h-10 w-10 rounded-full object-contain"/> : <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-black">{row.name[0]}</span>}<div className="min-w-0 flex-1"><h3 className="truncate font-black">{row.name}</h3><p className="text-xs text-muted-foreground">{teamSold.length} purchased players</p></div><strong className="text-sm text-emerald-600">{money(Number(purse?.initial_purse || 0) - Number(purse?.total_spent || 0))} left</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${purse?.initial_purse ? Math.min(100, Number(purse.total_spent) * 100 / Number(purse.initial_purse)) : 0}%` }}/></div></article>})}</div></div>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap gap-2">{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} className="overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/></div><div className="flex items-center justify-between gap-2 p-2"><CardRegion player={player} region="name"/><CardRegion player={player} region="serial"/>{player.status === "sold" && <strong className="text-xs text-emerald-600">{money(Number(player.winning_bid || 0))}</strong>}</div></button>)}</div></section>
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap gap-2">{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} className="overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><img src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/>{busy === player.id && <span className="absolute inset-0 grid place-items-center bg-black/60 text-xs font-black text-white"><Loader2 className="mr-2 h-5 w-5 animate-spin"/>Reading text</span>}</div><div className="p-2.5"><div className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{player.player_name}</strong><span className="font-mono text-xs font-black text-primary">S.NO {String(displaySerial(player)).padStart(2, "0")}</span></div><p className="mt-1 truncate text-xs capitalize text-muted-foreground">{pretty(player.playing_role)}</p>{player.status === "sold" && <strong className="mt-1 block text-xs text-emerald-600">{money(Number(player.winning_bid || 0))}</strong>}</div></button>)}</div></section>
 
       <section className="grid gap-5 xl:grid-cols-2"><SquadPanel teams={teams} players={sold}/><HistoryPanel history={history} players={players} teams={teams}/></section>
 
@@ -338,10 +421,17 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
         <section className="w-full max-w-xl rounded-3xl border border-border bg-card p-6 text-foreground shadow-2xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2"><CardRegion player={selected} region="serial"/><CardRegion player={selected} region="name"/></div>
-              <div className="mt-1"><CardRegion player={selected} region="role"/></div>
+              <p className="font-mono text-sm font-black text-primary">S.NO {String(displaySerial(selected)).padStart(2, "0")}</p>
+              <h2 className="text-2xl font-black">{selected.player_name}</h2>
+              <p className="text-sm capitalize text-muted-foreground">{pretty(selected.playing_role)}</p>
             </div>
             <button onClick={() => setSelected(null)} className="rounded-full bg-muted p-2"><X className="h-5 w-5" /></button>
+          </div>
+          <div className="mt-4 grid gap-3 rounded-xl border border-border bg-muted/30 p-3 sm:grid-cols-[1fr_1fr_6rem_auto]">
+            <input aria-label="Player name" className="input" value={editPlayerName} onChange={(event) => setEditPlayerName(event.target.value)} placeholder="Player name"/>
+            <input aria-label="Playing role" className="input" value={editPlayingRole} onChange={(event) => setEditPlayingRole(event.target.value)} placeholder="Playing role"/>
+            <input aria-label="S.NO" className="input" type="number" min="1" value={editSerial} onChange={(event) => setEditSerial(event.target.value)} placeholder="S.NO"/>
+            <button disabled={busy === "save-player-text"} onClick={() => void savePlayerText()} className="rounded-xl bg-primary px-4 py-2 text-sm font-black text-primary-foreground">{busy === "save-player-text" ? <Loader2 className="h-4 w-4 animate-spin"/> : "Save text"}</button>
           </div>
           {selected.status === "unsold" ? (
             <button onClick={() => void reopen(selected)} className="mt-6 w-full rounded-xl bg-primary px-4 py-3 font-black text-primary-foreground"><RefreshCw className="mr-2 inline h-4 w-4" />Reopen Player</button>
@@ -385,17 +475,11 @@ function Status({ value }: { value: AuctionPlayer["status"] }) {
   return <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-[.65rem] font-black uppercase text-white ${style}`}>{value}</span>;
 }
 function SquadPanel({ teams, players }: { teams: Team[]; players: AuctionPlayer[] }) {
-  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="grid gap-2 py-2 sm:grid-cols-2">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[4.75rem_1fr_auto] items-center gap-3 rounded-xl border border-border bg-background p-3 shadow-sm"><CardRegion player={player} region="photo"/><span className="min-w-0 space-y-1"><CardRegion player={player} region="name"/><CardRegion player={player} region="role"/><CardRegion player={player} region="serial"/></span><span className="rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-sm font-black text-emerald-600">{money(Number(player.winning_bid || 0))}</span></div>)}</div></article>)}</div></section>;
+  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="grid gap-2 py-2 sm:grid-cols-2">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[4.75rem_1fr_auto] items-center gap-3 rounded-xl border border-border bg-background p-3 shadow-sm"><PlayerPhotoFromCard player={player}/><span className="min-w-0"><strong className="block truncate text-base">{player.player_name}</strong><small className="block capitalize text-muted-foreground">{pretty(player.playing_role)}</small><small className="block font-mono font-black text-primary">S.NO {String(displaySerial(player)).padStart(2, "0")}</small></span><span className="rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-sm font-black text-emerald-600">{money(Number(player.winning_bid || 0))}</span></div>)}</div></article>)}</div></section>;
 }
-function CardRegion({ player, region }: { player: AuctionPlayer; region: "photo" | "name" | "role" | "serial" }) {
+function PlayerPhotoFromCard({ player }: { player: AuctionPlayer }) {
   const image = player.player_card_url || player.photo_url;
-  const styles = {
-    photo: { className: "h-[4.25rem] w-[4.25rem] rounded-xl border border-border", position: "11% 45%", size: "308% auto" },
-    name: { className: "h-7 w-48 max-w-full rounded bg-[#09275b]", position: "96% 32%", size: "216% auto" },
-    role: { className: "h-5 w-40 max-w-full rounded bg-white", position: "100% 48%", size: "263% auto" },
-    serial: { className: "h-5 w-20 rounded bg-[#09275b]", position: "22% 85%", size: "490% auto" },
-  }[region];
-  return <span role="img" aria-label={`${region} shown from uploaded player card`} className={`block shrink-0 bg-no-repeat ${styles.className}`} style={{ backgroundImage: `url(${JSON.stringify(image)})`, backgroundPosition: styles.position, backgroundSize: styles.size }}/>;
+  return <span role="img" aria-label={`${player.player_name} photo`} className="block h-[4.25rem] w-[4.25rem] shrink-0 rounded-xl border border-border bg-cover bg-no-repeat" style={{ backgroundImage: `url(${JSON.stringify(image)})`, backgroundPosition: "11% 45%", backgroundSize: "308% auto" }}/>;
 }
 function HistoryPanel({ history, players, teams }: { history: HistoryRow[]; players: AuctionPlayer[]; teams: Team[] }) {
   const playerIds = new Set(players.map((player) => player.id));
@@ -403,7 +487,7 @@ function HistoryPanel({ history, players, teams }: { history: HistoryRow[]; play
     playerIds.has(row.auction_player_id)
     && rows.findIndex((candidate) => candidate.auction_player_id === row.auction_player_id) === index
   );
-  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><History className="h-5 w-5 text-primary"/>Auction History</h2><div className="mt-4 max-h-[32rem] divide-y divide-border overflow-y-auto">{latestPlayerActions.map((row) => { const player = players.find((item) => item.id === row.auction_player_id); const team = teams.find((item) => item.id === row.team_id); return player ? <div key={row.id} className="flex items-center gap-3 py-3 text-sm"><Clock3 className="h-4 w-4 shrink-0 text-muted-foreground"/><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><CardRegion player={player} region="name"/><CardRegion player={player} region="serial"/></div><p className="mt-1 capitalize text-muted-foreground">{row.action}{team ? ` · ${team.name}` : ""}</p></div>{row.bid_amount !== null && <strong>{money(Number(row.bid_amount))}</strong>}<time className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></div> : null})}</div></section>;
+  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><History className="h-5 w-5 text-primary"/>Auction History</h2><div className="mt-4 max-h-[32rem] divide-y divide-border overflow-y-auto">{latestPlayerActions.map((row) => { const player = players.find((item) => item.id === row.auction_player_id); const team = teams.find((item) => item.id === row.team_id); return player ? <div key={row.id} className="flex items-center gap-3 py-3 text-sm"><Clock3 className="h-4 w-4 shrink-0 text-muted-foreground"/><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><strong className="truncate text-base">{player.player_name}</strong><span className="font-mono text-xs font-black text-primary">S.NO {String(displaySerial(player)).padStart(2, "0")}</span></div><p className="mt-1 capitalize text-muted-foreground">{row.action}{team ? ` · ${team.name}` : ""}</p></div>{row.bid_amount !== null && <strong>{money(Number(row.bid_amount))}</strong>}<time className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></div> : null})}</div></section>;
 }
 function DownloadButton({ label, busy, onClick }: { label: string; busy: boolean; onClick: () => void }) {
   return <button disabled={busy} onClick={onClick} className="control">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}{label}</button>;
@@ -411,18 +495,18 @@ function DownloadButton({ label, busy, onClick }: { label: string; busy: boolean
 function Empty({ text }: { text: string }) { return <div className="grid min-h-64 place-items-center rounded-3xl border border-dashed border-border text-muted-foreground">{text}</div>; }
 function pretty(value: string) { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
 function money(value: number) { return new Intl.NumberFormat("en-LK", { maximumFractionDigits: 2 }).format(value || 0); }
+function displaySerial(player: AuctionPlayer) { return player.ocr_serial_number || player.registration_number; }
 
 function playerDetailsFromFilename(filename: string) {
   const base = filename.replace(/\.[^.]+$/, "").trim();
   const parts = base.split(/\s+(?:-|–|—)\s+|_+/).map((part) => part.trim()).filter(Boolean);
-  const filenameNumber = parts.length && /^\d+$/.test(parts[0]) ? Number(parts.shift()) : null;
+  if (parts.length && /^\d+$/.test(parts[0])) parts.shift();
   const rolePattern = /^(all[\s_-]?rounder|batsman|batter|bowler|wicket[\s_-]?keeper|player)$/i;
   const rolePart = parts.length > 1 && rolePattern.test(parts.at(-1) || "") ? parts.pop()! : "Player";
   const playerName = parts.join(" - ").trim() || base.replace(/^\d+\s*/, "").trim() || "Player";
   return {
     player_name: playerName,
     playing_role: rolePart.replaceAll("-", " ").replaceAll("_", " "),
-    registration_number: filenameNumber,
   };
 }
 
