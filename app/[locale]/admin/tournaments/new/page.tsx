@@ -6,11 +6,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, CheckCircle2, Eye, EyeOff, ImagePlus, Upload, Loader2, Trophy, X } from "lucide-react";
+import { ArrowLeft, Upload, Loader2, Trophy } from "lucide-react";
 import Link from "next/link";
 import { uploadImage } from "@/lib/media";
 import { useAdminAccess } from "@/components/admin-shell";
-import { DEFAULT_PLAYER_CARD_LAYOUT } from "@/lib/player-card-layout";
 
 const tournamentSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -21,7 +20,6 @@ const tournamentSchema = z.object({
 });
 
 type TournamentFormValues = z.infer<typeof tournamentSchema>;
-type PendingTemplate = { id: string; file: File; preview: string; visible: boolean };
 
 export default function NewTournamentPage() {
   const { userId } = useAdminAccess();
@@ -29,8 +27,6 @@ export default function NewTournamentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [cardTemplates, setCardTemplates] = useState<PendingTemplate[]>([]);
-  const [activeTemplateId, setActiveTemplateId] = useState("");
 
   const { register, handleSubmit, formState: { errors } } = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentSchema),
@@ -46,32 +42,6 @@ export default function NewTournamentPage() {
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
     }
-  };
-
-  const handleTemplateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) return;
-    const next = files.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      preview: URL.createObjectURL(file),
-      visible: true,
-    }));
-    setCardTemplates((current) => [...current, ...next]);
-    setActiveTemplateId((current) => current || next[0].id);
-    event.target.value = "";
-  };
-
-  const toggleTemplate = (id: string) => {
-    setCardTemplates((current) => current.map((template) => template.id === id ? { ...template, visible: !template.visible } : template));
-    if (activeTemplateId === id) setActiveTemplateId("");
-  };
-
-  const removeTemplate = (id: string) => {
-    const target = cardTemplates.find((template) => template.id === id);
-    if (target) URL.revokeObjectURL(target.preview);
-    setCardTemplates((current) => current.filter((template) => template.id !== id));
-    if (activeTemplateId === id) setActiveTemplateId("");
   };
 
   const onSubmit = async (data: TournamentFormValues) => {
@@ -107,32 +77,6 @@ export default function NewTournamentPage() {
         .single();
 
       if (insertError) throw insertError;
-
-      let selectedTemplateId: string | null = null;
-      for (const template of cardTemplates) {
-        const uploaded = await uploadImage(template.file, "auction-templates");
-        const { data: createdTemplate, error: templateError } = await (supabase.from("card_templates") as any)
-          .insert({
-            organizer_id: userId,
-            name: template.file.name.replace(/\.[^.]+$/, "").trim() || "Player card template",
-            template_type: "player",
-            image_url: uploaded.url,
-            public_id: uploaded.publicId,
-            is_visible: template.visible,
-            layout: DEFAULT_PLAYER_CARD_LAYOUT,
-          })
-          .select("id")
-          .single();
-        if (templateError) throw templateError;
-        if (template.id === activeTemplateId && template.visible) selectedTemplateId = createdTemplate.id;
-      }
-      if (selectedTemplateId) {
-        const { error: choiceError } = await (supabase.from("tournament_card_templates") as any).insert({
-          tournament_id: createdTournament.id,
-          player_template_id: selectedTemplateId,
-        });
-        if (choiceError) throw choiceError;
-      }
 
       router.push(`/admin/tournaments/${createdTournament.id}`);
       router.refresh();
@@ -245,48 +189,6 @@ export default function NewTournamentPage() {
               {errors.overs && <p className="text-sm text-red-500">{errors.overs.message}</p>}
             </div>
           </div>
-
-          <section className="space-y-4 rounded-2xl border border-border bg-muted/20 p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[.18em] text-primary">Player Card Templates</p>
-                <h2 className="mt-1 text-lg font-black">Upload registration card designs</h2>
-                <p className="mt-1 text-sm text-muted-foreground">The selected visible template automatically generates every registered player card for this tournament.</p>
-              </div>
-              <label className="control cursor-pointer bg-primary text-primary-foreground">
-                <ImagePlus className="mr-2 h-4 w-4" />Upload Templates
-                <input type="file" multiple accept="image/jpeg,image/png" className="sr-only" onChange={handleTemplateChange} />
-              </label>
-            </div>
-            {!cardTemplates.length ? (
-              <div className="grid min-h-32 place-items-center rounded-xl border-2 border-dashed border-border text-center text-sm text-muted-foreground">
-                <span><Upload className="mx-auto mb-2 h-6 w-6" />Upload one or more JPG/PNG player-card templates.</span>
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {cardTemplates.map((template) => {
-                  const active = activeTemplateId === template.id;
-                  return <article key={template.id} className={`overflow-hidden rounded-2xl border bg-card ${active ? "border-emerald-500 ring-2 ring-emerald-200" : "border-border"} ${template.visible ? "" : "opacity-60"}`}>
-                    <button type="button" disabled={!template.visible} onClick={() => setActiveTemplateId(template.id)} className="relative block aspect-square w-full overflow-hidden bg-black/5 text-left">
-                      <img src={template.preview} alt={template.file.name} className="h-full w-full object-cover" />
-                      {active && <span className="absolute right-3 top-3 rounded-full bg-emerald-600 p-2 text-white"><CheckCircle2 className="h-5 w-5" /></span>}
-                    </button>
-                    <div className="space-y-3 p-3">
-                      <p className="truncate text-sm font-black">{template.file.name}</p>
-                      <div className="grid grid-cols-[1fr_auto] gap-2">
-                        <button type="button" onClick={() => toggleTemplate(template.id)} className="control justify-center">
-                          {template.visible ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                          {template.visible ? "Visible · Hide" : "Hidden · Show"}
-                        </button>
-                        <button type="button" aria-label="Remove template" onClick={() => removeTemplate(template.id)} className="control px-3 text-red-600"><X className="h-4 w-4" /></button>
-                      </div>
-                      {template.visible && !active && <button type="button" onClick={() => setActiveTemplateId(template.id)} className="w-full rounded-lg bg-primary/10 px-3 py-2 text-xs font-black text-primary">Use for this tournament</button>}
-                    </div>
-                  </article>;
-                })}
-              </div>
-            )}
-          </section>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-border">
             <Link 

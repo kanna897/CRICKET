@@ -5,6 +5,7 @@ export type MediaKind =
   | "team-logos"
   | "player-photos"
   | "player-registrations"
+  | "auction-player-cards"
   | "auction-templates"
   | "posters"
   | "banners";
