@@ -142,6 +142,10 @@ test("live auction is modular, realtime and transaction-backed", () => {
   assert.match(dashboard, /Bulk Card Downloads/);
   assert.match(dashboard, /Bulk Player Profile Card Upload/);
   assert.match(dashboard, /create_bulk_auction_players/);
+  assert.match(dashboard, /Complete & Hide/);
+  assert.match(dashboard, /latestPlayerActions/);
+  assert.match(dashboard, /CardRegion/);
+  assert.match(dashboard, /\["available","live","sold","unsold"\]/);
   assert.doesNotMatch(registration, /kind: "player"/);
   assert.match(migration, /drop trigger if exists create_auction_player_for_registration/);
   assert.match(migration, /source_type in \('registration', 'bulk_upload'\)/);
