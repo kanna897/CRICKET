@@ -10,6 +10,7 @@ import { ArrowLeft, CheckCircle2, Eye, EyeOff, ImagePlus, Upload, Loader2, Troph
 import Link from "next/link";
 import { uploadImage } from "@/lib/media";
 import { useAdminAccess } from "@/components/admin-shell";
+import { DEFAULT_PLAYER_CARD_LAYOUT } from "@/lib/player-card-layout";
 
 const tournamentSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -118,6 +119,7 @@ export default function NewTournamentPage() {
             image_url: uploaded.url,
             public_id: uploaded.publicId,
             is_visible: template.visible,
+            layout: DEFAULT_PLAYER_CARD_LAYOUT,
           })
           .select("id")
           .single();

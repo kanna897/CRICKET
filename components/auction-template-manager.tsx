@@ -5,6 +5,8 @@ import { CheckCircle2, Eye, EyeOff, ImagePlus, Loader2, Upload } from "lucide-re
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/media";
 import { useAdminAccess } from "@/components/admin-shell";
+import { PlayerCardLayoutEditor } from "@/components/player-card-layout-editor";
+import { DEFAULT_PLAYER_CARD_LAYOUT, type PlayerCardLayout } from "@/lib/player-card-layout";
 
 type Template = {
   id: string;
@@ -13,6 +15,7 @@ type Template = {
   image_url: string;
   public_id: string | null;
   is_visible: boolean;
+  layout: unknown;
 };
 
 type Choice = {
@@ -27,6 +30,7 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
   const [uploadType, setUploadType] = useState<Template["template_type"]>("player");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [editing, setEditing] = useState<Template | null>(null);
 
   const load = useCallback(async () => {
     const [{ data: templateRows }, { data: selected }] = await Promise.all([
@@ -57,6 +61,7 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
           image_url: uploaded.url,
           public_id: uploaded.publicId,
           is_visible: true,
+          layout: uploadType === "player" ? DEFAULT_PLAYER_CARD_LAYOUT : {},
         });
         if (error) throw error;
       }
@@ -127,6 +132,16 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
 
   const visible = (type: Template["template_type"]) => templates.filter((row) => row.template_type === type && row.is_visible);
 
+  async function saveLayout(layout: PlayerCardLayout) {
+    if (!editing) return;
+    const { error } = await (supabase.from("card_templates") as any)
+      .update({ layout, updated_at: new Date().toISOString() })
+      .eq("id", editing.id);
+    if (error) throw error;
+    setEditing({ ...editing, layout });
+    await load();
+  }
+
   return <section className="space-y-5 rounded-xl border border-border bg-card p-6 text-foreground shadow-sm">
     <div><p className="text-xs font-black uppercase tracking-[.18em] text-primary">Auction media</p><h2 className="mt-1 text-xl font-black">Player Card Templates</h2><p className="mt-1 text-sm text-muted-foreground">Upload multiple JPG/PNG backgrounds. Hidden templates cannot be selected; one active template is allowed for each card type.</p></div>
     {message && <p role="status" className="rounded-xl border border-primary/20 bg-primary/10 p-3 text-sm font-bold">{message}</p>}
@@ -139,10 +154,18 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
       <TemplateSelect label="Active player profile card" value={choice.player_template_id || ""} templates={visible("player")} busy={busy === "select-player"} onChange={(id) => void select("player", id)} />
       <TemplateSelect label="Active team player card" value={choice.team_player_template_id || ""} templates={visible("team_player")} busy={busy === "select-team_player"} onChange={(id) => void select("team_player", id)} />
     </div>
+    <div className="flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div><h3 className="font-black">Dynamic Player Card Layout</h3><p className="text-sm text-muted-foreground">Configure photo frame, coordinates, fonts, colours and alignment for any player template.</p></div>
+      <select aria-label="Configure player card layout" className="input sm:max-w-xs" value="" onChange={(event) => { const template = templates.find((row) => row.id === event.target.value); if (template) setEditing(template); }}>
+        <option value="">Configure a template…</option>
+        {templates.filter((row) => row.template_type === "player").map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
+      </select>
+    </div>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{templates.map((template) => {
       const active = choice.player_template_id === template.id || choice.team_player_template_id === template.id;
       return <article key={template.id} className={`overflow-hidden rounded-2xl border ${active ? "border-emerald-400 ring-2 ring-emerald-200" : "border-border"} ${template.is_visible ? "bg-background" : "bg-muted opacity-70"}`}><div className="aspect-square overflow-hidden bg-black/5"><img src={template.image_url} alt={template.name} className="h-full w-full object-cover"/></div><div className="space-y-3 p-4"><div className="flex items-start justify-between gap-2"><div><h3 className="font-black">{template.name}</h3><p className="text-xs capitalize text-muted-foreground">{template.template_type.replace("_", " ")}</p></div>{active && <CheckCircle2 className="h-5 w-5 text-emerald-600"/>}</div><button type="button" disabled={busy === template.id} onClick={() => void toggle(template)} className="control w-full justify-center">{template.is_visible ? <Eye className="mr-2 h-4 w-4"/> : <EyeOff className="mr-2 h-4 w-4"/>}{template.is_visible ? "Visible · Hide" : "Hidden · Show"}</button></div></article>;
     })}</div>
+    {editing && <PlayerCardLayoutEditor templateName={editing.name} imageUrl={editing.image_url} initialLayout={editing.layout} onClose={() => setEditing(null)} onSave={saveLayout} />}
   </section>;
 }
 

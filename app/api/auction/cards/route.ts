@@ -6,6 +6,7 @@ import {
   generateTeamPlayerCardJpeg,
   uploadGeneratedJpeg,
 } from "@/lib/auction-card-generator";
+import type { PlayerCardLayout } from "@/lib/player-card-layout";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,7 @@ type PublicPayload = {
   bowling_style: string;
   registration_number: number;
   template_url: string | null;
+  template_layout: unknown;
 };
 
 export async function POST(request: NextRequest) {
@@ -67,10 +69,11 @@ async function createPublicPlayerCard(registrationId?: string, trackingCode?: st
     bowlingStyle: payload.bowling_style,
     mobileNumber: payload.contact_number,
     registrationNumber: payload.registration_number,
+    layout: payload.template_layout as PlayerCardLayout,
   });
   const cardUrl = await uploadGeneratedJpeg(
     jpeg,
-    `crickpulse/auction-cards/${payload.tournament_id}/players`,
+    `crickpulse/tournaments/${payload.tournament_id}/player-cards`,
     `${payload.registration_id}-player-card`,
   );
   const { error: saveError } = await (supabase.rpc as any)("save_registration_card_url", {
