@@ -51,10 +51,11 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
     setBusy("upload");
     setMessage("");
     try {
+      let firstPlayerTemplateId: string | null = null;
       for (const file of Array.from(files)) {
         const uploaded = await uploadImage(file, "auction-templates");
         const name = file.name.replace(/\.[^.]+$/, "").trim() || "Auction template";
-        const { error } = await (supabase.from("card_templates") as any).insert({
+        const { data: inserted, error } = await (supabase.from("card_templates") as any).insert({
           organizer_id: userId,
           name,
           template_type: uploadType,
@@ -62,8 +63,13 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
           public_id: uploaded.publicId,
           is_visible: true,
           layout: uploadType === "player" ? DEFAULT_PLAYER_CARD_LAYOUT : {},
-        });
+        }).select("id").single();
         if (error) throw error;
+        if (uploadType === "player" && !firstPlayerTemplateId) firstPlayerTemplateId = inserted.id;
+      }
+      if (firstPlayerTemplateId && !choice.player_template_id) {
+        await saveChoice({ ...choice, player_template_id: firstPlayerTemplateId });
+        await regeneratePlayerCards();
       }
       setMessage(`${files.length} template${files.length === 1 ? "" : "s"} uploaded.`);
       await load();
@@ -122,7 +128,12 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
         ? { ...choice, player_template_id: templateId || null }
         : { ...choice, team_player_template_id: templateId || null };
       await saveChoice(next);
-      setMessage("Active tournament template updated.");
+      if (type === "player" && templateId) {
+        const result = await regeneratePlayerCards();
+        setMessage(`Active template updated. ${result.generated} player card${result.generated === 1 ? "" : "s"} generated.`);
+      } else {
+        setMessage("Active tournament template updated.");
+      }
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Template selection failed.");
     } finally {
@@ -132,6 +143,17 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
 
   const visible = (type: Template["template_type"]) => templates.filter((row) => row.template_type === type && row.is_visible);
 
+  async function regeneratePlayerCards() {
+    const response = await fetch("/api/auction/cards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "tournament_players", tournamentId }),
+    });
+    const result = await response.json() as { generated?: number; error?: string };
+    if (!response.ok) throw new Error(result.error || "Player cards could not be generated.");
+    return { generated: result.generated || 0 };
+  }
+
   async function saveLayout(layout: PlayerCardLayout) {
     if (!editing) return;
     const { error } = await (supabase.from("card_templates") as any)
@@ -140,6 +162,10 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
     if (error) throw error;
     setEditing({ ...editing, layout });
     await load();
+    if (choice.player_template_id === editing.id) {
+      const result = await regeneratePlayerCards();
+      setMessage(`Layout saved. ${result.generated} player card${result.generated === 1 ? "" : "s"} regenerated.`);
+    }
   }
 
   return <section className="space-y-5 rounded-xl border border-border bg-card p-6 text-foreground shadow-sm">

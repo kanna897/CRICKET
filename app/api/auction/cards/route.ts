@@ -24,21 +24,97 @@ type PublicPayload = {
   template_layout: unknown;
 };
 
+type TournamentRegistration = {
+  id: string;
+  player_name: string;
+  contact_number: string;
+  photo_url: string;
+  playing_role: string;
+  batting_style: string;
+  bowling_style: string;
+  registration_number: number;
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as {
-      kind?: "player" | "team_player";
+      kind?: "player" | "team_player" | "tournament_players";
       registrationId?: string;
       trackingCode?: string;
       auctionPlayerId?: string;
+      tournamentId?: string;
     };
     if (body.kind === "player") return await createPublicPlayerCard(body.registrationId, body.trackingCode);
     if (body.kind === "team_player") return await createTeamPlayerCard(body.auctionPlayerId);
+    if (body.kind === "tournament_players") return await createTournamentPlayerCards(body.tournamentId);
     return NextResponse.json({ error: "Invalid card generation request." }, { status: 400 });
   } catch (reason) {
     const message = reason instanceof Error ? reason.message : "Card generation failed.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+async function createTournamentPlayerCards(tournamentId?: string) {
+  if (!tournamentId) {
+    return NextResponse.json({ error: "Tournament ID is required." }, { status: 400 });
+  }
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
+
+  const [{ data: choice, error: choiceError }, { data: registrations, error: registrationsError }] = await Promise.all([
+    (supabase.from("tournament_card_templates") as any)
+      .select("player_template_id,card_templates!player_template_id(image_url,is_visible,layout)")
+      .eq("tournament_id", tournamentId)
+      .maybeSingle(),
+    (supabase.from("player_registrations") as any)
+      .select("id,player_name,contact_number,photo_url,playing_role,batting_style,bowling_style,registration_number")
+      .eq("tournament_id", tournamentId)
+      .order("registration_number"),
+  ]);
+  if (choiceError) throw choiceError;
+  if (registrationsError) throw registrationsError;
+  const template = Array.isArray(choice?.card_templates) ? choice.card_templates[0] : choice?.card_templates;
+  if (!choice?.player_template_id || !template?.image_url || !template.is_visible) {
+    return NextResponse.json({ generated: 0, reason: "Select a visible player-card template first." });
+  }
+
+  const failures: string[] = [];
+  let generated = 0;
+  for (const registration of (registrations || []) as TournamentRegistration[]) {
+    try {
+      const jpeg = await generatePlayerCardJpeg({
+        id: registration.id,
+        templateUrl: template.image_url,
+        photoUrl: registration.photo_url,
+        playerName: registration.player_name,
+        playingRole: registration.playing_role,
+        battingStyle: registration.batting_style,
+        bowlingStyle: registration.bowling_style,
+        mobileNumber: registration.contact_number,
+        registrationNumber: registration.registration_number,
+        layout: template.layout as PlayerCardLayout,
+      });
+      const cardUrl = await uploadGeneratedJpeg(
+        jpeg,
+        `crickpulse/tournaments/${tournamentId}/player-cards`,
+        `${registration.id}-player-card`,
+      );
+      const [{ error: registrationError }, { error: auctionError }] = await Promise.all([
+        (supabase.from("player_registrations") as any)
+          .update({ player_card_url: cardUrl }).eq("id", registration.id),
+        (supabase.from("auction_players") as any)
+          .update({ player_card_url: cardUrl, updated_at: new Date().toISOString() })
+          .eq("registration_id", registration.id),
+      ]);
+      if (registrationError) throw registrationError;
+      if (auctionError) throw auctionError;
+      generated += 1;
+    } catch (reason) {
+      failures.push(reason instanceof Error ? reason.message : `Card generation failed for ${registration.id}.`);
+    }
+  }
+  return NextResponse.json({ generated, total: registrations?.length || 0, failures });
 }
 
 async function createPublicPlayerCard(registrationId?: string, trackingCode?: string) {
