@@ -55,19 +55,13 @@ function fittedFontSize(value: string, field: PlayerCardTextLayout) {
 
 async function textLayer(value: string, field: PlayerCardTextLayout): Promise<OverlayOptions> {
   const fontSize = fittedFontSize(value, field);
-  const pangoFontSize = Math.max(8, Math.round(fontSize * 0.82));
-  const markup = `<span foreground="${field.fontColour}" weight="${field.fontWeight}" style="${field.italic ? "italic" : "normal"}">${xml(value)}</span>`;
-  const input = await sharp({
-    text: {
-      text: markup,
-      font: `${field.fontFamily} ${pangoFontSize}`,
-      width: Math.round(field.maxWidth),
-      align: field.textAlignment === "center" ? "centre" : field.textAlignment,
-      wrap: "none",
-      rgba: true,
-      dpi: 72,
-    },
-  }).png().toBuffer();
+  const width = Math.max(1, Math.round(field.maxWidth));
+  const height = Math.max(1, Math.ceil(fontSize * 1.35));
+  const anchor = field.textAlignment === "center" ? "middle" : field.textAlignment === "right" ? "end" : "start";
+  const x = field.textAlignment === "center" ? width / 2 : field.textAlignment === "right" ? width : 0;
+  const input = Buffer.from(`<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+    <text x="${x}" y="${fontSize}" text-anchor="${anchor}" fill="${field.fontColour}" font-family="sans-serif" font-size="${fontSize}" font-weight="${field.fontWeight}" font-style="${field.italic ? "italic" : "normal"}">${xml(value)}</text>
+  </svg>`);
   const left = field.textAlignment === "center"
     ? Math.round(field.x - field.maxWidth / 2)
     : field.textAlignment === "right"
@@ -76,7 +70,7 @@ async function textLayer(value: string, field: PlayerCardTextLayout): Promise<Ov
   return {
     input,
     left: Math.max(0, left),
-    top: Math.max(0, Math.round(field.y - fontSize * 0.92)),
+    top: Math.max(0, Math.round(field.y - fontSize)),
   };
 }
 
