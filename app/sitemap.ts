@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { locales, publicSupabase, siteUrl } from "@/lib/seo";
 
+export const revalidate = 3600;
+
 const staticRoutes = [
   "",
   "/discover",
