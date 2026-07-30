@@ -83,7 +83,7 @@ test("SEO exposes localized discovery and dynamic entity metadata", () => {
 });
 
 test("scoring retains offline queue and handover controls", () => {
-  const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
+  const scoring = readFileSync(resolve(root, "features/scoring/use-live-scoring-page.tsx"), "utf8");
   assert.match(scoring, /saveToOfflineQueue/);
   assert.match(scoring, /Scorer Handover/);
 });
@@ -91,13 +91,13 @@ test("scoring retains offline queue and handover controls", () => {
 test("match workflow keeps the active locale in admin navigation", () => {
   const matchList = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
   const newMatch = readFileSync(resolve(root, "app/[locale]/admin/matches/new/page.tsx"), "utf8");
-  const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
+  const scoring = readFileSync(resolve(root, "features/scoring/use-live-scoring-page.tsx"), "utf8");
   const scorecard = readFileSync(resolve(root, "app/[locale]/admin/matches/scorecard/[id]/page.tsx"), "utf8");
   for (const source of [matchList, newMatch, scoring, scorecard]) assert.match(source, /localePath\(locale,/);
 });
 
 test("advanced scorer keeps free-hit, variable extras and mobile controls", () => {
-  const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
+  const scoring = readFileSync(resolve(root, "features/scoring/use-live-scoring-page.tsx"), "utf8");
   assert.match(scoring, /freeHitActive/);
   assert.match(scoring, /Advanced delivery/);
   assert.match(scoring, /Mobile quick scoring/);
