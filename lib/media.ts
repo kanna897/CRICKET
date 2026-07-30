@@ -10,18 +10,7 @@ export type MediaKind =
   | "posters"
   | "banners";
 
-type UploadSignature = {
-  cloudName: string;
-  apiKey: string;
-  folder: string;
-  timestamp: string;
-  signature: string;
-};
-
-type CloudinaryUpload = {
-  secure_url?: string;
-  public_id?: string;
-};
+type MediaUpload = { url?: string; publicId?: string };
 
 type ErrorPayload = { error?: string | { message?: string } };
 
@@ -64,27 +53,12 @@ export async function uploadImage(file: File, kind: MediaKind) {
     headers: { Authorization: `Bearer ${session.access_token}` },
     body: signatureRequest,
   });
-  const signature = await readJson<UploadSignature>(signatureResponse);
-  if (!signatureResponse.ok) throw new Error(errorMessage(signature.error, "Image upload authorization failed."));
-
-  const cloudinaryForm = new FormData();
-  cloudinaryForm.set("file", file);
-  cloudinaryForm.set("folder", signature.folder);
-  cloudinaryForm.set("timestamp", signature.timestamp);
-  cloudinaryForm.set("api_key", signature.apiKey);
-  cloudinaryForm.set("signature", signature.signature);
-
-  const cloudinaryResponse = await fetch(
-    `https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`,
-    { method: "POST", body: cloudinaryForm },
-  );
-  const upload = await readJson<CloudinaryUpload>(cloudinaryResponse);
-  if (!cloudinaryResponse.ok || !upload.secure_url || !upload.public_id) {
-    throw new Error(errorMessage(upload.error, "Cloudinary upload failed."));
+  const upload = await readJson<MediaUpload>(signatureResponse);
+  if (!signatureResponse.ok || !upload.url || !upload.publicId) {
+    throw new Error(errorMessage(upload.error, "Image upload failed."));
   }
-
   const url = kind === "player-photos" || kind === "player-registrations"
-    ? cloudinaryPlayerPhotoUrl(upload.secure_url)
-    : upload.secure_url;
-  return { url, publicId: upload.public_id };
+    ? cloudinaryPlayerPhotoUrl(upload.url)
+    : upload.url;
+  return { url, publicId: upload.publicId };
 }
