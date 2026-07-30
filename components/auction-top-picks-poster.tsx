@@ -25,9 +25,9 @@ function exportSafeUrl(url: string) {
   if (!url) return url;
   try {
     const parsed = new URL(url, window.location.origin);
-    return parsed.hostname === "res.cloudinary.com"
-      ? `/api/poster-image?url=${encodeURIComponent(parsed.toString())}`
-      : url;
+    return parsed.origin === window.location.origin
+      ? parsed.pathname + parsed.search
+      : `/api/poster-image?url=${encodeURIComponent(parsed.toString())}`;
   } catch {
     return url;
   }
@@ -142,7 +142,8 @@ export function AuctionTopPicksPoster({
       onDownloadComplete?.();
     } catch (reason) {
       console.error("Top Picks poster export failed", reason);
-      setDownloadError("Poster download failed. Reload this page once and try Download 4K JPG again.");
+      const detail = reason instanceof Error ? reason.message : "Unknown export error";
+      setDownloadError(`Poster download failed: ${detail}. Please try once more.`);
     } finally {
       setDownloading(false);
     }

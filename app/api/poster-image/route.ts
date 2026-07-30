@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ALLOWED_IMAGE_HOSTS = new Set(["res.cloudinary.com"]);
+const ALLOWED_IMAGE_HOSTS = new Set([
+  "res.cloudinary.com",
+  "lh3.googleusercontent.com",
+  "avatars.githubusercontent.com",
+  "raw.githubusercontent.com",
+]);
+
+function isAllowedImageHost(hostname: string) {
+  return ALLOWED_IMAGE_HOSTS.has(hostname)
+    || hostname.endsWith(".supabase.co")
+    || hostname.endsWith(".supabase.in")
+    || hostname.endsWith(".supabase.net");
+}
 
 export async function GET(request: NextRequest) {
   const rawUrl = request.nextUrl.searchParams.get("url");
@@ -13,7 +25,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid image URL." }, { status: 400 });
   }
 
-  if (imageUrl.protocol !== "https:" || !ALLOWED_IMAGE_HOSTS.has(imageUrl.hostname)) {
+  if (imageUrl.protocol !== "https:" || !isAllowedImageHost(imageUrl.hostname)) {
     return NextResponse.json({ error: "Image host is not allowed." }, { status: 403 });
   }
 
