@@ -38,6 +38,27 @@ test("public navigation exposes discovery and comparison", () => {
   assert.match(nav, /Unhide/);
 });
 
+test("production responses define the complete security header baseline", () => {
+  const config = readFileSync(resolve(root, "next.config.ts"), "utf8");
+  for (const header of [
+    "Content-Security-Policy",
+    "Strict-Transport-Security",
+    "Referrer-Policy",
+    "Permissions-Policy",
+    "X-Frame-Options",
+    "X-Content-Type-Options",
+    "Cross-Origin-Opener-Policy",
+    "Cross-Origin-Resource-Policy",
+    "Cross-Origin-Embedder-Policy",
+  ]) {
+    assert.match(config, new RegExp(header));
+  }
+  assert.match(config, /https:\/\/\*\.supabase\.co/);
+  assert.match(config, /wss:\/\/\*\.supabase\.co/);
+  assert.match(config, /https:\/\/res\.cloudinary\.com/);
+  assert.match(config, /https:\/\/challenges\.cloudflare\.com/);
+});
+
 test("scoring retains offline queue and handover controls", () => {
   const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
   assert.match(scoring, /saveToOfflineQueue/);

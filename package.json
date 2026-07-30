@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "check": "npm run test && npm run typecheck",
-    "verify:production-env": "node scripts/verify-production-env.mjs"
+    "verify:production-env": "node scripts/verify-production-env.mjs",
+    "verify:security-headers": "node scripts/verify-security-headers.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
