@@ -1,0 +1,26 @@
+export type Tournament = { id: string; name: string; organizer_id?: string | null };
+export type Team = { id: string; name: string; logo_url: string | null };
+export type AuctionPlayer = {
+  id: string;
+  tournament_id: string;
+  registration_id: string;
+  player_id: string | null;
+  registration_number: number;
+  ocr_serial_number: number | null;
+  player_name: string;
+  photo_url: string;
+  playing_role: string;
+  batting_style: string;
+  bowling_style: string;
+  status: "available" | "live" | "sold" | "unsold";
+  winning_team_id: string | null;
+  winning_bid: number | null;
+  sold_at: string | null;
+  player_card_url: string | null;
+  team_player_card_url: string | null;
+  source_type: "registration" | "bulk_upload";
+};
+export type Purse = { tournament_id: string; team_id: string; initial_purse: number; total_spent: number; purchased_count: number };
+export type Session = { tournament_id: string; status: "draft" | "live" | "paused" | "completed"; current_auction_player_id: string | null };
+export type HistoryRow = { id: number; auction_player_id: string; team_id: string | null; bid_amount: number | null; action: string; created_at: string };
+export type AuctionFilter = AuctionPlayer["status"];
