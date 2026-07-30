@@ -180,6 +180,7 @@ test("team and player rankings are available to admins and public viewers", () =
 
 test("live auction is modular, realtime and transaction-backed", () => {
   const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  const auctionComponents = readFileSync(resolve(root, "features/auction/components.tsx"), "utf8");
   const registration = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");
   const migration = readFileSync(resolve(root, "supabase/migrations/20260729172101_bulk_auction_player_cards.sql"), "utf8");
   const ocrMigration = readFileSync(resolve(root, "supabase/migrations/20260729192316_update_bulk_auction_player_ocr_text.sql"), "utf8");
@@ -191,7 +192,7 @@ test("live auction is modular, realtime and transaction-backed", () => {
   assert.match(dashboard, /Bulk Player Profile Card Upload/);
   assert.match(dashboard, /create_bulk_auction_players/);
   assert.match(dashboard, /Complete & Hide/);
-  assert.match(dashboard, /latestPlayerActions/);
+  assert.match(auctionComponents, /latestPlayerActions/);
   assert.match(dashboard, /Scan Cards to Text/);
   assert.match(dashboard, /recognizeAuctionCard/);
   assert.match(dashboard, /\["available","live","sold","unsold"\]/);
