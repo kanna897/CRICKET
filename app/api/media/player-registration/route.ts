@@ -1,45 +1,55 @@
-import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import type { Database } from "@/types/database.types";
+import {
+  clientAddress,
+  consumeUploadLimit,
+  registrationFolder,
+  uploadToCloudinary,
+  validateImage,
+  verifyTurnstile,
+} from "@/lib/cloudinary-upload-security";
 
 export async function POST(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  if (!supabaseUrl || !supabaseKey || !cloudName || !apiKey || !apiSecret) {
-    return NextResponse.json({ error: "Player photo upload service is not configured." }, { status: 503 });
-  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return NextResponse.json({ error: "Player photo upload service is not configured." }, { status: 503 });
 
   const formData = await request.formData();
   const tournamentId = formData.get("tournamentId");
-
-  if (typeof tournamentId !== "string" || !tournamentId) {
+  const captchaToken = formData.get("captchaToken");
+  const file = formData.get("file");
+  if (typeof tournamentId !== "string" || typeof captchaToken !== "string" || !(file instanceof File)) {
     return NextResponse.json({ error: "Invalid player photo upload request." }, { status: 400 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: tournament, error } = await supabase
-    .from("tournaments")
-    .select("id")
-    .eq("id", tournamentId)
-    .eq("player_registration_enabled", true)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (error || !tournament) {
-    return NextResponse.json({ error: "Player registration is not enabled for this tournament." }, { status: 403 });
+  const ip = clientAddress(request);
+  const supabase = createClient<Database>(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  try {
+    if (!await consumeUploadLimit(supabase, `registration:${tournamentId}:${ip}`, 8)) {
+      console.warn("upload_audit", { action: "rate_limited", tournamentId, ip });
+      return NextResponse.json({ error: "Too many uploads. Please try again later." }, { status: 429 });
+    }
+    if (!await verifyTurnstile(captchaToken, ip)) {
+      console.warn("upload_audit", { action: "captcha_rejected", tournamentId, ip });
+      return NextResponse.json({ error: "CAPTCHA verification failed. Please try again." }, { status: 403 });
+    }
+    await validateImage(file);
+    const { data: tournament, error } = await supabase.from("tournaments").select("id")
+      .eq("id", tournamentId).eq("player_registration_enabled", true).is("deleted_at", null).maybeSingle();
+    if (error || !tournament) {
+      return NextResponse.json({ error: "Player registration is not enabled for this tournament." }, { status: 403 });
+    }
+    const upload = await uploadToCloudinary(
+      file,
+      registrationFolder(tournamentId),
+      process.env.CLOUDINARY_REGISTRATION_UPLOAD_PRESET,
+    );
+    console.info("upload_audit", { action: "uploaded", tournamentId, publicId: upload.publicId, ip });
+    return NextResponse.json(upload);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Player photo upload failed.";
+    console.error("upload_audit", { action: "rejected", tournamentId, ip, message });
+    return NextResponse.json({ error: message }, { status: message.includes("configured") ? 503 : 400 });
   }
-
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const folder = `crickpulse/player-registrations/${tournamentId}`;
-  const signature = createHash("sha1")
-    .update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`)
-    .digest("hex");
-
-  return NextResponse.json({ cloudName, apiKey, folder, timestamp, signature });
 }

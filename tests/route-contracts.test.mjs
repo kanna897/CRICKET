@@ -116,8 +116,10 @@ test("player registration supports hide/unhide and organizer approval", () => {
   assert.match(editor, /Visible — public players can submit applications/);
   assert.match(form, /Same jersey number is allowed/);
   assert.match(form, /consent_given/);
-  assert.doesNotMatch(form, /signatureRequest\.set\("file"/);
-  assert.match(form, /readJson<UploadSignature>/);
+  assert.match(form, /uploadRequest\.set\("file"/);
+  assert.match(form, /uploadRequest\.set\("captchaToken"/);
+  assert.match(form, /readJson<MediaUpload>/);
+  assert.doesNotMatch(form, /api_key|signature\.signature|res\.cloudinary\.com\/v1_1/);
   assert.match(queue, /Approve & Add/);
 });
 
