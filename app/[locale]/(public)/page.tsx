@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PublicNav } from "@/components/public-nav";
 import { supabase } from "@/lib/supabase";
+import { preload } from "react-dom";
 
 type Tournament = {
   id: string;
@@ -54,6 +55,7 @@ type Innings = {
 };
 
 export default function PublicHome() {
+  preload("/landing/cricket-hero-background.webp", { as: "image", fetchPriority: "high" });
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -63,29 +65,40 @@ export default function PublicHome() {
   useEffect(() => {
     let active = true;
     async function loadLanding() {
-      const [tournamentResult, teamResult, matchResult, playerResult] = await Promise.all([
+      const [tournamentResult, matchResult, playerResult] = await Promise.all([
         supabase.from("tournaments")
           .select("id,name,logo_url,venue,start_date,end_date,status")
           .is("deleted_at", null)
-          .order("created_at", { ascending: false }),
-        supabase.from("teams")
-          .select("id,tournament_id,name,logo_url")
-          .is("deleted_at", null),
+          .order("created_at", { ascending: false })
+          .limit(8),
         supabase.from("matches")
           .select("id,tournament_id,team_a_id,team_b_id,status,match_date,match_time,ground,toss_winner_id,toss_decision,created_at")
           .order("created_at", { ascending: false })
-          .limit(20),
+          .limit(12),
         supabase.from("players")
           .select("id", { count: "exact", head: true })
           .is("deleted_at", null),
       ]);
       const matchRows = (matchResult.data || []) as Match[];
       const matchIds = matchRows.map((item) => item.id);
-      const inningsResult = matchIds.length
-        ? await supabase.from("innings")
+      const tournamentIds = (tournamentResult.data || []).map((item) => item.id);
+      const teamIds = [...new Set(matchRows.flatMap((item) => [item.team_a_id, item.team_b_id]))];
+      const teamScopeFilters = [
+        tournamentIds.length ? `tournament_id.in.(${tournamentIds.join(",")})` : "",
+        teamIds.length ? `id.in.(${teamIds.join(",")})` : "",
+      ].filter(Boolean).join(",");
+      const [inningsResult, teamResult] = await Promise.all([
+        matchIds.length ? supabase.from("innings")
             .select("match_id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled")
             .in("match_id", matchIds)
-        : { data: [] };
+          : Promise.resolve({ data: [] }),
+        tournamentIds.length || teamIds.length
+          ? supabase.from("teams")
+              .select("id,tournament_id,name,logo_url")
+              .or(teamScopeFilters)
+              .is("deleted_at", null)
+          : Promise.resolve({ data: [] }),
+      ]);
       if (!active) return;
       setTournaments((tournamentResult.data || []) as Tournament[]);
       setTeams((teamResult.data || []) as Team[]);
@@ -95,19 +108,41 @@ export default function PublicHome() {
     }
 
     void loadLanding();
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleRefresh = () => {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => void loadLanding(), 350);
+    };
     const channel = supabase
       .channel("public-landing-v2")
-      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, loadLanding)
-      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, loadLanding)
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh)
       .subscribe();
     return () => {
       active = false;
+      clearTimeout(refreshTimer);
       void supabase.removeChannel(channel);
     };
   }, []);
 
-  const team = (id: string) => teams.find((item) => item.id === id);
-  const tournament = (id: string | null) => tournaments.find((item) => item.id === id);
+  const teamMap = useMemo(() => new Map(teams.map((item) => [item.id, item])), [teams]);
+  const tournamentMap = useMemo(() => new Map(tournaments.map((item) => [item.id, item])), [tournaments]);
+  const tournamentTeamCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of teams) {
+      if (item.tournament_id) counts.set(item.tournament_id, (counts.get(item.tournament_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [teams]);
+  const tournamentMatchCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of matches) {
+      if (item.tournament_id) counts.set(item.tournament_id, (counts.get(item.tournament_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [matches]);
+  const team = (id: string) => teamMap.get(id);
+  const tournament = (id: string | null) => id ? tournamentMap.get(id) : undefined;
   const liveMatches = matches.filter((item) => item.status === "live");
   const featuredMatch = liveMatches[0] || matches[0];
   const featuredInnings = featuredMatch
@@ -187,10 +222,10 @@ export default function PublicHome() {
               <Link href={`/tournaments/${item.id}`} key={item.id} className={`landing-tournament-card landing-tournament-${index % 4}`}>
                 <div className="landing-tournament-art">
                   <StatusBadge status={item.status} />
-                  {item.logo_url ? <Image unoptimized width={128} height={128} src={item.logo_url} alt="" /> : <Trophy />}
+                  {item.logo_url ? <Image width={128} height={128} sizes="128px" src={item.logo_url} alt="" /> : <Trophy />}
                   <span>CRICKET LEAGUE</span>
                 </div>
-                <div><h3>{item.name}</h3><p><Users />{teams.filter((entry) => entry.tournament_id === item.id).length} teams <Activity />{matches.filter((entry) => entry.tournament_id === item.id).length} matches</p><small>{dateRange(item.start_date, item.end_date)}</small></div>
+                <div><h3>{item.name}</h3><p><Users />{tournamentTeamCounts.get(item.id) ?? 0} teams <Activity />{tournamentMatchCounts.get(item.id) ?? 0} matches</p><small>{dateRange(item.start_date, item.end_date)}</small></div>
               </Link>
             ))}
             {!visibleTournaments.length && <div className="landing-no-tournament"><Trophy /><b>Tournaments coming soon</b></div>}
@@ -208,7 +243,7 @@ export default function PublicHome() {
         <section className="landing-bottom-cta">
           <div><span><Users /></span><p><b>Organizing a tournament?</b>Create, manage and showcase your tournament with CrickPulse.<Link href="/login">Get Started Now <ArrowRight /></Link></p></div>
           <div><span><Radio /></span><p><b>Public Live Scores</b>Check scores from any match, any tournament.<Link href="/fixtures">View Live Scores <ArrowRight /></Link></p></div>
-          <div className="landing-login-cta"><Link href="/login">Admin Login / Register <ArrowRight /></Link><Link href="/tournaments">Learn More <ArrowRight /></Link></div>
+          <div className="landing-login-cta"><Link href="/login">Admin Login / Register <ArrowRight /></Link><Link href="/tournaments">Explore Tournaments <ArrowRight /></Link></div>
         </section>
       </main>
     </div>
@@ -220,7 +255,7 @@ function FeatureMini({ icon: Icon, title, text }: { icon: typeof Zap; title: str
 }
 
 function TeamCrest({ team }: { team?: Team }) {
-  return <div className="landing-team-crest">{team?.logo_url ? <Image unoptimized width={128} height={128} src={team.logo_url} alt="" /> : <span>{team?.name.slice(0, 2).toUpperCase() || "CP"}</span>}<b>{team?.name || "Team"}</b></div>;
+  return <div className="landing-team-crest">{team?.logo_url ? <Image width={128} height={128} sizes="128px" src={team.logo_url} alt="" /> : <span>{team?.name.slice(0, 2).toUpperCase() || "CP"}</span>}<b>{team?.name || "Team"}</b></div>;
 }
 
 function StatusBadge({ status }: { status: string }) {

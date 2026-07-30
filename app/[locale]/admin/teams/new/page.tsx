@@ -15,7 +15,7 @@ import { useAdminAccess } from "@/components/admin-shell";
 import { useParams } from "next/navigation";
 import { localePath } from "@/lib/locale-path";
 
-type Tournament = Database['public']['Tables']['tournaments']['Row'];
+type Tournament = Pick<Database['public']['Tables']['tournaments']['Row'], "id" | "name" | "organizer_id">;
 
 const teamSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -41,7 +41,7 @@ export default function NewTeamPage() {
 
   useEffect(() => {
     async function fetchTournaments() {
-      let query = supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('tournaments').select('id,name,organizer_id').order('created_at', { ascending: false });
       if (!isMasterAdmin) query = query.eq('organizer_id', userId);
       const { data } = await query;
       if (data) {

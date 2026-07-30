@@ -55,8 +55,19 @@ export default function PublicLiveMatch() {
       } else setBalls([]);
     };
     void load();
-    const channel = supabase.channel(`public-score:${id}`).on("postgres_changes", { event: "*", schema: "public", table: "innings", filter: `match_id=eq.${id}` }, () => { void load(true); }).subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const channel = supabase.channel(`public-score:${id}`).on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "innings", filter: `match_id=eq.${id}` },
+      () => {
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => void load(true), 200);
+      },
+    ).subscribe();
+    return () => {
+      clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const teamName = (teamId: string | null | undefined) => teams.find((team) => team.id === teamId)?.name || "Team";

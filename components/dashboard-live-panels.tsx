@@ -1,7 +1,7 @@
 "use client";
  
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Radio, Trophy, Activity, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -33,16 +33,34 @@ export function DashboardLivePanels() {
       setTournaments(scoped); setMatches((matchResult.data || []) as Match[]); setTeams((teamResult.data || []) as Team[]);
     };
     void load();
-    const channel = supabase.channel(`admin-dashboard:${userId}`).on("postgres_changes", { event: "*", schema: "public", table: "matches" }, load).subscribe();
-    return () => { active = false; void supabase.removeChannel(channel); };
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleRefresh = () => {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => void load(), 250);
+    };
+    const channel = supabase.channel(`admin-dashboard:${userId}`).on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "matches" },
+      scheduleRefresh,
+    ).subscribe();
+    return () => {
+      active = false;
+      clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
   }, [isMasterAdmin, userId]);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayMatches = matches.filter((match) => match.match_date === today);
   const running = matches.filter((match) => ["live", "ongoing", "toss_done"].includes(match.status));
   const upcoming = matches.filter((match) => match.match_date && match.match_date >= today && !["completed", "abandoned"].includes(match.status)).sort((a, b) => `${a.match_date}${a.match_time}`.localeCompare(`${b.match_date}${b.match_time}`)).slice(0, 4);
-  const teamName = (id: string) => teams.find((team) => team.id === id)?.name || "Team";
-  const tournamentName = (id: string) => tournaments.find((tournament) => tournament.id === id)?.name || "Tournament";
+  const teamNames = useMemo(() => new Map(teams.map((team) => [team.id, team.name])), [teams]);
+  const tournamentNames = useMemo(
+    () => new Map(tournaments.map((tournament) => [tournament.id, tournament.name])),
+    [tournaments],
+  );
+  const teamName = (id: string) => teamNames.get(id) || "Team";
+  const tournamentName = (id: string) => tournamentNames.get(id) || "Tournament";
   const activities = [
     ...matches.slice(0, 4).map((match) => ({ id: `match:${match.id}`, title: `${teamName(match.team_a_id)} vs ${teamName(match.team_b_id)}`, detail: `${tournamentName(match.tournament_id)} · ${match.status}`, href: `/admin/matches/score/${match.id}`, date: match.created_at, kind: "match" })),
     ...tournaments.slice(0, 3).map((item) => ({ id: `tournament:${item.id}`, title: item.name, detail: `Tournament · ${item.status}`, href: `/admin/tournaments/${item.id}`, date: item.created_at, kind: "tournament" })),
