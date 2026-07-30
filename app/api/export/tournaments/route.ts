@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { rowsToCsv } from '@/lib/csv';
+import { withApiMonitoring } from '@/lib/monitoring/api';
 
-export async function GET() {
+export const GET = withApiMonitoring("/api/export/tournaments", async () => {
   try {
     // 1. Fetch Data
     const { data: tournaments, error: tourneyError } = await supabase
@@ -34,4 +35,4 @@ export async function GET() {
     console.error("Export Engine Error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
-}
+});

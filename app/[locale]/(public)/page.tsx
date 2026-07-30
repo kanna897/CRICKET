@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PublicNav } from "@/components/public-nav";
 import { supabase } from "@/lib/supabase";
+import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { preload } from "react-dom";
 
 type Tournament = {
@@ -116,8 +117,8 @@ export default function PublicHome() {
     const channel = supabase
       .channel("public-landing-v2")
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh)
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh);
+    subscribeWithMonitoring(channel, "public-landing-v2");
     return () => {
       active = false;
       clearTimeout(refreshTimer);

@@ -9,8 +9,9 @@ import {
   validateImage,
   verifyTurnstile,
 } from "@/lib/cloudinary-upload-security";
+import { withApiMonitoring } from "@/lib/monitoring/api";
 
-export async function POST(request: NextRequest) {
+export const POST = withApiMonitoring<NextRequest>("/api/media/player-registration", async (request) => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return NextResponse.json({ error: "Player photo upload service is not configured." }, { status: 503 });
@@ -52,4 +53,4 @@ export async function POST(request: NextRequest) {
     console.error("upload_audit", { action: "rejected", tournamentId, ip, message });
     return NextResponse.json({ error: message }, { status: message.includes("configured") ? 503 : 400 });
   }
-}
+});

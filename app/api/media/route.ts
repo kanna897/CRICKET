@@ -13,8 +13,9 @@ import {
   validateImage,
   writeUploadAudit,
 } from "@/lib/cloudinary-upload-security";
+import { withApiMonitoring } from "@/lib/monitoring/api";
 
-export async function POST(request: NextRequest) {
+export const POST = withApiMonitoring<NextRequest>("/api/media", async (request) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -56,4 +57,4 @@ export async function POST(request: NextRequest) {
     await writeUploadAudit(supabase, { userId: user.id, role, action: "Upload Rejected", kind, ip, success: false });
     return NextResponse.json({ error: message }, { status: message.includes("configured") ? 503 : 400 });
   }
-}
+});

@@ -22,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { useAdminAccess } from "@/components/admin-shell";
 
 type Tournament = {
@@ -139,8 +140,8 @@ export default function AdminDashboard() {
       .channel(`dashboard-v2:${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, loadDashboard)
       .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, loadDashboard)
-      .on("postgres_changes", { event: "*", schema: "public", table: "player_registrations" }, loadDashboard)
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "player_registrations" }, loadDashboard);
+    subscribeWithMonitoring(channel, `dashboard-v2:${userId}`);
     return () => {
       active = false;
       void supabase.removeChannel(channel);

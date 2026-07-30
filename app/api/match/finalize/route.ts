@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { calculateNetRunRate, calculatePoints } from "@/lib/calculations";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { withApiMonitoring } from "@/lib/monitoring/api";
 
-export async function POST(request: Request) {
+export const POST = withApiMonitoring("/api/match/finalize", async (request: Request) => {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -36,4 +37,4 @@ export async function POST(request: Request) {
     console.error("Calculation Engine Error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
-}
+});

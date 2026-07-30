@@ -7,6 +7,7 @@ import {
   uploadGeneratedJpeg,
 } from "@/lib/auction-card-generator";
 import type { PlayerCardLayout } from "@/lib/player-card-layout";
+import { withApiMonitoring } from "@/lib/monitoring/api";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,7 @@ type TournamentRegistration = {
   registration_number: number;
 };
 
-export async function POST(request: NextRequest) {
+export const POST = withApiMonitoring<NextRequest>("/api/auction/cards", async (request) => {
   try {
     const body = await request.json() as {
       kind?: "player" | "team_player" | "tournament_players";
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
         : "Card generation failed.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});
 
 async function createTournamentPlayerCards(tournamentId?: string) {
   if (!tournamentId) {

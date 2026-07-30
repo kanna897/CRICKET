@@ -15,6 +15,7 @@ import { recognizeAuctionCard } from "@/lib/auction-card-ocr";
 import type { AuctionFilter as Filter, AuctionPlayer, HistoryRow, Purse, Session, Team, Tournament } from "@/features/auction/types";
 import { AuctionEmpty as Empty, AuctionPlayerDialog, AuctionStat as Stat, AuctionStatus as Status, DownloadButton, HistoryPanel, SquadPanel } from "@/features/auction/components";
 import { displaySerial, mapWithConcurrency, money, playerDetailsFromFilename, pretty } from "@/features/auction/utils";
+import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 
 export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = false }: { admin?: boolean; userId?: string; isMasterAdmin?: boolean }) {
   const { locale } = useParams<{ locale: string }>();
@@ -97,8 +98,8 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       .on("postgres_changes", { event: "*", schema: "public", table: "auction_players", filter: `tournament_id=eq.${tournamentId}` }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "auction_team_purses", filter: `tournament_id=eq.${tournamentId}` }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "auction_sessions", filter: `tournament_id=eq.${tournamentId}` }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "auction_history", filter: `tournament_id=eq.${tournamentId}` }, () => void load())
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "auction_history", filter: `tournament_id=eq.${tournamentId}` }, () => void load());
+    subscribeWithMonitoring(channel, `auction-${tournamentId}`);
     return () => { void supabase.removeChannel(channel); };
   }, [load, tournamentId]);
 

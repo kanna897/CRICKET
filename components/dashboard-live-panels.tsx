@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Radio, Trophy, Activity, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { useAdminAccess } from "@/components/admin-shell";
 
 type Tournament = { id: string; name: string; status: string; organizer_id: string; created_at: string };
@@ -42,7 +43,8 @@ export function DashboardLivePanels() {
       "postgres_changes",
       { event: "*", schema: "public", table: "matches" },
       scheduleRefresh,
-    ).subscribe();
+    );
+    subscribeWithMonitoring(channel, `admin-dashboard:${userId}`);
     return () => {
       active = false;
       clearTimeout(refreshTimer);

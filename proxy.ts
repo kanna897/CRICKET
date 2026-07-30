@@ -9,7 +9,10 @@ const intlProxy = createMiddleware({
 });
 
 export async function proxy(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") || request.headers.get("x-vercel-id") || crypto.randomUUID();
+  request.headers.set("x-request-id", requestId);
   let response = intlProxy(request);
+  response.headers.set("x-request-id", requestId);
   const isAdminRequest = /^\/(?:en|ta|si)\/admin(?:\/|$)/.test(request.nextUrl.pathname);
   if (!isAdminRequest) return response;
 
@@ -22,6 +25,7 @@ export async function proxy(request: NextRequest) {
         setAll: (cookiesToSet, headers) => {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = intlProxy(request);
+          response.headers.set("x-request-id", requestId);
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
           Object.entries(headers).forEach(([name, value]) => response.headers.set(name, value));
         },

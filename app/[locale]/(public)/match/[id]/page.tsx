@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, BarChart3, Bell, BellOff, FileText, Radio, Target, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { LiveCommentary } from "@/components/live-commentary";
 
 type Match = { id: string; team_a_id: string; team_b_id: string; overs_per_match: number; status: string; winner_id: string | null };
@@ -63,7 +64,8 @@ export default function PublicLiveMatch() {
         clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => void load(true), 200);
       },
-    ).subscribe();
+    );
+    subscribeWithMonitoring(channel, `public-score:${id}`);
     return () => {
       clearTimeout(refreshTimer);
       void supabase.removeChannel(channel);
