@@ -17,8 +17,8 @@ export default function TeamsPage() {
   useEffect(() => {
     void (async () => {
       const [{ data: teamRows }, { data: playerRows }] = await Promise.all([
-        (supabase.from("teams") as any).select("id,name,logo_url").order("name"),
-        (supabase.from("players") as any).select("team_id"),
+        supabase.from("teams").select("id,name,logo_url").order("name"),
+        supabase.from("players").select("team_id"),
       ]);
       setTeams(teamRows || []);
       setPlayers(playerRows || []);

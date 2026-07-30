@@ -82,7 +82,7 @@ export default function AdminDashboard() {
     let active = true;
     async function loadDashboard() {
       setLoading(true);
-      let tournamentQuery = (supabase.from("tournaments") as any)
+      let tournamentQuery = supabase.from("tournaments")
         .select("id,name,logo_url,status,start_date,venue,created_at")
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
@@ -93,11 +93,11 @@ export default function AdminDashboard() {
 
       const [teamResult, matchResult] = tournamentIds.length
         ? await Promise.all([
-            (supabase.from("teams") as any)
+            supabase.from("teams")
               .select("id,tournament_id,name,logo_url")
               .in("tournament_id", tournamentIds)
               .is("deleted_at", null),
-            (supabase.from("matches") as any)
+            supabase.from("matches")
               .select("id,tournament_id,team_a_id,team_b_id,match_date,match_time,ground,status,created_at")
               .in("tournament_id", tournamentIds)
               .order("created_at", { ascending: false })
@@ -111,15 +111,15 @@ export default function AdminDashboard() {
       const matchIds = scopedMatches.map((item) => item.id);
       const [playerResult, inningsResult, registrationResult] = await Promise.all([
         teamIds.length
-          ? (supabase.from("players") as any).select("id,team_id").in("team_id", teamIds).is("deleted_at", null)
+          ? supabase.from("players").select("id,team_id").in("team_id", teamIds).is("deleted_at", null)
           : Promise.resolve({ data: [] }),
         matchIds.length
-          ? (supabase.from("innings") as any)
+          ? supabase.from("innings")
               .select("match_id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled")
               .in("match_id", matchIds)
           : Promise.resolve({ data: [] }),
         tournamentIds.length
-          ? (supabase.from("player_registrations") as any).select("id,tournament_id,status,created_at").in("tournament_id", tournamentIds).eq("status", "pending")
+          ? supabase.from("player_registrations").select("id,tournament_id,status,created_at").in("tournament_id", tournamentIds).eq("status", "pending")
           : Promise.resolve({ data: [] }),
       ]);
 

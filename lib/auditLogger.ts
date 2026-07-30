@@ -38,7 +38,7 @@ interface AuditLogPayload {
 export const logAuditEvent = async (payload: AuditLogPayload) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('audit_logs') as any)
+    const { error } = await supabase.from('audit_logs')
       .insert([
         {
           user_id: payload.userId,

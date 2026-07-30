@@ -18,8 +18,8 @@ export default function FixturesPage() {
   useEffect(() => {
     void (async () => {
       const [{ data: matchRows }, { data: teamRows }] = await Promise.all([
-        (supabase.from("matches") as any).select("id,team_a_id,team_b_id,status,match_date,match_time,ground,overs_per_match,match_scope,match_type,title").eq("is_public", true).order("match_date"),
-        (supabase.from("teams") as any).select("id,name,logo_url"),
+        supabase.from("matches").select("id,team_a_id,team_b_id,status,match_date,match_time,ground,overs_per_match,match_scope,match_type,title").eq("is_public", true).order("match_date"),
+        supabase.from("teams").select("id,name,logo_url"),
       ]);
       setMatches(matchRows || []);
       setTeams(teamRows || []);

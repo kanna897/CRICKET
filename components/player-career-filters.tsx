@@ -27,25 +27,25 @@ export function PlayerCareerFilters({ playerId }: { playerId: string }) {
     let active = true;
     void (async () => {
       setLoading(true);
-      const ballResult = await (supabase.from("ball_by_ball") as any)
+      const ballResult = await supabase.from("ball_by_ball")
         .select("innings_id,batsman_id,bowler_id,fielder_id,player_out_id,runs,extras,extras_type,is_legal,is_wicket,dismissal_type")
         .or(`batsman_id.eq.${playerId},bowler_id.eq.${playerId},fielder_id.eq.${playerId},player_out_id.eq.${playerId}`);
       const ballRows = (ballResult.data || []) as Ball[];
       const inningsIds = [...new Set(ballRows.map((ball) => ball.innings_id))];
       const inningsResult = inningsIds.length
-        ? await (supabase.from("innings") as any).select("id,match_id,batting_team_id,bowling_team_id").in("id", inningsIds)
+        ? await supabase.from("innings").select("id,match_id,batting_team_id,bowling_team_id").in("id", inningsIds)
         : { data: [], error: null };
       const inningsRows = (inningsResult.data || []) as Innings[];
       const matchIds = [...new Set(inningsRows.map((row) => row.match_id))];
       const matchResult = matchIds.length
-        ? await (supabase.from("matches") as any).select("id,tournament_id,team_a_id,team_b_id,match_date,created_at,overs_per_match,status").in("id", matchIds)
+        ? await supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,match_date,created_at,overs_per_match,status").in("id", matchIds)
         : { data: [], error: null };
       const matchRows = (matchResult.data || []) as Match[];
       const tournamentIds = [...new Set(matchRows.map((row) => row.tournament_id).filter(Boolean) as string[])];
       const teamIds = [...new Set(matchRows.flatMap((row) => [row.team_a_id, row.team_b_id]))];
       const [tournamentResult, teamResult] = await Promise.all([
-        tournamentIds.length ? (supabase.from("tournaments") as any).select("id,name,ball_type").in("id", tournamentIds) : Promise.resolve({ data: [], error: null }),
-        teamIds.length ? (supabase.from("teams") as any).select("id,name").in("id", teamIds) : Promise.resolve({ data: [], error: null }),
+        tournamentIds.length ? supabase.from("tournaments").select("id,name,ball_type").in("id", tournamentIds) : Promise.resolve({ data: [], error: null }),
+        teamIds.length ? supabase.from("teams").select("id,name").in("id", teamIds) : Promise.resolve({ data: [], error: null }),
       ]);
       if (!active) return;
       setBalls(ballRows); setInnings(inningsRows); setMatches(matchRows);

@@ -23,7 +23,7 @@ export default function PointsPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => { void (async () => {
-    const { data, error } = await (supabase.from("tournaments") as any).select("id,name,logo_url").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("tournaments").select("id,name,logo_url").order("created_at", { ascending: false });
     const items = (data || []) as Tournament[];
     setTournaments(items);
     setSelectedTournament(items[0]?.id || "");
@@ -35,15 +35,15 @@ export default function PointsPage() {
     if (!selectedTournament) return;
     setLoading(true); setMessage("");
     const [teamResult, matchResult] = await Promise.all([
-      (supabase.from("teams") as any).select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
-      (supabase.from("matches") as any).select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
+      supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
+      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
     ]);
     const teamRows = (teamResult.data || []) as StandingsTeam[];
     const matchRows = (matchResult.data || []) as StandingsMatch[];
     setMatches(matchRows);
     const matchIds = matchRows.map((match) => match.id);
     const inningsResult = matchIds.length
-      ? await (supabase.from("innings") as any).select("match_id,batting_team_id,bowling_team_id,total_runs,total_wickets,balls_bowled").in("match_id", matchIds)
+      ? await supabase.from("innings").select("match_id,batting_team_id,bowling_team_id,total_runs,total_wickets,balls_bowled").in("match_id", matchIds)
       : { data: [], error: null };
     setTeams(teamRows);
     setRows(calculateTournamentStandings(teamRows, matchRows, (inningsResult.data || []) as StandingsInnings[]));

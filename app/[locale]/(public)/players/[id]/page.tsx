@@ -22,13 +22,13 @@ export default function PublicPlayerProfilePage() {
   const [matchCount, setMatchCount] = useState(0);
   const [loading, setLoading] = useState(true);
   useEffect(() => { if (!id) return; void (async () => {
-    const playerResult = await (supabase.from("players") as any).select("id,name,photo_url,playing_role,batting_style,bowling_style,team_id,created_at").eq("id", id).maybeSingle();
+    const playerResult = await supabase.from("players").select("id,name,photo_url,playing_role,batting_style,bowling_style,team_id,created_at").eq("id", id).maybeSingle();
     const row = playerResult.data as Player | null; setPlayer(row);
-    if (row?.team_id) { const result = await (supabase.from("teams") as any).select("id,name,logo_url").eq("id", row.team_id).maybeSingle(); setTeam(result.data); }
-    const ballResult = await (supabase.from("ball_by_ball") as any).select("innings_id,batsman_id,bowler_id,fielder_id,player_out_id,runs,is_wicket,dismissal_type").or(`batsman_id.eq.${id},bowler_id.eq.${id},fielder_id.eq.${id},player_out_id.eq.${id}`);
+    if (row?.team_id) { const result = await supabase.from("teams").select("id,name,logo_url").eq("id", row.team_id).maybeSingle(); setTeam(result.data); }
+    const ballResult = await supabase.from("ball_by_ball").select("innings_id,batsman_id,bowler_id,fielder_id,player_out_id,runs,is_wicket,dismissal_type").or(`batsman_id.eq.${id},bowler_id.eq.${id},fielder_id.eq.${id},player_out_id.eq.${id}`);
     const ballRows = (ballResult.data || []) as Ball[]; setBalls(ballRows);
     const inningsIds = [...new Set(ballRows.map((ball) => ball.innings_id))];
-    if (inningsIds.length) { const inningsResult = await (supabase.from("innings") as any).select("match_id").in("id", inningsIds); setMatchCount(new Set((inningsResult.data || []).map((item: { match_id: string }) => item.match_id)).size); }
+    if (inningsIds.length) { const inningsResult = await supabase.from("innings").select("match_id").in("id", inningsIds); setMatchCount(new Set((inningsResult.data || []).map((item: { match_id: string }) => item.match_id)).size); }
     setLoading(false);
   })(); }, [id]);
   const stats = useMemo(() => {

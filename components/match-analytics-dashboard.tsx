@@ -31,16 +31,16 @@ export function MatchAnalyticsDashboard({ matchId, locale = "en", admin = false,
 
   useEffect(() => { void (async () => {
     setLoading(true);
-    const matchResult = await (supabase.from("matches") as any).select("id,team_a_id,team_b_id").eq("id", matchId).maybeSingle();
+    const matchResult = await supabase.from("matches").select("id,team_a_id,team_b_id").eq("id", matchId).maybeSingle();
     if (!matchResult.data) { setMessage(matchResult.error?.message || "Match not found."); setLoading(false); return; }
     const [teamResult, inningsResult] = await Promise.all([
-      (supabase.from("teams") as any).select("id,name,logo_url").in("id", [matchResult.data.team_a_id, matchResult.data.team_b_id]),
-      (supabase.from("innings") as any).select("id,innings_number,batting_team_id").eq("match_id", matchId).order("innings_number"),
+      supabase.from("teams").select("id,name,logo_url").in("id", [matchResult.data.team_a_id, matchResult.data.team_b_id]),
+      supabase.from("innings").select("id,innings_number,batting_team_id").eq("match_id", matchId).order("innings_number"),
     ]);
     const inningsRows = (inningsResult.data || []) as Innings[];
-    const ballResult = inningsRows.length ? await (supabase.from("ball_by_ball") as any).select("id,innings_id,over_number,ball_number,batsman_id,bowler_id,runs,extras,extras_type,commentary,is_legal,is_wicket,dismissal_type").in("innings_id", inningsRows.map((row) => row.id)).order("created_at") : { data: [], error: null };
+    const ballResult = inningsRows.length ? await supabase.from("ball_by_ball").select("id,innings_id,over_number,ball_number,batsman_id,bowler_id,runs,extras,extras_type,commentary,is_legal,is_wicket,dismissal_type").in("innings_id", inningsRows.map((row) => row.id)).order("created_at") : { data: [], error: null };
     const playerIds = [...new Set(((ballResult.data || []) as Ball[]).flatMap((ball) => [ball.batsman_id, ball.bowler_id]).filter(Boolean) as string[])];
-    const playerResult = playerIds.length ? await (supabase.from("players") as any).select("id,name").in("id", playerIds) : { data: [], error: null };
+    const playerResult = playerIds.length ? await supabase.from("players").select("id,name").in("id", playerIds) : { data: [], error: null };
     setMatch(matchResult.data); setTeams(teamResult.data || []); setInnings(inningsRows); setBalls((ballResult.data || []) as Ball[]); setPlayers(playerResult.data || []);
     setMessage(teamResult.error?.message || inningsResult.error?.message || ballResult.error?.message || playerResult.error?.message || "");
     setLoading(false);

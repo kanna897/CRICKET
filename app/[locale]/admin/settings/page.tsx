@@ -37,7 +37,7 @@ export default function SettingsPage() {
     const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
     const { data: auth } = await supabase.auth.getUser();
     const json = subscription.toJSON();
-    const { error } = await (supabase.from("push_subscriptions") as any).upsert({ user_id: auth.user?.id, endpoint: subscription.endpoint, p256dh: json.keys?.p256dh, auth_key: json.keys?.auth, user_agent: navigator.userAgent }, { onConflict: "endpoint" });
+    const { error } = await supabase.from("push_subscriptions").upsert({ user_id: auth.user?.id, endpoint: subscription.endpoint, p256dh: json.keys?.p256dh, auth_key: json.keys?.auth, user_agent: navigator.userAgent }, { onConflict: "endpoint" });
     setNotificationStatus(error ? error.message : "Background push enabled");
   };
 

@@ -26,11 +26,11 @@ export default function PublicLiveMatch() {
     if (!id) return;
     setAlertsEnabled(localStorage.getItem(`crickpulse-live-alert:${id}`) === "on" && Notification.permission === "granted");
     const load = async (notify = false) => {
-      const { data: matchRow } = await (supabase.from("matches") as any).select("id,team_a_id,team_b_id,overs_per_match,status,winner_id").eq("id", id).maybeSingle();
+      const { data: matchRow } = await supabase.from("matches").select("id,team_a_id,team_b_id,overs_per_match,status,winner_id").eq("id", id).maybeSingle();
       if (!matchRow) return;
       const [{ data: teamRows }, { data: inningsRow }] = await Promise.all([
-        (supabase.from("teams") as any).select("id,name,logo_url").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
-        (supabase.from("innings") as any).select("id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled,target").eq("match_id", id).order("innings_number", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("teams").select("id,name,logo_url").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
+        supabase.from("innings").select("id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled,target").eq("match_id", id).order("innings_number", { ascending: false }).limit(1).maybeSingle(),
       ]);
       setMatch(matchRow); setTeams(teamRows || []); setInnings(inningsRow || null);
       if (notify && inningsRow && localStorage.getItem(`crickpulse-live-alert:${id}`) === "on" && Notification.permission === "granted") {
@@ -47,7 +47,7 @@ export default function PublicLiveMatch() {
         });
       }
       if (inningsRow) {
-        const { data: ballRows } = await (supabase.from("ball_by_ball") as any).select("id,over_number,ball_number,runs,extras,extras_type,is_wicket").eq("innings_id", inningsRow.id).order("created_at", { ascending: false }).limit(12);
+        const { data: ballRows } = await supabase.from("ball_by_ball").select("id,over_number,ball_number,runs,extras,extras_type,is_wicket").eq("innings_id", inningsRow.id).order("created_at", { ascending: false }).limit(12);
         setBalls((ballRows || []).reverse());
       } else setBalls([]);
     };

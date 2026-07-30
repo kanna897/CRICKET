@@ -32,19 +32,19 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const { data: matchRow } = await (supabase.from("matches") as any).select("*").eq("id", id).maybeSingle();
+      const { data: matchRow } = await supabase.from("matches").select("*").eq("id", id).maybeSingle();
       if (!matchRow) return;
       const [{ data: teamRows }, { data: playerRows }, { data: inningsRows }, { data: tournamentRow }] = await Promise.all([
-        (supabase.from("teams") as any).select("id,name,logo_url,primary_color").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
-        (supabase.from("players") as any).select("id,name,team_id,photo_url"),
-        (supabase.from("innings") as any).select("*").eq("match_id", id).order("innings_number"),
+        supabase.from("teams").select("id,name,logo_url,primary_color").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
+        supabase.from("players").select("id,name,team_id,photo_url"),
+        supabase.from("innings").select("*").eq("match_id", id).order("innings_number"),
         matchRow.tournament_id
-          ? (supabase.from("tournaments") as any).select("name,logo_url").eq("id", matchRow.tournament_id).maybeSingle()
+          ? supabase.from("tournaments").select("name,logo_url").eq("id", matchRow.tournament_id).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
       const inningsIds = (inningsRows || []).map((row: { id: string }) => row.id);
       const { data: ballRows } = inningsIds.length
-        ? await (supabase.from("ball_by_ball") as any).select("*").in("innings_id", inningsIds).order("created_at")
+        ? await supabase.from("ball_by_ball").select("*").in("innings_id", inningsIds).order("created_at")
         : { data: [] };
       setMatch(matchRow);
       setTeams(teamRows || []);
@@ -57,7 +57,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
 
   useEffect(() => {
     const refreshPlayerPhotos = async () => {
-      const { data } = await (supabase.from("players") as any).select("id,photo_url");
+      const { data } = await supabase.from("players").select("id,photo_url");
       if (!data) return;
       const photos = new Map<string, string | null>();
       data.forEach((player: { id: string; photo_url: string | null }) => photos.set(player.id, player.photo_url));
@@ -71,7 +71,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
 
   const teamName = (teamId: string | null) => teams.find((team) => team.id === teamId)?.name || "Team";
   const cards = useMemo(
-    () => innings.map((item) => ({ item, summary: buildScorecard(item, balls.filter((ball: any) => ball.innings_id === item.id), players) })),
+    () => innings.map((item) => ({ item, summary: buildScorecard(item, balls.filter((ball) => ball.innings_id === item.id), players) })),
     [innings, balls, players],
   );
   const selected = cards.find(({ item }) => item.innings_number === active) || cards[0];

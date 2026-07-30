@@ -22,7 +22,7 @@ export default function KnockoutBracketPage() {
   const [message, setMessage] = useState("");
 
   async function load(tournamentId?: string) {
-    let tournamentQuery = (supabase.from("tournaments") as any).select("id,name,organizer_id,overs,venue").is("deleted_at", null).order("name");
+    let tournamentQuery = supabase.from("tournaments").select("id,name,organizer_id,overs,venue").is("deleted_at", null).order("name");
     if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
     const { data: tournamentRows } = await tournamentQuery;
     const rows = (tournamentRows || []) as Tournament[];
@@ -31,8 +31,8 @@ export default function KnockoutBracketPage() {
     if (!active) return;
     setSelected(active);
     const [{ data: teamRows }, { data: matchRows }] = await Promise.all([
-      (supabase.from("teams") as any).select("id,name,logo_url,tournament_id").eq("tournament_id", active).is("deleted_at", null).order("name"),
-      (supabase.from("matches") as any).select("id,tournament_id,team_a_id,team_b_id,winner_id,status,bracket_round,bracket_slot,match_date").eq("tournament_id", active).eq("competition_stage", "knockout").order("bracket_round").order("bracket_slot"),
+      supabase.from("teams").select("id,name,logo_url,tournament_id").eq("tournament_id", active).is("deleted_at", null).order("name"),
+      supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,winner_id,status,bracket_round,bracket_slot,match_date").eq("tournament_id", active).eq("competition_stage", "knockout").order("bracket_round").order("bracket_slot"),
     ]);
     setTeams((teamRows || []) as Team[]);
     setMatches((matchRows || []) as Match[]);
@@ -59,7 +59,7 @@ export default function KnockoutBracketPage() {
       const date = new Date(`${startDate}T00:00:00`); date.setDate(date.getDate() + slot);
       return { tournament_id:selected, team_a_id:seeded[slot].id, team_b_id:seeded[count-1-slot].id, match_date:date.toISOString().slice(0,10), overs_per_match:tournament?.overs||20, ground:tournament?.venue||null, status:"scheduled", competition_stage:"knockout", bracket_round:1, bracket_slot:slot+1, assigned_scorer_id:tournament?.organizer_id||userId, scoring_locked:false };
     });
-    const { error } = await (supabase.from("matches") as any).insert(rows);
+    const { error } = await supabase.from("matches").insert(rows);
     setWorking(false);
     if (error) return setMessage(error.message);
     setMessage(`${count}-team knockout bracket created.`);
@@ -77,7 +77,7 @@ export default function KnockoutBracketPage() {
     const tournament=tournaments.find((item)=>item.id===selected);
     const winners=current.sort((a,b)=>a.bracket_slot-b.bracket_slot).map((match)=>match.winner_id!);
     const rows=Array.from({length:winners.length/2},(_,slot)=>({tournament_id:selected,team_a_id:winners[slot*2],team_b_id:winners[slot*2+1],match_date:null,overs_per_match:tournament?.overs||20,ground:tournament?.venue||null,status:"scheduled",competition_stage:"knockout",bracket_round:currentRound+1,bracket_slot:slot+1,assigned_scorer_id:tournament?.organizer_id||userId,scoring_locked:false}));
-    const {error}=await (supabase.from("matches") as any).insert(rows);
+    const {error}=await supabase.from("matches").insert(rows);
     setWorking(false);
     if(error)return setMessage(error.message);
     setMessage("Winners advanced to the next round.");

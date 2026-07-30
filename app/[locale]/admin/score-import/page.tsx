@@ -23,7 +23,7 @@ export default function HistoricalScoreImportPage() {
   const [imported, setImported] = useState(0);
 
   useEffect(() => { void (async () => {
-    let query = (supabase.from("tournaments") as any).select("id,name,overs_per_match").is("deleted_at", null).order("created_at", { ascending: false });
+    let query = supabase.from("tournaments").select("id,name,overs_per_match").is("deleted_at", null).order("created_at", { ascending: false });
     if (!isMasterAdmin) query = query.eq("organizer_id", userId);
     const { data, error } = await query;
     const rows = (data || []) as Tournament[]; setTournaments(rows); setSelectedTournament(rows[0]?.id || ""); setMessage(error?.message || "");
@@ -31,8 +31,8 @@ export default function HistoricalScoreImportPage() {
 
   useEffect(() => { if (!selectedTournament) return; void (async () => {
     const [teamResult, matchResult] = await Promise.all([
-      (supabase.from("teams") as any).select("id,name").eq("tournament_id", selectedTournament).is("deleted_at", null).order("name"),
-      (supabase.from("matches") as any).select("id,match_date,team_a_id,team_b_id").eq("tournament_id", selectedTournament),
+      supabase.from("teams").select("id,name").eq("tournament_id", selectedTournament).is("deleted_at", null).order("name"),
+      supabase.from("matches").select("id,match_date,team_a_id,team_b_id").eq("tournament_id", selectedTournament),
     ]);
     setTeams((teamResult.data || []) as Team[]); setExisting((matchResult.data || []) as ExistingMatch[]);
     setMessage(teamResult.error?.message || matchResult.error?.message || ""); setGroups([]); setFilename(""); setImported(0);
@@ -68,7 +68,7 @@ export default function HistoricalScoreImportPage() {
         continue;
       }
       if (!cache.has(row.match_ref)) {
-        const { data } = await (supabase.from("matches") as any)
+        const { data } = await supabase.from("matches")
           .select("team_a_id,team_b_id,winner_id,match_date,created_at,status")
           .eq("id", row.match_ref)
           .maybeSingle();
@@ -107,7 +107,7 @@ export default function HistoricalScoreImportPage() {
       for (const group of reviewed.filter((item) => !item.errors.length)) {
         const teamA = findTeam(group.teamA)!, teamB = findTeam(group.teamB)!;
         const winner = [teamA, teamB].find((team) => normalizeName(team.name) === normalizeName(group.winner));
-        const matchResult = await (supabase.from("matches") as any).insert({
+        const matchResult = await supabase.from("matches").insert({
           tournament_id: selectedTournament, team_a_id: teamA.id, team_b_id: teamB.id, match_date: group.matchDate,
           status: "completed", winner_id: winner?.id || null, result_type: winner ? "win" : normalizeName(group.winner) === "tie" ? "tie" : "no_result", overs_per_match: overs,
         }).select("id").single();
@@ -118,12 +118,12 @@ export default function HistoricalScoreImportPage() {
           const bowling = batting.id === teamA.id ? teamB : teamA;
           return { match_id: matchId, innings_number: item.innings_number, batting_team_id: batting.id, bowling_team_id: bowling.id, total_runs: item.total_runs, total_wickets: item.total_wickets, balls_bowled: item.balls_bowled, overs_completed: Number(`${Math.floor(item.balls_bowled / 6)}.${item.balls_bowled % 6}`), extras: 0, is_completed: true };
         });
-        const inningsResult = await (supabase.from("innings") as any).insert(inningsRows);
-        if (inningsResult.error) { await (supabase.from("matches") as any).delete().eq("id", matchId); throw new Error(`${group.matchRef}: ${inningsResult.error.message}`); }
+        const inningsResult = await supabase.from("innings").insert(inningsRows);
+        if (inningsResult.error) { await supabase.from("matches").delete().eq("id", matchId); throw new Error(`${group.matchRef}: ${inningsResult.error.message}`); }
         completed++;
       }
       setImported(completed); setMessage(`${completed} historical match${completed === 1 ? "" : "es"} imported successfully.`);
-      const { data } = await (supabase.from("matches") as any).select("id,match_date,team_a_id,team_b_id").eq("tournament_id", selectedTournament);
+      const { data } = await supabase.from("matches").select("id,match_date,team_a_id,team_b_id").eq("tournament_id", selectedTournament);
       setExisting((data || []) as ExistingMatch[]);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Historical score import failed."); }
     finally { setBusy(false); }

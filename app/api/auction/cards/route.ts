@@ -68,11 +68,11 @@ async function createTournamentPlayerCards(tournamentId?: string) {
   if (!user) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
 
   const [{ data: choice, error: choiceError }, { data: registrations, error: registrationsError }] = await Promise.all([
-    (supabase.from("tournament_card_templates") as any)
+    supabase.from("tournament_card_templates")
       .select("player_template_id,card_templates!player_template_id(image_url,is_visible,layout)")
       .eq("tournament_id", tournamentId)
       .maybeSingle(),
-    (supabase.from("player_registrations") as any)
+    supabase.from("player_registrations")
       .select("id,player_name,contact_number,photo_url,playing_role,batting_style,bowling_style,registration_number")
       .eq("tournament_id", tournamentId)
       .order("registration_number"),
@@ -106,9 +106,9 @@ async function createTournamentPlayerCards(tournamentId?: string) {
         `${registration.id}-player-card`,
       );
       const [{ error: registrationError }, { error: auctionError }] = await Promise.all([
-        (supabase.from("player_registrations") as any)
+        supabase.from("player_registrations")
           .update({ player_card_url: cardUrl }).eq("id", registration.id),
-        (supabase.from("auction_players") as any)
+        supabase.from("auction_players")
           .update({ player_card_url: cardUrl, updated_at: new Date().toISOString() })
           .eq("registration_id", registration.id),
       ]);
@@ -130,7 +130,7 @@ async function createPublicPlayerCard(registrationId?: string, trackingCode?: st
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await (supabase.rpc as any)("get_registration_card_payload", {
+  const { data, error } = await supabase.rpc("get_registration_card_payload", {
     p_registration_id: registrationId,
     p_tracking_code: trackingCode,
   });
@@ -157,7 +157,7 @@ async function createPublicPlayerCard(registrationId?: string, trackingCode?: st
     `crickpulse/tournaments/${payload.tournament_id}/player-cards`,
     `${payload.registration_id}-player-card`,
   );
-  const { error: saveError } = await (supabase.rpc as any)("save_registration_card_url", {
+  const { error: saveError } = await supabase.rpc("save_registration_card_url", {
     p_registration_id: registrationId,
     p_tracking_code: trackingCode,
     p_card_url: cardUrl,
@@ -173,7 +173,7 @@ async function createTeamPlayerCard(auctionPlayerId?: string) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
-  const { data: auctionPlayer, error } = await (supabase.from("auction_players") as any)
+  const { data: auctionPlayer, error } = await supabase.from("auction_players")
     .select("id,tournament_id,registration_id,winning_team_id,winning_bid,status")
     .eq("id", auctionPlayerId)
     .maybeSingle();
@@ -182,17 +182,17 @@ async function createTeamPlayerCard(auctionPlayerId?: string) {
     return NextResponse.json({ error: "Only sold players can receive a team card." }, { status: 409 });
   }
   const [{ data: registration }, { data: team }, { data: choice }] = await Promise.all([
-    (supabase.from("player_registrations") as any)
+    supabase.from("player_registrations")
       .select("player_name,contact_number,photo_url,playing_role,batting_style,bowling_style,registration_number")
       .eq("id", auctionPlayer.registration_id).maybeSingle(),
-    (supabase.from("teams") as any).select("name,logo_url").eq("id", auctionPlayer.winning_team_id).maybeSingle(),
-    (supabase.from("tournament_card_templates") as any)
+    supabase.from("teams").select("name,logo_url").eq("id", auctionPlayer.winning_team_id).maybeSingle(),
+    supabase.from("tournament_card_templates")
       .select("team_player_template_id").eq("tournament_id", auctionPlayer.tournament_id).maybeSingle(),
   ]);
   if (!registration || !team || !choice?.team_player_template_id) {
     return NextResponse.json({ generated: false, reason: "Select a visible team-player template first." });
   }
-  const { data: template } = await (supabase.from("card_templates") as any)
+  const { data: template } = await supabase.from("card_templates")
     .select("image_url").eq("id", choice.team_player_template_id).eq("is_visible", true).maybeSingle();
   if (!template?.image_url) {
     return NextResponse.json({ generated: false, reason: "The selected team-player template is hidden." });
@@ -216,7 +216,7 @@ async function createTeamPlayerCard(auctionPlayerId?: string) {
     `crickpulse/auction-cards/${auctionPlayer.tournament_id}/teams/${auctionPlayer.winning_team_id}`,
     `${auctionPlayer.id}-team-card`,
   );
-  const { error: updateError } = await (supabase.from("auction_players") as any)
+  const { error: updateError } = await supabase.from("auction_players")
     .update({ team_player_card_url: cardUrl }).eq("id", auctionPlayer.id);
   if (updateError) throw updateError;
   return NextResponse.json({ generated: true, url: cardUrl });

@@ -35,7 +35,7 @@ export default function NewMatchPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const tournamentsResult = await tournamentQuery;
       const tournamentIds = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);
-      const teamsResult = await (supabase.from("teams") as any).select("*").order("name");
+      const teamsResult = await supabase.from("teams").select("*").order("name");
       const manageableTeams = ((teamsResult.data || []) as Team[]).filter((team) =>
         isMasterAdmin || tournamentIds.includes(team.tournament_id) || team.organizer_id === userId
       );
@@ -73,7 +73,7 @@ export default function NewMatchPage() {
     if (teamASquad.length < 6 || teamASquad.length > 11 || teamBSquad.length < 6 || teamBSquad.length > 11) return setError("Select 6 to 11 players for each team.");
     setSaving(true);
     try {
-      const { data: match, error: insertError } = await (supabase.from("matches") as any).insert({
+      const { data: match, error: insertError } = await supabase.from("matches").insert({
         tournament_id: form.match_scope === "tournament" ? form.tournament_id : null,
         organizer_id: userId,
         match_scope: form.match_scope,
@@ -102,9 +102,9 @@ export default function NewMatchPage() {
         ...teamASquad.map((player_id) => ({ match_id: match.id, team_id: form.team_a_id, player_id })),
         ...teamBSquad.map((player_id) => ({ match_id: match.id, team_id: form.team_b_id, player_id })),
       ];
-      const { error: squadError } = await (supabase.from("match_squads") as any).insert(squadRows);
+      const { error: squadError } = await supabase.from("match_squads").insert(squadRows);
       if (squadError) {
-        await (supabase.from("matches") as any).delete().eq("id", match.id);
+        await supabase.from("matches").delete().eq("id", match.id);
         throw squadError;
       }
       router.push(localePath(locale, "/admin/matches"));

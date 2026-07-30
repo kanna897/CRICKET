@@ -99,7 +99,7 @@ export default function NewPlayerPage() {
       };
 
       // The database retains legacy column names while the UI uses the new names.
-      const { error } = await (supabase.from("players") as any).insert(payload);
+      const { error } = await supabase.from("players").insert(payload);
       if (error) throw error;
 
       router.push(localePath(locale, returnPath));

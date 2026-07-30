@@ -11,20 +11,20 @@ const playerRole = (role:string) => role === "all_rounder" ? "all-rounder" : rol
 export default function PlayerRegistrationsPage(){
   const [rows,setRows]=useState<Registration[]>([]),[teams,setTeams]=useState<Named[]>([]),[tournaments,setTournaments]=useState<Named[]>([]);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState("");
-  const load=useCallback(async()=>{setLoading(true);const [r,t,tr]=await Promise.all([(supabase.from("player_registrations") as any).select("*").order("created_at",{ascending:false}),(supabase.from("teams") as any).select("id,name"),(supabase.from("tournaments") as any).select("id,name")]);setRows(r.data||[]);setTeams(t.data||[]);setTournaments(tr.data||[]);setLoading(false)},[]);
+  const load=useCallback(async()=>{setLoading(true);const [r,t,tr]=await Promise.all([supabase.from("player_registrations").select("*").order("created_at",{ascending:false}),supabase.from("teams").select("id,name"),supabase.from("tournaments").select("id,name")]);setRows(r.data||[]);setTeams(t.data||[]);setTournaments(tr.data||[]);setLoading(false)},[]);
   useEffect(()=>{void load()},[load]);
   const name=(list:Named[],id:string|null)=>list.find(x=>x.id===id)?.name||"Organizer assignment";
   async function review(row:Registration,approve:boolean){
     setBusy(row.id);
     try{
       if(approve){
-        const {data:created,error}=await (supabase.from("players") as any).insert({name:row.player_name,player_name:row.player_name,phone_number:row.contact_number,contact_number:row.contact_number,photo_url:row.photo_url,playing_role:row.playing_role,role:playerRole(row.playing_role),batting_style:row.batting_style,bowling_style:row.bowling_style,jersey_name:row.jersey_name,jersey_number:row.jersey_number,team_id:row.preferred_team_id}).select("id").single();
+        const {data:created,error}=await supabase.from("players").insert({name:row.player_name,player_name:row.player_name,phone_number:row.contact_number,contact_number:row.contact_number,photo_url:row.photo_url,playing_role:row.playing_role,role:playerRole(row.playing_role),batting_style:row.batting_style,bowling_style:row.bowling_style,jersey_name:row.jersey_name,jersey_number:row.jersey_number,team_id:row.preferred_team_id}).select("id").single();
         if(error)throw error;
-        await (supabase.from("auction_players") as any).update({player_id:created.id}).eq("registration_id",row.id);
+        await supabase.from("auction_players").update({player_id:created.id}).eq("registration_id",row.id);
         (row as Registration & { player_id?: string }).player_id=created.id;
       }
       const {data:{user}}=await supabase.auth.getUser();
-      const {error}=await (supabase.from("player_registrations") as any).update({status:approve?"approved":"rejected",player_id:(row as Registration & {player_id?:string}).player_id||null,reviewed_by:user?.id||null,reviewed_at:new Date().toISOString()}).eq("id",row.id);
+      const {error}=await supabase.from("player_registrations").update({status:approve?"approved":"rejected",player_id:(row as Registration & {player_id?:string}).player_id||null,reviewed_by:user?.id||null,reviewed_at:new Date().toISOString()}).eq("id",row.id);
       if(error)throw error;
       await load();
     }catch(e){const failure=e as {message?:string};alert(failure?.message||"Review failed.")}finally{setBusy("")}

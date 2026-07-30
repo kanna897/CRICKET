@@ -25,13 +25,13 @@ export function PublicNav() {
   const isHomePage = pathname === `/${locale}`;
   useEffect(() => {
     void (async () => {
-      const { data: openRows } = await (supabase.from("tournaments") as any).select("id").eq("player_registration_enabled", true).is("deleted_at", null).limit(1);
+      const { data: openRows } = await supabase.from("tournaments").select("id").eq("player_registration_enabled", true).is("deleted_at", null).limit(1);
       setRegistrationOpen(Boolean(openRows?.length));
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user) return;
-      const { data: profile } = await (supabase.from("profiles") as any).select("role").eq("id", user.id).maybeSingle();
-      let managerQuery = (supabase.from("tournaments") as any).select("id,player_registration_enabled").is("deleted_at", null).order("created_at", { ascending: false }).limit(1);
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+      let managerQuery = supabase.from("tournaments").select("id,player_registration_enabled").is("deleted_at", null).order("created_at", { ascending: false }).limit(1);
       if (profile?.role !== "master_admin") managerQuery = managerQuery.eq("organizer_id", user.id);
       const { data: managedRows } = await managerQuery;
       if (managedRows?.length) setManagedRegistration({ id: managedRows[0].id, enabled: managedRows[0].player_registration_enabled });
@@ -41,7 +41,7 @@ export function PublicNav() {
     if (!managedRegistration || togglingRegistration) return;
     setTogglingRegistration(true);
     const enabled = !managedRegistration.enabled;
-    const { data, error } = await (supabase.from("tournaments") as any).update({ player_registration_enabled: enabled }).eq("id", managedRegistration.id).select("id").maybeSingle();
+    const { data, error } = await supabase.from("tournaments").update({ player_registration_enabled: enabled }).eq("id", managedRegistration.id).select("id").maybeSingle();
     setTogglingRegistration(false);
     if (error || !data) return alert(error?.message || "You cannot change player registration for this tournament.");
     setManagedRegistration({ ...managedRegistration, enabled });

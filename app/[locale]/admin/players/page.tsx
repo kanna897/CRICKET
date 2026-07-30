@@ -29,7 +29,7 @@ export default function PlayersPage() {
     if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
     const { data: tournaments } = await tournamentQuery;
     const tournamentIds = (tournaments || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-    const { data: teams } = await (supabase.from("teams") as any).select("id,tournament_id,organizer_id");
+    const { data: teams } = await supabase.from("teams").select("id,tournament_id,organizer_id");
     const teamIds = ((teams || []) as Array<{ id: string; tournament_id: string | null; organizer_id: string | null }>)
       .filter((team) => isMasterAdmin || tournamentIds.includes(team.tournament_id || "") || team.organizer_id === userId)
       .map((team) => team.id);
@@ -60,8 +60,7 @@ export default function PlayersPage() {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let jsonData: any[] = [];
+        let jsonData: Record<string, string>[] = [];
         
         const text = evt.target?.result as string;
         jsonData = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true }).data;
@@ -89,8 +88,7 @@ export default function PlayersPage() {
 
           if (!existingPlayer) {
             // Create new player
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase.from('players') as any).insert([{
+            await supabase.from('players').insert([{
               name: String(name).trim(),
               phone_number: String(phone).trim(),
               playing_role: String(role).trim(),

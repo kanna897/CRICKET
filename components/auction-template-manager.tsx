@@ -34,8 +34,8 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
 
   const load = useCallback(async () => {
     const [{ data: templateRows }, { data: selected }] = await Promise.all([
-      (supabase.from("card_templates") as any).select("*").order("created_at", { ascending: false }),
-      (supabase.from("tournament_card_templates") as any)
+      supabase.from("card_templates").select("*").order("created_at", { ascending: false }),
+      supabase.from("tournament_card_templates")
         .select("player_template_id,team_player_template_id")
         .eq("tournament_id", tournamentId)
         .maybeSingle(),
@@ -55,7 +55,7 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
       for (const file of Array.from(files)) {
         const uploaded = await uploadImage(file, "auction-templates");
         const name = file.name.replace(/\.[^.]+$/, "").trim() || "Auction template";
-        const { data: inserted, error } = await (supabase.from("card_templates") as any).insert({
+        const { data: inserted, error } = await supabase.from("card_templates").insert({
           organizer_id: userId,
           name,
           template_type: uploadType,
@@ -85,7 +85,7 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
     setMessage("");
     try {
       const nextVisible = !template.is_visible;
-      const { error } = await (supabase.from("card_templates") as any)
+      const { error } = await supabase.from("card_templates")
         .update({ is_visible: nextVisible, updated_at: new Date().toISOString() })
         .eq("id", template.id);
       if (error) throw error;
@@ -107,11 +107,11 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
 
   async function saveChoice(next: Choice) {
     if (!next.player_template_id && !next.team_player_template_id) {
-      await (supabase.from("tournament_card_templates") as any).delete().eq("tournament_id", tournamentId);
+      await supabase.from("tournament_card_templates").delete().eq("tournament_id", tournamentId);
       setChoice(next);
       return;
     }
-    const { error } = await (supabase.from("tournament_card_templates") as any).upsert({
+    const { error } = await supabase.from("tournament_card_templates").upsert({
       tournament_id: tournamentId,
       ...next,
       updated_at: new Date().toISOString(),
@@ -156,7 +156,7 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
 
   async function saveLayout(layout: PlayerCardLayout) {
     if (!editing) return;
-    const { error } = await (supabase.from("card_templates") as any)
+    const { error } = await supabase.from("card_templates")
       .update({ layout, updated_at: new Date().toISOString() })
       .eq("id", editing.id);
     if (error) throw error;

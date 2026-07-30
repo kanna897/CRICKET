@@ -19,7 +19,7 @@ export function HallOfFameDashboard({ admin = false, organizerId, isMasterAdmin 
   const card = "border-border bg-card text-foreground";
 
   useEffect(() => { void (async () => {
-    let query = (supabase.from("tournaments") as any).select("id,name,status").order("created_at", { ascending: false });
+    let query = supabase.from("tournaments").select("id,name,status").order("created_at", { ascending: false });
     if (admin && !isMasterAdmin && organizerId) query = query.eq("organizer_id", organizerId);
     const { data, error } = await query;
     const rows = (data || []) as Tournament[];
@@ -31,18 +31,18 @@ export function HallOfFameDashboard({ admin = false, organizerId, isMasterAdmin 
     if (!selectedTournament) return;
     setLoading(true); setMessage("");
     const [teamResult, matchResult] = await Promise.all([
-      (supabase.from("teams") as any).select("id,name,logo_url").eq("tournament_id", selectedTournament),
-      (supabase.from("matches") as any).select("id,status,player_of_match_id").eq("tournament_id", selectedTournament),
+      supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament),
+      supabase.from("matches").select("id,status,player_of_match_id").eq("tournament_id", selectedTournament),
     ]);
     const teams = (teamResult.data || []) as StatisticsTeam[];
     const tournamentMatches = (matchResult.data || []) as StatisticsMatch[];
     const matchIds = tournamentMatches.map((row) => row.id);
     setAllMatchesCompleted(tournamentMatches.length > 0 && tournamentMatches.every((match) => match.status === "completed"));
-    const inningsResult = matchIds.length ? await (supabase.from("innings") as any).select("id,match_id,batting_team_id,bowling_team_id").in("match_id", matchIds) : { data: [], error: null };
+    const inningsResult = matchIds.length ? await supabase.from("innings").select("id,match_id,batting_team_id,bowling_team_id").in("match_id", matchIds) : { data: [], error: null };
     const innings = (inningsResult.data || []) as StatisticsInnings[];
     const [playerResult, ballResult] = await Promise.all([
-      teams.length ? (supabase.from("players") as any).select("id,name,team_id,photo_url").in("team_id", teams.map((team) => team.id)) : Promise.resolve({ data: [], error: null }),
-      innings.length ? (supabase.from("ball_by_ball") as any).select("innings_id,over_number,batsman_id,bowler_id,player_out_id,fielder_id,runs,extras,extras_type,is_legal,is_wicket,dismissal_type").in("innings_id", innings.map((item) => item.id)) : Promise.resolve({ data: [], error: null }),
+      teams.length ? supabase.from("players").select("id,name,team_id,photo_url").in("team_id", teams.map((team) => team.id)) : Promise.resolve({ data: [], error: null }),
+      innings.length ? supabase.from("ball_by_ball").select("innings_id,over_number,batsman_id,bowler_id,player_out_id,fielder_id,runs,extras,extras_type,is_legal,is_wicket,dismissal_type").in("innings_id", innings.map((item) => item.id)) : Promise.resolve({ data: [], error: null }),
     ]);
     const players = (playerResult.data || []) as StatisticsPlayer[];
     const balls = (ballResult.data || []) as StatisticsBall[];

@@ -57,7 +57,7 @@ export default function NewTournamentPage() {
 
       // Insert Tournament
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: createdTournament, error: insertError } = await (supabase.from('tournaments') as any)
+      const { data: createdTournament, error: insertError } = await supabase.from('tournaments')
         .insert([
           {
             name: data.name,

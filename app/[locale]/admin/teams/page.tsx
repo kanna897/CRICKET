@@ -24,7 +24,7 @@ export default function TeamsPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: manageable } = await tournamentQuery;
       const ids = (manageable || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-      const { data } = await (supabase.from("teams") as any).select("*").order("created_at", { ascending: false });
+      const { data } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
       if (data) setTeams((data as Team[]).filter((team) => isMasterAdmin || ids.includes(team.tournament_id) || team.organizer_id === userId));
       setLoading(false);
     }

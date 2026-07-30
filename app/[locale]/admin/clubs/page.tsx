@@ -24,10 +24,10 @@ export default function ClubsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let clubQuery = (supabase.from("clubs") as any).select("*").order("created_at",{ascending:false});
-    let tournamentQuery = (supabase.from("tournaments") as any).select("id,name,club_id,season_id,organizer_id").is("deleted_at",null).order("created_at",{ascending:false});
+    let clubQuery = supabase.from("clubs").select("*").order("created_at",{ascending:false});
+    let tournamentQuery = supabase.from("tournaments").select("id,name,club_id,season_id,organizer_id").is("deleted_at",null).order("created_at",{ascending:false});
     if (!isMasterAdmin) { clubQuery=clubQuery.eq("organizer_id",userId); tournamentQuery=tournamentQuery.eq("organizer_id",userId); }
-    const [clubResult,seasonResult,tournamentResult] = await Promise.all([clubQuery,(supabase.from("club_seasons") as any).select("*").order("start_date",{ascending:false}),tournamentQuery]);
+    const [clubResult,seasonResult,tournamentResult] = await Promise.all([clubQuery,supabase.from("club_seasons").select("*").order("start_date",{ascending:false}),tournamentQuery]);
     if (clubResult.error) setError(clubResult.error.message);
     setClubs(clubResult.data||[]); setSeasons(seasonResult.data||[]); setTournaments(tournamentResult.data||[]);
     setSelectedClubId(current=>current||clubResult.data?.[0]?.id||""); setLoading(false);
@@ -41,17 +41,17 @@ export default function ClubsPage() {
 
   async function createClub(event:React.FormEvent) {
     event.preventDefault(); if(!clubForm.name.trim()) return; setSaving(true); setError("");
-    const {error:insertError}=await (supabase.from("clubs") as any).insert({organizer_id:userId,name:clubForm.name.trim(),short_name:clubForm.short_name.trim()||null,location:clubForm.location.trim()||null,website_url:clubForm.website_url.trim()||null,social_url:clubForm.social_url.trim()||null});
+    const {error:insertError}=await supabase.from("clubs").insert({organizer_id:userId,name:clubForm.name.trim(),short_name:clubForm.short_name.trim()||null,location:clubForm.location.trim()||null,website_url:clubForm.website_url.trim()||null,social_url:clubForm.social_url.trim()||null});
     if(insertError) setError(insertError.message); else { setClubForm({name:"",short_name:"",location:"",website_url:"",social_url:""}); await load(); } setSaving(false);
   }
   async function createSeason(event:React.FormEvent) {
     event.preventDefault(); if(!selectedClubId||!seasonForm.name.trim()) return; setSaving(true); setError("");
-    const {error:insertError}=await (supabase.from("club_seasons") as any).insert({club_id:selectedClubId,name:seasonForm.name.trim(),start_date:seasonForm.start_date||null,end_date:seasonForm.end_date||null,status:seasonForm.status});
+    const {error:insertError}=await supabase.from("club_seasons").insert({club_id:selectedClubId,name:seasonForm.name.trim(),start_date:seasonForm.start_date||null,end_date:seasonForm.end_date||null,status:seasonForm.status});
     if(insertError) setError(insertError.message); else { setSeasonForm({name:String(new Date().getFullYear()+1),start_date:"",end_date:"",status:"upcoming"}); await load(); } setSaving(false);
   }
   async function assignTournament(event:React.FormEvent) {
     event.preventDefault(); if(!selectedClubId||!assignment.tournament_id||!assignment.season_id) return; setSaving(true); setError("");
-    const {error:updateError}=await (supabase.from("tournaments") as any).update({club_id:selectedClubId,season_id:assignment.season_id}).eq("id",assignment.tournament_id);
+    const {error:updateError}=await supabase.from("tournaments").update({club_id:selectedClubId,season_id:assignment.season_id}).eq("id",assignment.tournament_id);
     if(updateError) setError(updateError.message); else { setAssignment({tournament_id:"",season_id:""}); await load(); } setSaving(false);
   }
 

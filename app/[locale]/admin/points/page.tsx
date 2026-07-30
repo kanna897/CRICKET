@@ -39,7 +39,7 @@ export default function AdminPointsPage() {
   useEffect(() => {
     void (async () => {
       setLoading(true);
-      let query = (supabase.from("tournaments") as any).select("id,name,logo_url").order("created_at", { ascending: false });
+      let query = supabase.from("tournaments").select("id,name,logo_url").order("created_at", { ascending: false });
       if (!isMasterAdmin) query = query.eq("organizer_id", userId);
       const { data, error } = await query;
       const rows = (data || []) as Tournament[];
@@ -55,13 +55,13 @@ export default function AdminPointsPage() {
     setLoading(true);
     setMessage("");
     const [{ data: matchRows, error: matchesError }, { data: teamRows, error: teamsError }] = await Promise.all([
-      (supabase.from("matches") as any).select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
-      (supabase.from("teams") as any).select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
+      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
+      supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
     ]);
     const matches = (matchRows || []) as StandingsMatch[];
     setMatches(matches);
     const matchIds = matches.map((match) => match.id);
-    const inningsResult = matchIds.length ? await (supabase.from("innings") as any).select("match_id,batting_team_id,bowling_team_id,total_runs,total_wickets,balls_bowled").in("match_id", matchIds) : { data: [], error: null };
+    const inningsResult = matchIds.length ? await supabase.from("innings").select("match_id,batting_team_id,bowling_team_id,total_runs,total_wickets,balls_bowled").in("match_id", matchIds) : { data: [], error: null };
     const tournamentTeams = (teamRows || []) as Team[];
     setStandings(calculateTournamentStandings(tournamentTeams, matches, (inningsResult.data || []) as StandingsInnings[], rules));
     setTeams(tournamentTeams);

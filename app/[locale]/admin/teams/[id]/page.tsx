@@ -20,8 +20,8 @@ export default function ManageTeamPage() {
 
   useEffect(() => { if (!id) return; void (async () => {
     const [teamResult, playerResult] = await Promise.all([
-      (supabase.from("teams") as any).select("id,name,logo_url,owner_name,contact_number,tournament_id").eq("id", id).maybeSingle(),
-      (supabase.from("players") as any).select("id,name,playing_role,photo_url").eq("team_id", id).order("name"),
+      supabase.from("teams").select("id,name,logo_url,owner_name,contact_number,tournament_id").eq("id", id).maybeSingle(),
+      supabase.from("players").select("id,name,playing_role,photo_url").eq("team_id", id).order("name"),
     ]);
     setTeam(teamResult.data as Team | null); setPlayers((playerResult.data || []) as Player[]);
     setMessage(teamResult.error?.message || playerResult.error?.message || (teamResult.data ? "" : "Team not found.")); setLoading(false);
@@ -30,7 +30,7 @@ export default function ManageTeamPage() {
   const save = async () => {
     if (!team || !team.name.trim()) return;
     setSaving(true); setMessage("");
-    const { error } = await (supabase.from("teams") as any).update({ name: team.name.trim(), team_name: team.name.trim(), owner_name: team.owner_name || null, contact_number: team.contact_number || null, owner_phone: team.contact_number || null }).eq("id", team.id);
+    const { error } = await supabase.from("teams").update({ name: team.name.trim(), team_name: team.name.trim(), owner_name: team.owner_name || null, contact_number: team.contact_number || null, owner_phone: team.contact_number || null }).eq("id", team.id);
     setMessage(error?.message || "Team details saved successfully."); setSaving(false);
   };
 

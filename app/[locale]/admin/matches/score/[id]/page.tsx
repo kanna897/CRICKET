@@ -212,7 +212,7 @@ export default function LiveScorer() {
     };
     useEffect(() => {
         async function load() {
-            const { data: matchData } = await (supabase.from("matches") as any).select("*").eq("id", id).maybeSingle();
+            const { data: matchData } = await supabase.from("matches").select("*").eq("id", id).maybeSingle();
             if (!matchData) {
                 setLoading(false);
                 return;
@@ -223,18 +223,18 @@ export default function LiveScorer() {
                 return;
             }
             const [{ data: teamRows }, { data: playerRows }, { data: squadRows }, { data: inningsRow }] = await Promise.all([
-                (supabase.from("teams") as any).select("id,name,logo_url,primary_color").in("id", [matchData.team_a_id, matchData.team_b_id]),
-                (supabase.from("players") as any).select("id,name,team_id,playing_role,photo_url").order("name"),
-                (supabase.from("match_squads") as any).select("player_id").eq("match_id", id),
-                (supabase.from("innings") as any).select("*").eq("match_id", id).order("innings_number", { ascending: false }).limit(1).maybeSingle(),
+                supabase.from("teams").select("id,name,logo_url,primary_color").in("id", [matchData.team_a_id, matchData.team_b_id]),
+                supabase.from("players").select("id,name,team_id,playing_role,photo_url").order("name"),
+                supabase.from("match_squads").select("player_id").eq("match_id", id),
+                supabase.from("innings").select("*").eq("match_id", id).order("innings_number", { ascending: false }).limit(1).maybeSingle(),
             ]);
             let activeInnings = inningsRow || null;
             if (inningsRow?.innings_number === 1 && inningsRow.is_completed) {
-                const { data: secondInnings } = await (supabase.from("innings") as any).insert({ match_id: matchData.id, innings_number: 2, batting_team_id: inningsRow.bowling_team_id, bowling_team_id: inningsRow.batting_team_id, target: inningsRow.total_runs + 1 }).select("*").maybeSingle();
+                const { data: secondInnings } = await supabase.from("innings").insert({ match_id: matchData.id, innings_number: 2, batting_team_id: inningsRow.bowling_team_id, bowling_team_id: inningsRow.batting_team_id, target: inningsRow.total_runs + 1 }).select("*").maybeSingle();
                 if (secondInnings)
                     activeInnings = secondInnings;
                 else {
-                    const { data: existingSecondInnings } = await (supabase.from("innings") as any).select("*").eq("match_id", id).eq("innings_number", 2).maybeSingle();
+                    const { data: existingSecondInnings } = await supabase.from("innings").select("*").eq("match_id", id).eq("innings_number", 2).maybeSingle();
                     if (existingSecondInnings)
                         activeInnings = existingSecondInnings;
                 }
@@ -249,7 +249,7 @@ export default function LiveScorer() {
             setTossWinner(matchData.toss_winner_id || matchData.team_a_id);
             setTossDecision(matchData.toss_decision || "bat");
             if (activeInnings) {
-                const { data: ballRows } = await (supabase.from("ball_by_ball") as any).select("*").eq("innings_id", activeInnings.id).order("created_at", { ascending: false });
+                const { data: ballRows } = await supabase.from("ball_by_ball").select("*").eq("innings_id", activeInnings.id).order("created_at", { ascending: false });
                 setBalls((ballRows || []).reverse());
             }
             const batting = matchData.toss_winner_id && matchData.toss_decision
@@ -274,7 +274,7 @@ export default function LiveScorer() {
             setOfflinePending(current.length);
             let synced = 0;
             for (const item of current) {
-                const { error } = await (supabase.rpc as any)("record_scoring_delivery", {
+                const { error } = await supabase.rpc("record_scoring_delivery", {
                     p_ball: item.payload.ball,
                     p_next_striker_id: item.payload.next.striker_id || null,
                     p_next_non_striker_id: item.payload.next.non_striker_id || null,
@@ -295,7 +295,7 @@ export default function LiveScorer() {
     }, [id]);
     useEffect(() => {
         const refreshPlayerPhotos = async () => {
-            const { data } = await (supabase.from("players") as any).select("id,photo_url");
+            const { data } = await supabase.from("players").select("id,photo_url");
             if (!data)
                 return;
             const photos = new Map<string, string | null>();
@@ -448,7 +448,7 @@ export default function LiveScorer() {
     const saveInnings = async (next: Partial<Innings>) => {
         if (!innings)
             return;
-        const { error } = await (supabase.from("innings") as any).update(next).eq("id", innings.id);
+        const { error } = await supabase.from("innings").update(next).eq("id", innings.id);
         if (error)
             throw error;
         setInnings({ ...innings, ...next });
@@ -456,10 +456,10 @@ export default function LiveScorer() {
     const assignPlayerOfMatch = async (winnerTeamId?: string | null) => {
         if (!match)
             return null;
-        const { data: inningsRows, error: inningsError } = await (supabase.from("innings") as any).select("id").eq("match_id", match.id);
+        const { data: inningsRows, error: inningsError } = await supabase.from("innings").select("id").eq("match_id", match.id);
         if (inningsError || !inningsRows?.length)
             return null;
-        const { data: matchBalls, error: ballsError } = await (supabase.from("ball_by_ball") as any).select("batsman_id,bowler_id,runs,is_wicket,dismissal_type").in("innings_id", inningsRows.map((row: {
+        const { data: matchBalls, error: ballsError } = await supabase.from("ball_by_ball").select("batsman_id,bowler_id,runs,is_wicket,dismissal_type").in("innings_id", inningsRows.map((row: {
             id: string;
         }) => row.id));
         if (ballsError || !matchBalls?.length)
@@ -508,7 +508,7 @@ export default function LiveScorer() {
             const battingTeam = innings?.innings_number === 2 ? innings.batting_team_id : setup.battingTeam;
             const bowling = innings?.innings_number === 2 ? innings.bowling_team_id : (battingTeam === match.team_a_id ? match.team_b_id : match.team_a_id);
             const payload = { match_id: match.id, innings_number: innings?.innings_number || 1, batting_team_id: battingTeam, bowling_team_id: bowling, striker_id: setup.striker, non_striker_id: setup.nonStriker, current_bowler_id: setup.bowler };
-            const result = innings ? await (supabase.from("innings") as any).update(payload).eq("id", innings.id).select("*").single() : await (supabase.from("innings") as any).insert(payload).select("*").single();
+            const result = innings ? await supabase.from("innings").update(payload).eq("id", innings.id).select("*").single() : await supabase.from("innings").insert(payload).select("*").single();
             if (result.error)
                 throw result.error;
             setInnings(result.data);
@@ -608,7 +608,7 @@ export default function LiveScorer() {
             }
             const next = { total_runs: nextTotalRuns, total_wickets: nextTotalWickets, balls_bowled: nextBallsBowled, extras: (innings.extras || 0) + extras, overs_completed: Number(`${Math.floor(nextBallsBowled / ballsPerOver)}.${nextBallsBowled % ballsPerOver}`), is_completed: inningsComplete, striker_id: striker || null, non_striker_id: nonStriker || null };
             const ballPayload = { client_event_id: crypto.randomUUID(), innings_id: innings.id, over_number: Math.floor(innings.balls_bowled / ballsPerOver) + 1, ball_number: innings.balls_bowled % ballsPerOver + 1, batsman_id: innings.striker_id, non_striker_id: innings.non_striker_id, bowler_id: innings.current_bowler_id, runs, extras, extras_type: extrasType || null, is_legal: legal, is_wicket: wicket, dismissal_type: dismissalType || null, player_out_id: outId || null, fielder_id: fielderId || null, commentary };
-            const { data: atomicData, error: ballError } = await (supabase.rpc as any)("record_scoring_delivery", {
+            const { data: atomicData, error: ballError } = await supabase.rpc("record_scoring_delivery", {
                 p_ball: ballPayload,
                 p_next_striker_id: next.striker_id,
                 p_next_non_striker_id: next.non_striker_id,
@@ -639,7 +639,7 @@ export default function LiveScorer() {
                 setMatch({ ...match, status: "live" });
             }
             if (inningsComplete && innings.innings_number === 1) {
-                const { data: secondInnings, error: secondInningsError } = await (supabase.from("innings") as any).insert({ match_id: match.id, innings_number: 2, batting_team_id: innings.bowling_team_id, bowling_team_id: innings.batting_team_id, target: nextTotalRuns + 1 }).select("*").single();
+                const { data: secondInnings, error: secondInningsError } = await supabase.from("innings").insert({ match_id: match.id, innings_number: 2, batting_team_id: innings.bowling_team_id, bowling_team_id: innings.batting_team_id, target: nextTotalRuns + 1 }).select("*").single();
                 if (secondInningsError)
                     throw secondInningsError;
                 setInnings(secondInnings);
@@ -650,7 +650,7 @@ export default function LiveScorer() {
             if (inningsComplete && innings.innings_number === 2) {
                 const winnerId = targetReached ? innings.batting_team_id : nextTotalRuns === (innings.target || 1) - 1 ? null : innings.bowling_team_id;
                 const playerOfMatch = await assignPlayerOfMatch(winnerId);
-                const { error: finishError } = await (supabase.from("matches") as any).update({ status: "completed", winner_id: winnerId, player_of_match_id: playerOfMatch?.playerId || null, player_of_match_summary: playerOfMatch?.summary || null }).eq("id", match.id);
+                const { error: finishError } = await supabase.from("matches").update({ status: "completed", winner_id: winnerId, player_of_match_id: playerOfMatch?.playerId || null, player_of_match_summary: playerOfMatch?.summary || null }).eq("id", match.id);
                 if (finishError)
                     throw finishError;
                 setMatch({ ...match, status: "completed", player_of_match_id: playerOfMatch?.playerId || null, player_of_match_summary: playerOfMatch?.summary || null });
@@ -727,7 +727,7 @@ export default function LiveScorer() {
             return;
         setSaving(true);
         try {
-            const { error } = await (supabase.from("matches") as any).update({ toss_winner_id: tossWinner, toss_decision: tossDecision }).eq("id", match.id);
+            const { error } = await supabase.from("matches").update({ toss_winner_id: tossWinner, toss_decision: tossDecision }).eq("id", match.id);
             if (error)
                 throw error;
             const battingTeam = tossDecision === "bat" ? tossWinner : (tossWinner === match.team_a_id ? match.team_b_id : match.team_a_id);
@@ -761,7 +761,7 @@ export default function LiveScorer() {
             return alert("Enter the scorer-approved revised target for the chase.");
         setSaving(true);
         try {
-            const { error: matchError } = await (supabase.from("matches") as any).update({
+            const { error: matchError } = await supabase.from("matches").update({
                 revised_overs: oversValue,
                 target_method: targetMethod,
                 interruption_notes: interruptionNotes.trim() || null,
@@ -769,7 +769,7 @@ export default function LiveScorer() {
             if (matchError)
                 throw matchError;
             if (innings.innings_number === 2 && targetValue) {
-                const { error: inningsError } = await (supabase.from("innings") as any).update({ target: targetValue }).eq("id", innings.id);
+                const { error: inningsError } = await supabase.from("innings").update({ target: targetValue }).eq("id", innings.id);
                 if (inningsError)
                     throw inningsError;
                 setInnings({ ...innings, target: targetValue });
@@ -785,7 +785,7 @@ export default function LiveScorer() {
         }
     };
     const finish = async () => { if (!match || !confirm("Finish match and lock scoring?"))
-        return; const playerOfMatch = await assignPlayerOfMatch(winningTeamId); const { error } = await (supabase.from("matches") as any).update({ status: "completed", player_of_match_id: playerOfMatch?.playerId || null, player_of_match_summary: playerOfMatch?.summary || null }).eq("id", match.id); if (error)
+        return; const playerOfMatch = await assignPlayerOfMatch(winningTeamId); const { error } = await supabase.from("matches").update({ status: "completed", player_of_match_id: playerOfMatch?.playerId || null, player_of_match_summary: playerOfMatch?.summary || null }).eq("id", match.id); if (error)
         return alert("Unable to finish match."); setMatch({ ...match, status: "completed", player_of_match_id: playerOfMatch?.playerId || null, player_of_match_summary: playerOfMatch?.summary || null }); };
     const handoverScoring = async () => {
         const url = window.location.href;
@@ -807,7 +807,7 @@ export default function LiveScorer() {
         setSaving(true);
         try {
             const remaining = balls.slice(0, -1);
-            const { data, error } = await (supabase.rpc as any)("undo_last_scoring_delivery", {
+            const { data, error } = await supabase.rpc("undo_last_scoring_delivery", {
                 p_innings_id: innings.id,
             });
             if (error)
@@ -830,7 +830,7 @@ export default function LiveScorer() {
         setSaving(true);
         try {
             const { ball, innings: restoredInnings } = redoSnapshot;
-            const { data, error } = await (supabase.rpc as any)("record_scoring_delivery", {
+            const { data, error } = await supabase.rpc("record_scoring_delivery", {
                 p_ball: ball,
                 p_next_striker_id: restoredInnings.striker_id,
                 p_next_non_striker_id: restoredInnings.non_striker_id,

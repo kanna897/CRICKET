@@ -66,11 +66,11 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   useEffect(() => {
     void (async () => {
       const [tournamentResult, sessionResult] = await Promise.all([
-        (supabase.from("tournaments") as any)
+        supabase.from("tournaments")
           .select("id,name,organizer_id").is("deleted_at", null).order("created_at", { ascending: false }),
         admin
           ? Promise.resolve({ data: [] })
-          : (supabase.from("auction_sessions") as any).select("tournament_id,status").eq("status", "completed"),
+          : supabase.from("auction_sessions").select("tournament_id,status").eq("status", "completed"),
       ]);
       const completedTournamentIds = new Set(
         ((sessionResult.data || []) as Pick<Session, "tournament_id">[]).map((row) => row.tournament_id)
@@ -89,11 +89,11 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     if (!tournamentId) return;
     setLoading(true);
     const [teamResult, playerResult, purseResult, historyResult, sessionResult] = await Promise.all([
-      (supabase.from("teams") as any).select("id,name,logo_url").eq("tournament_id", tournamentId).is("deleted_at", null).order("name"),
-      (supabase.from("auction_players") as any).select("*").eq("tournament_id", tournamentId).eq("source_type", "bulk_upload").order("registration_number"),
-      (supabase.from("auction_team_purses") as any).select("*").eq("tournament_id", tournamentId),
-      (supabase.from("auction_history") as any).select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: false }).limit(100),
-      (supabase.from("auction_sessions") as any).select("*").eq("tournament_id", tournamentId).maybeSingle(),
+      supabase.from("teams").select("id,name,logo_url").eq("tournament_id", tournamentId).is("deleted_at", null).order("name"),
+      supabase.from("auction_players").select("*").eq("tournament_id", tournamentId).eq("source_type", "bulk_upload").order("registration_number"),
+      supabase.from("auction_team_purses").select("*").eq("tournament_id", tournamentId),
+      supabase.from("auction_history").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: false }).limit(100),
+      supabase.from("auction_sessions").select("*").eq("tournament_id", tournamentId).maybeSingle(),
     ]);
     const firstError = [teamResult.error, playerResult.error, purseResult.error, historyResult.error, sessionResult.error].find(Boolean);
     if (firstError) setMessage(firstError.message);
@@ -159,7 +159,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
           updated_at: new Date().toISOString(),
         };
       });
-      const { error } = await (supabase.from("auction_team_purses") as any).upsert(rows, { onConflict: "tournament_id,team_id" });
+      const { error } = await supabase.from("auction_team_purses").upsert(rows, { onConflict: "tournament_id,team_id" });
       if (error) throw error;
       setMessage("Team purses saved.");
       await load();
@@ -176,7 +176,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       ended_at: status === "completed" ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await (supabase.from("auction_sessions") as any).upsert(payload, { onConflict: "tournament_id" });
+    const { error } = await supabase.from("auction_sessions").upsert(payload, { onConflict: "tournament_id" });
     if (error) setMessage(error.message);
     await load(); setBusy("");
   }
@@ -201,7 +201,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
         }));
         return { card_url: media.url, ...playerDetailsFromFilename(file.name) };
       });
-      const { data, error } = await (supabase.rpc as any)("create_bulk_auction_players", {
+      const { data, error } = await supabase.rpc("create_bulk_auction_players", {
         p_tournament_id: tournamentId,
         p_players: uploaded,
       });
@@ -220,7 +220,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     const cardUrl = player.player_card_url || player.photo_url;
     const recognized = await recognizeAuctionCard(cardUrl);
     if (!recognized.playerName) throw new Error("Player name could not be read. Use a clear 1080×1080 player card.");
-    const { data, error } = await (supabase.rpc as any)("update_bulk_auction_player_text", {
+    const { data, error } = await supabase.rpc("update_bulk_auction_player_text", {
       p_auction_player_id: player.id,
       p_player_name: recognized.playerName,
       p_playing_role: recognized.playingRole || "Player",
@@ -270,7 +270,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       setSaleTeamId(resolvedPlayer.winning_team_id || "");
       setWinningBid(resolvedPlayer.winning_bid ? String(resolvedPlayer.winning_bid) : "");
       if (admin && resolvedPlayer.status === "available") {
-        const { error } = await (supabase.rpc as any)("set_auction_player_live", {
+        const { error } = await supabase.rpc("set_auction_player_live", {
           p_auction_player_id: resolvedPlayer.id,
         });
         if (error) throw error;
@@ -287,7 +287,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     if (!selected || !editPlayerName.trim()) return setMessage("Enter the player name.");
     setBusy("save-player-text");
     const serial = Number(editSerial);
-    const { data, error } = await (supabase.rpc as any)("update_bulk_auction_player_text", {
+    const { data, error } = await supabase.rpc("update_bulk_auction_player_text", {
       p_auction_player_id: selected.id,
       p_player_name: editPlayerName.trim(),
       p_playing_role: editPlayingRole.trim() || "Player",
@@ -313,7 +313,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       const availablePurse = Number(purse.initial_purse) - Number(purse.total_spent);
       if (bid > availablePurse) throw new Error("Winning bid exceeds the team's remaining purse.");
       const soldTeamName = team(saleTeamId)?.name || "selected team";
-      const { error } = await (supabase.rpc as any)("sell_auction_player", {
+      const { error } = await supabase.rpc("sell_auction_player", {
         p_auction_player_id: selected.id, p_team_id: saleTeamId, p_winning_bid: bid,
       });
       if (error) throw error;
@@ -326,14 +326,14 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   async function markUnsold(player: AuctionPlayer) {
     setBusy("unsold"); setMessage("");
-    const { error } = await (supabase.rpc as any)("mark_auction_player_unsold", { p_auction_player_id: player.id });
+    const { error } = await supabase.rpc("mark_auction_player_unsold", { p_auction_player_id: player.id });
     if (error) setMessage(error.message); else setSelected(null);
     await load(); setBusy("");
   }
 
   async function reopen(player: AuctionPlayer) {
     setBusy(player.id);
-    const { error } = await (supabase.rpc as any)("reopen_auction_player", { p_auction_player_id: player.id });
+    const { error } = await supabase.rpc("reopen_auction_player", { p_auction_player_id: player.id });
     if (error) setMessage(error.message);
     await load(); setBusy("");
   }

@@ -22,8 +22,8 @@ export default function PublicTeamPage() {
     if (!id) return;
     void (async () => {
       const [{ data: teamRow }, { data: playerRows }] = await Promise.all([
-        (supabase.from("teams") as any).select("id,name,logo_url").eq("id", id).maybeSingle(),
-        (supabase.from("players") as any).select("id,name,photo_url,playing_role,batting_style,bowling_style").eq("team_id", id).order("name"),
+        supabase.from("teams").select("id,name,logo_url").eq("id", id).maybeSingle(),
+        supabase.from("players").select("id,name,photo_url,playing_role,batting_style,bowling_style").eq("team_id", id).order("name"),
       ]);
       setTeam(teamRow);
       setPlayers(playerRows || []);

@@ -41,8 +41,8 @@ export default function PlayerProfilePage() {
   useEffect(() => {
     async function fetchPlayer() {
       const [{ data }, { data: orderedPlayers }] = await Promise.all([
-        (supabase.from('players') as any).select('*').eq('id', id).single(),
-        (supabase.from('players') as any).select('id,name,created_at').order('created_at', { ascending: true }).order('id', { ascending: true }),
+        supabase.from('players').select('*').eq('id', id).single(),
+        supabase.from('players').select('id,name,created_at').order('created_at', { ascending: true }).order('id', { ascending: true }),
       ]);
       if (data) {
         setPlayer(data);
@@ -50,10 +50,10 @@ export default function PlayerProfilePage() {
         const sequence = Math.max(1, ordered.findIndex((row) => row.id === data.id) + 1);
         const shortName = String(data.name).split(/\s+/).map((part: string) => part.replace(/[^a-z0-9]/gi, "").slice(0, 1)).join("").toUpperCase().slice(0, 6) || "PLAYER";
         setPlayerCode(`#CP-${shortName}-${String(sequence).padStart(2, "0")}`);
-        const { data: ballRows } = await (supabase.from('ball_by_ball') as any).select('innings_id,batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type,player_out_id').or(`batsman_id.eq.${id},bowler_id.eq.${id},fielder_id.eq.${id},player_out_id.eq.${id}`);
+        const { data: ballRows } = await supabase.from('ball_by_ball').select('innings_id,batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type,player_out_id').or(`batsman_id.eq.${id},bowler_id.eq.${id},fielder_id.eq.${id},player_out_id.eq.${id}`);
         const balls = (ballRows || []) as Array<{ innings_id: string; batsman_id: string | null; bowler_id: string | null; fielder_id: string | null; runs: number | null; is_wicket: boolean | null; dismissal_type: string | null; player_out_id: string | null }>;
         const inningsIds = [...new Set(balls.map((ball) => ball.innings_id))];
-        const { data: inningsRows } = inningsIds.length ? await (supabase.from('innings') as any).select('id,match_id').in('id', inningsIds) : { data: [] };
+        const { data: inningsRows } = inningsIds.length ? await supabase.from('innings').select('id,match_id').in('id', inningsIds) : { data: [] };
         const inningsToMatch = new Map(((inningsRows || []) as Array<{ id: string; match_id: string }>).map((row) => [row.id, row.match_id]));
         const battingRuns = new Map<string, number>();
         let runs = 0, wickets = 0, dismissals = 0, catches = 0, stumpings = 0, runOuts = 0;
@@ -106,7 +106,7 @@ export default function PlayerProfilePage() {
     try {
       // Legacy database columns are not represented in the generated local type yet.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('players') as any)
+      const { error } = await supabase.from('players')
         .update({
           name: editValues.name.trim(),
           player_name: editValues.name.trim(),
@@ -162,9 +162,8 @@ export default function PlayerProfilePage() {
     try {
       const { url: photo_url } = await uploadImage(file, "player-photos");
 
-      const { data: updatedPlayer, error } = await (supabase
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .from('players') as any)
+      const { data: updatedPlayer, error } = await supabase
+        .from('players')
         .update({ photo_url })
         .eq('id', player.id)
         .select('id,photo_url')

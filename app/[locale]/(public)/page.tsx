@@ -65,25 +65,25 @@ export default function PublicHome() {
     let active = true;
     async function loadLanding() {
       const [tournamentResult, teamResult, matchResult, playerResult] = await Promise.all([
-        (supabase.from("tournaments") as any)
+        supabase.from("tournaments")
           .select("id,name,logo_url,venue,start_date,end_date,status")
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
-        (supabase.from("teams") as any)
+        supabase.from("teams")
           .select("id,tournament_id,name,logo_url")
           .is("deleted_at", null),
-        (supabase.from("matches") as any)
+        supabase.from("matches")
           .select("id,tournament_id,team_a_id,team_b_id,status,match_date,match_time,ground,toss_winner_id,toss_decision,created_at")
           .order("created_at", { ascending: false })
           .limit(20),
-        (supabase.from("players") as any)
+        supabase.from("players")
           .select("id", { count: "exact", head: true })
           .is("deleted_at", null),
       ]);
       const matchRows = (matchResult.data || []) as Match[];
       const matchIds = matchRows.map((item) => item.id);
       const inningsResult = matchIds.length
-        ? await (supabase.from("innings") as any)
+        ? await supabase.from("innings")
             .select("match_id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled")
             .in("match_id", matchIds)
         : { data: [] };

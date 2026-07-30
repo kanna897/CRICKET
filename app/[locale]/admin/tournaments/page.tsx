@@ -47,14 +47,14 @@ export default function TournamentsPage() {
   const handleSoftDelete = async (id: string) => {
     if (!confirm("Are you sure you want to move this tournament to the trash?")) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from("tournaments") as any).update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    await supabase.from("tournaments").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     fetchTournaments();
   };
 
   const handleRestore = async (id: string) => {
     if (!confirm("Restore this tournament?")) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from("tournaments") as any).update({ deleted_at: null }).eq("id", id);
+    await supabase.from("tournaments").update({ deleted_at: null }).eq("id", id);
     fetchTournaments();
   };
 

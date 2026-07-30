@@ -19,7 +19,7 @@ export function TournamentEditor({ tournament, snapshot }: { tournament: Editabl
     event.preventDefault();
     setSaving(true);
     setMessage(null);
-    const { data, error } = await (supabase.from("tournaments") as any).update({ ...form, tournament_name: form.name, overs: Number(form.overs), overs_per_match: Number(form.overs) }).eq("id", tournament.id).select("id").maybeSingle();
+    const { data, error } = await supabase.from("tournaments").update({ ...form, tournament_name: form.name, overs: Number(form.overs), overs_per_match: Number(form.overs) }).eq("id", tournament.id).select("id").maybeSingle();
     setSaving(false);
     if (error) return setMessage(error.message);
     if (!data) return setMessage("Unauthorized: you cannot update this tournament.");
@@ -29,7 +29,7 @@ export function TournamentEditor({ tournament, snapshot }: { tournament: Editabl
 
   async function remove() {
     if (!confirm("Delete this tournament? This action is restricted to its organizer or the Master Admin.")) return;
-    const { data, error } = await (supabase.from("tournaments") as any).delete().eq("id", tournament.id).select("id").maybeSingle();
+    const { data, error } = await supabase.from("tournaments").delete().eq("id", tournament.id).select("id").maybeSingle();
     if (error) return setMessage(error.message);
     if (!data) return setMessage("Unauthorized: you cannot delete this tournament.");
     router.replace("/admin/tournaments");

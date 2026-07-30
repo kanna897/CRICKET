@@ -17,14 +17,14 @@ export function StatsMatchAnalytics() {
   const [message, setMessage] = useState("");
 
   useEffect(() => { void (async () => {
-    const matchResult = await (supabase.from("matches") as any)
+    const matchResult = await supabase.from("matches")
       .select("id,team_a_id,team_b_id,status")
       .in("status", ["live", "completed"])
       .order("created_at", { ascending: false });
     const rows = (matchResult.data || []) as MatchOption[];
     const teamIds = [...new Set(rows.flatMap((match) => [match.team_a_id, match.team_b_id]))];
     const teamResult = teamIds.length
-      ? await (supabase.from("teams") as any).select("id,name").in("id", teamIds)
+      ? await supabase.from("teams").select("id,name").in("id", teamIds)
       : { data: [], error: null };
     setMatches(rows);
     setTeams((teamResult.data || []) as Team[]);

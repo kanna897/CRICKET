@@ -33,12 +33,12 @@ export default function PublicPlayerRegistrationPage() {
   const [registrationNumber, setRegistrationNumber] = useState<number | null>(null);
   const playerCardUrl = "";
   useEffect(() => { void (async () => {
-    const { data: tournamentRows } = await (supabase.from("tournaments") as any).select("id,name").eq("player_registration_enabled", true).is("deleted_at", null).order("name");
+    const { data: tournamentRows } = await supabase.from("tournaments").select("id,name").eq("player_registration_enabled", true).is("deleted_at", null).order("name");
     const rows = (tournamentRows || []) as Tournament[];
     setTournaments(rows);
     if (rows.length) {
       setForm((current) => ({ ...current, tournament_id: rows[0].id }));
-      const { data: teamRows } = await (supabase.from("teams") as any).select("id,name,tournament_id").in("tournament_id", rows.map((row) => row.id)).is("deleted_at", null).order("name");
+      const { data: teamRows } = await supabase.from("teams").select("id,name,tournament_id").in("tournament_id", rows.map((row) => row.id)).is("deleted_at", null).order("name");
       setTeams((teamRows || []) as Team[]);
     }
   })(); }, []);
@@ -79,7 +79,7 @@ export default function PublicPlayerRegistrationPage() {
       const bytes = crypto.getRandomValues(new Uint8Array(6));
       const code = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
       const registrationId = crypto.randomUUID();
-      const { error } = await (supabase.from("player_registrations") as any).insert({
+      const { error } = await supabase.from("player_registrations").insert({
         id: registrationId,
         ...form,
         preferred_team_id: form.preferred_team_id || null,
@@ -92,7 +92,7 @@ export default function PublicPlayerRegistrationPage() {
       setTrackingCode(code);
       localStorage.setItem("crickpulse-player-registration", JSON.stringify({ code, contact: form.contact_number }));
       setSubmitted(true);
-      const { data: savedRegistration } = await (supabase.rpc as any)("get_registration_card_payload", {
+      const { data: savedRegistration } = await supabase.rpc("get_registration_card_payload", {
         p_registration_id: registrationId,
         p_tracking_code: code,
       });

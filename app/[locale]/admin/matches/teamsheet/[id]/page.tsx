@@ -59,7 +59,7 @@ export default function TeamSheetPage() {
       setLoading(true);
       setError(null);
       try {
-        const { data: matchRow, error: matchError } = await (supabase.from("matches") as any)
+        const { data: matchRow, error: matchError } = await supabase.from("matches")
           .select("id,tournament_id,team_a_id,team_b_id,match_date,match_time,ground")
           .eq("id", matchId)
           .maybeSingle();
@@ -67,14 +67,14 @@ export default function TeamSheetPage() {
         if (!matchRow) throw new Error("Match not found.");
 
         const { data: tournamentRow, error: tournamentError } = matchRow.tournament_id
-          ? await (supabase.from("tournaments") as any).select("name,logo_url").eq("id", matchRow.tournament_id).maybeSingle()
+          ? await supabase.from("tournaments").select("name,logo_url").eq("id", matchRow.tournament_id).maybeSingle()
           : { data: null, error: null };
         if (tournamentError) throw tournamentError;
 
         const [{ data: teamRows, error: teamsError }, { data: playerRows, error: playersError }, { data: squadRows, error: squadsError }] = await Promise.all([
-          (supabase.from("teams") as any).select("id,name,logo_url").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
-          (supabase.from("players") as any).select("id,name,team_id,playing_role,photo_url").in("team_id", [matchRow.team_a_id, matchRow.team_b_id]).order("name"),
-          (supabase.from("match_squads") as any).select("player_id,team_id,is_captain").eq("match_id", matchId),
+          supabase.from("teams").select("id,name,logo_url").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
+          supabase.from("players").select("id,name,team_id,playing_role,photo_url").in("team_id", [matchRow.team_a_id, matchRow.team_b_id]).order("name"),
+          supabase.from("match_squads").select("player_id,team_id,is_captain").eq("match_id", matchId),
         ]);
         if (teamsError) throw teamsError;
         if (playersError) throw playersError;
@@ -128,13 +128,13 @@ export default function TeamSheetPage() {
     setSaving(true);
     setError(null);
     try {
-      const { error: removeError } = await (supabase.from("match_squads") as any).delete().eq("match_id", match.id);
+      const { error: removeError } = await supabase.from("match_squads").delete().eq("match_id", match.id);
       if (removeError) throw removeError;
       const rows = [
         ...teamASelection.map((player_id) => ({ match_id: match.id, team_id: teamA.id, player_id, is_captain: player_id === teamACaptain })),
         ...teamBSelection.map((player_id) => ({ match_id: match.id, team_id: teamB.id, player_id, is_captain: player_id === teamBCaptain })),
       ];
-      const { error: insertError } = await (supabase.from("match_squads") as any).insert(rows);
+      const { error: insertError } = await supabase.from("match_squads").insert(rows);
       if (insertError) throw insertError;
       setShowOfficialSheet(true);
     } catch (reason) {

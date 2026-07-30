@@ -49,8 +49,8 @@ export default function MatchesPage() {
       const tournamentsResult = await tournamentQuery;
       const ids = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);
       const [matchesResult, teamsResult] = await Promise.all([
-        (supabase.from("matches") as any).select("*").order("created_at", { ascending: false }),
-        (supabase.from("teams") as any).select("*").order("name"),
+        supabase.from("matches").select("*").order("created_at", { ascending: false }),
+        supabase.from("teams").select("*").order("name"),
       ]);
       const manageableMatches = ((matchesResult.data || []) as Match[]).filter((match) =>
         isMasterAdmin || ids.includes(match.tournament_id || "") || match.organizer_id === userId
@@ -73,7 +73,7 @@ export default function MatchesPage() {
   const updateScorer = async (match: Match, assigned: boolean) => {
     setSavingAssignment(match.id); setMessage("");
     const ownerId = matchOwner(match);
-    const { error } = await (supabase.from("matches") as any).update({ assigned_scorer_id: assigned ? ownerId : null }).eq("id", match.id);
+    const { error } = await supabase.from("matches").update({ assigned_scorer_id: assigned ? ownerId : null }).eq("id", match.id);
     if (error) setMessage(error.message);
     else setMatches((rows) => rows.map((row) => row.id === match.id ? { ...row, assigned_scorer_id: assigned ? ownerId : null } : row));
     setSavingAssignment("");
@@ -82,7 +82,7 @@ export default function MatchesPage() {
     setSavingAssignment(match.id); setMessage("");
     const ownerId = matchOwner(match);
     const nextLocked = !match.scoring_locked;
-    const { error } = await (supabase.from("matches") as any).update({ scoring_locked: nextLocked, assigned_scorer_id: nextLocked ? (match.assigned_scorer_id || ownerId) : match.assigned_scorer_id }).eq("id", match.id);
+    const { error } = await supabase.from("matches").update({ scoring_locked: nextLocked, assigned_scorer_id: nextLocked ? (match.assigned_scorer_id || ownerId) : match.assigned_scorer_id }).eq("id", match.id);
     if (error) setMessage(error.message);
     else setMatches((rows) => rows.map((row) => row.id === match.id ? { ...row, scoring_locked: nextLocked, assigned_scorer_id: nextLocked ? (row.assigned_scorer_id || ownerId) : row.assigned_scorer_id } : row));
     setSavingAssignment("");
@@ -126,7 +126,7 @@ export default function MatchesPage() {
         }
       }
       if (!rows.length) throw new Error("All round-robin team pairings are already scheduled.");
-      const { data, error } = await (supabase.from("matches") as any).insert(rows).select("*");
+      const { data, error } = await supabase.from("matches").insert(rows).select("*");
       if (error) throw error;
       setMatches((current) => [...((data || []) as Match[]), ...current]);
       setGeneratorOpen(false);

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const { match_id, tournament_id, team1_id, team2_id, team1_score, team2_score, team1_overs, team2_overs, winner_id } = await request.json();
     if (!match_id || !tournament_id) return NextResponse.json({ error: "Missing required match parameters" }, { status: 400 });
 
-    const { data: match } = await (supabase.from("matches") as any)
+    const { data: match } = await supabase.from("matches")
       .select("id, tournament_id")
       .eq("id", match_id)
       .eq("tournament_id", tournament_id)
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const nrrImpactTeam2 = calculateNetRunRate(team2_score, team2_overs, team1_score, team1_overs);
     const { team1Points, team2Points } = calculatePoints(winner_id, team1_id, team2_id);
 
-    const { data: updated, error } = await (supabase.from("matches") as any)
+    const { data: updated, error } = await supabase.from("matches")
       .update({ status: "completed" })
       .eq("id", match_id)
       .eq("tournament_id", tournament_id)

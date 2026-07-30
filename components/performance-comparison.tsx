@@ -59,11 +59,11 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
     async function load() {
       setLoading(true);
       const [teamResult, playerResult, matchResult, inningsResult, ballResult] = await Promise.all([
-        (supabase.from("teams") as any).select("id,name,logo_url,primary_color").is("deleted_at", null).order("name"),
-        (supabase.from("players") as any).select("id,name,team_id,photo_url,playing_role").is("deleted_at", null).order("name"),
-        (supabase.from("matches") as any).select("team_a_id,team_b_id,winner_id,status"),
-        (supabase.from("innings") as any).select("batting_team_id,bowling_team_id,total_runs,total_wickets"),
-        (supabase.from("ball_by_ball") as any).select("batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type"),
+        supabase.from("teams").select("id,name,logo_url,primary_color").is("deleted_at", null).order("name"),
+        supabase.from("players").select("id,name,team_id,photo_url,playing_role").is("deleted_at", null).order("name"),
+        supabase.from("matches").select("team_a_id,team_b_id,winner_id,status"),
+        supabase.from("innings").select("batting_team_id,bowling_team_id,total_runs,total_wickets"),
+        supabase.from("ball_by_ball").select("batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type"),
       ]);
       if (!active) return;
       const teamRows = (teamResult.data || []) as Team[];

@@ -20,14 +20,14 @@ export function DashboardLivePanels() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      let tournamentQuery = (supabase.from("tournaments") as any).select("id,name,status,organizer_id,created_at").order("created_at", { ascending: false });
+      let tournamentQuery = supabase.from("tournaments").select("id,name,status,organizer_id,created_at").order("created_at", { ascending: false });
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: tournamentRows } = await tournamentQuery;
       const scoped = (tournamentRows || []) as Tournament[];
       const ids = scoped.map((item) => item.id);
       const [matchResult, teamResult] = ids.length ? await Promise.all([
-        (supabase.from("matches") as any).select("id,tournament_id,team_a_id,team_b_id,match_number,match_date,match_time,ground,status,created_at").in("tournament_id", ids).order("created_at", { ascending: false }).limit(30),
-        (supabase.from("teams") as any).select("id,name").in("tournament_id", ids),
+        supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,match_number,match_date,match_time,ground,status,created_at").in("tournament_id", ids).order("created_at", { ascending: false }).limit(30),
+        supabase.from("teams").select("id,name").in("tournament_id", ids),
       ]) : [{ data: [] }, { data: [] }];
       if (!active) return;
       setTournaments(scoped); setMatches((matchResult.data || []) as Match[]); setTeams((teamResult.data || []) as Team[]);

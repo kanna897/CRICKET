@@ -72,7 +72,7 @@ export default function NewTeamPage() {
         .eq('name', data.name);
       duplicateQuery = data.tournament_id
         ? duplicateQuery.eq('tournament_id', data.tournament_id)
-        : duplicateQuery.is('tournament_id', null).eq('organizer_id' as any, userId);
+        : duplicateQuery.is('tournament_id', null).eq('organizer_id', userId);
       const { data: existingTeam } = await duplicateQuery.maybeSingle();
         
       if (existingTeam) {
@@ -89,7 +89,7 @@ export default function NewTeamPage() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: insertError } = await (supabase.from('teams') as any)
+      const { error: insertError } = await supabase.from('teams')
         .insert([
           {
             name: data.name,
