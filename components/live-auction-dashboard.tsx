@@ -46,7 +46,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     void (async () => {
       const [tournamentResult, sessionResult] = await Promise.all([
         supabase.from("tournaments")
-          .select("id,name,organizer_id").is("deleted_at", null).order("created_at", { ascending: false }),
+          .select("id,name,logo_url,organizer_id").is("deleted_at", null).order("created_at", { ascending: false }),
         admin
           ? Promise.resolve({ data: [] })
           : supabase.from("auction_sessions").select("tournament_id,status").eq("status", "completed"),
@@ -401,6 +401,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
       {admin && sold.length > 0 && <AuctionTopPicksPoster
         tournamentName={tournaments.find((row) => row.id === tournamentId)?.name || "Tournament"}
+        tournamentLogo={tournaments.find((row) => row.id === tournamentId)?.logo_url}
         players={sold}
         teams={teams}
         autoDownloadToken={topPicksDownloadToken}

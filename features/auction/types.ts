@@ -1,4 +1,4 @@
-export type Tournament = { id: string; name: string; organizer_id?: string | null };
+export type Tournament = { id: string; name: string; logo_url?: string | null; organizer_id?: string | null };
 export type Team = { id: string; name: string; logo_url: string | null };
 export type AuctionPlayer = {
   id: string;
