@@ -35,12 +35,19 @@ function exportSafeUrl(url: string) {
 function PlayerPortrait({ player, className = "" }: { player: AuctionPlayer; className?: string }) {
   const source = exportSafeUrl(player.player_card_url || player.photo_url);
   return (
-    <div className={`relative overflow-hidden bg-[radial-gradient(circle_at_center,#1c62ba_0%,#0a1f4a_58%,#050b26_100%)] ${className}`}>
+    <div
+      data-poster-image-url={source}
+      className={`relative overflow-hidden bg-[radial-gradient(circle_at_center,#1c62ba_0%,#0a1f4a_58%,#050b26_100%)] bg-no-repeat ${className}`}
+      style={player.player_card_url ? {
+        backgroundImage: `url(${JSON.stringify(source)})`,
+        backgroundPosition: "11% 45%",
+        backgroundSize: "308% auto",
+      } : undefined}
+      role="img"
+      aria-label={`${player.player_name} profile photo`}
+    >
       {player.player_card_url ? (
-        // Uploaded auction cards are square. This fixed crop isolates the portrait panel
-        // used by the CricPulse card template instead of showing the full card artwork.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={source} alt={player.player_name} crossOrigin="anonymous" className="absolute left-[-8%] top-[-72%] h-auto w-[230%] max-w-none" />
+        <span className="sr-only">{player.player_name}</span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={source} alt={player.player_name} crossOrigin="anonymous" className="h-full w-full object-cover object-top" />
@@ -52,7 +59,10 @@ function PlayerPortrait({ player, className = "" }: { player: AuctionPlayer; cla
 async function waitForPosterImages(node: HTMLElement) {
   await document.fonts.ready;
   const images = Array.from(node.querySelectorAll("img"));
-  await Promise.all(images.map(async (image) => {
+  const backgroundUrls = Array.from(node.querySelectorAll<HTMLElement>("[data-poster-image-url]"))
+    .map((element) => element.dataset.posterImageUrl)
+    .filter((url): url is string => Boolean(url));
+  await Promise.all([...images.map(async (image) => {
     if (image.complete && image.naturalWidth > 0) return;
     await new Promise<void>((resolve) => {
       const done = () => resolve();
@@ -60,7 +70,14 @@ async function waitForPosterImages(node: HTMLElement) {
       image.addEventListener("error", done, { once: true });
       window.setTimeout(done, 8000);
     });
-  }));
+  }), ...backgroundUrls.map((url) => new Promise<void>((resolve) => {
+    const image = new window.Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+    window.setTimeout(resolve, 8000);
+  }))]);
 }
 
 export function AuctionTopPicksPoster({
@@ -125,7 +142,7 @@ export function AuctionTopPicksPoster({
         <div>
           <p className="text-xs font-black uppercase tracking-[.2em] text-amber-500">Auction poster</p>
           <h2 className="mt-1 flex items-center gap-2 text-xl font-black"><Sparkles className="h-5 w-5 text-amber-500" />Top Picks of {tournamentName}</h2>
-          <p className="text-sm text-muted-foreground">Top five players ranked by winning bid with profile-photo crops.</p>
+          <p className="text-sm text-muted-foreground">Live ranking · updates automatically after every player sale.</p>
         </div>
         <button type="button" disabled={downloading} onClick={() => void download4K()} className="inline-flex min-h-11 items-center rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg disabled:opacity-60">
           {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
@@ -152,7 +169,7 @@ export function AuctionTopPicksPoster({
               </div>
               <div className="flex shrink-0 items-center gap-3 rounded-sm border-y-2 border-amber-300 bg-[#0a1f53] px-5 py-2 shadow-lg">
                 <Trophy className="h-8 w-8 text-amber-300" />
-                <div><p className="text-[9px] font-bold uppercase tracking-[.2em] text-amber-200">Live Auction</p><strong className="text-lg uppercase">Official Results</strong></div>
+                <div><p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[.2em] text-amber-200"><span className="h-2 w-2 rounded-full bg-red-500" />Live Auction</p><strong className="text-lg uppercase">Official Results</strong></div>
               </div>
             </header>
 
@@ -162,7 +179,7 @@ export function AuctionTopPicksPoster({
                 <span className="absolute left-5 top-5 rounded-full bg-amber-300 px-3 py-1 text-xs font-black text-slate-950">#1 TOP PICK</span>
                 <div className="absolute inset-x-0 bottom-0 h-[118px] bg-gradient-to-t from-[#020711] via-[#020711]/95 to-transparent px-5 pb-4 pt-7">
                   <div className="flex items-end gap-3">
-                    {heroTeam?.logo_url ? <Image unoptimized width={58} height={58} src={exportSafeUrl(heroTeam.logo_url)} alt="" crossOrigin="anonymous" className="h-13 w-13 rounded-full border-2 border-white bg-white object-contain p-1" /> : null}
+                    {heroTeam?.logo_url ? <span className="relative h-13 w-13 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white"><Image unoptimized fill src={exportSafeUrl(heroTeam.logo_url)} alt="" crossOrigin="anonymous" className="object-contain p-1.5" /></span> : null}
                     <div className="min-w-0"><p className="truncate text-[24px] font-black uppercase leading-none">{hero.player_name}</p><p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-sky-200">{heroTeam?.name || "Winning team"}</p></div>
                   </div>
                   <p className="mt-2 rounded-md bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] py-1.5 text-center text-[20px] font-black text-[#06122d]">{money(Number(hero.winning_bid || 0))} POINTS</p>
@@ -176,7 +193,7 @@ export function AuctionTopPicksPoster({
                     <PlayerPortrait player={player} className="h-[62px] w-[62px] rounded-xl border-2 border-white" />
                     <div className="min-w-0"><p className="truncate text-[19px] font-black uppercase leading-tight">{index + 2}. {player.player_name}</p><p className="truncate text-[9px] font-bold uppercase tracking-[.13em] text-cyan-200">{winningTeam?.name || "Winning team"}</p></div>
                     <strong className="text-right text-[18px] font-black text-amber-300">{money(Number(player.winning_bid || 0))} PTS</strong>
-                    {winningTeam?.logo_url ? <Image unoptimized width={48} height={48} src={exportSafeUrl(winningTeam.logo_url)} alt="" crossOrigin="anonymous" className="h-11 w-11 rounded-full border-2 border-white bg-white object-contain p-1" /> : <span className="grid h-11 w-11 place-items-center rounded-full border-2 border-white bg-slate-800 text-sm font-black">{winningTeam?.name?.slice(0, 2) || "CP"}</span>}
+                    {winningTeam?.logo_url ? <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white"><Image unoptimized fill src={exportSafeUrl(winningTeam.logo_url)} alt="" crossOrigin="anonymous" className="object-contain p-1.5" /></span> : <span className="grid h-11 w-11 place-items-center rounded-full border-2 border-white bg-slate-800 text-sm font-black">{winningTeam?.name?.slice(0, 2) || "CP"}</span>}
                   </article>;
                 })}
                 {Array.from({ length: Math.max(0, 4 - runners.length) }).map((_, index) => <div key={`empty-${index}`} className="grid min-h-[78px] place-items-center rounded-xl border border-dashed border-white/20 bg-white/5 text-xs font-bold uppercase tracking-[.2em] text-white/35">Awaiting sold player</div>)}
