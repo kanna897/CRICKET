@@ -16,6 +16,7 @@ import type { AuctionFilter as Filter, AuctionPlayer, HistoryRow, Purse, Session
 import { AuctionEmpty as Empty, AuctionPlayerDialog, AuctionStat as Stat, AuctionStatus as Status, DownloadButton, HistoryPanel, SquadPanel } from "@/features/auction/components";
 import { displaySerial, mapWithConcurrency, money, playerDetailsFromFilename, pretty } from "@/features/auction/utils";
 import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
+import { AuctionTopPicksPoster } from "@/components/auction-top-picks-poster";
 
 export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = false }: { admin?: boolean; userId?: string; isMasterAdmin?: boolean }) {
   const { locale } = useParams<{ locale: string }>();
@@ -39,6 +40,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   const [purseDrafts, setPurseDrafts] = useState<Record<string, string>>({});
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
   const [scanProgress, setScanProgress] = useState({ completed: 0, total: 0 });
+  const [topPicksDownloadToken, setTopPicksDownloadToken] = useState(0);
 
   useEffect(() => {
     void (async () => {
@@ -158,6 +160,10 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     };
     const { error } = await supabase.from("auction_sessions").upsert(payload, { onConflict: "tournament_id" });
     if (error) setMessage(error.message);
+    else if (status === "completed") {
+      setMessage("Auction completed. Your 4K Top Picks JPG is being prepared.");
+      setTopPicksDownloadToken((token) => token + 1);
+    }
     await load(); setBusy("");
   }
 
@@ -392,6 +398,16 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap gap-2">{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} className="overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><Image unoptimized width={128} height={128} src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/>{busy === player.id && <span className="absolute inset-0 grid place-items-center bg-black/60 text-xs font-black text-white"><Loader2 className="mr-2 h-5 w-5 animate-spin"/>Reading text</span>}</div><div className="p-2.5"><div className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{player.player_name}</strong><span className="font-mono text-xs font-black text-primary">S.NO {String(displaySerial(player)).padStart(2, "0")}</span></div><p className="mt-1 truncate text-xs capitalize text-muted-foreground">{pretty(player.playing_role)}</p>{player.status === "sold" && <strong className="mt-1 block text-xs text-emerald-600">{money(Number(player.winning_bid || 0))}</strong>}</div></button>)}</div></section>
 
       <section className="grid gap-5 xl:grid-cols-2"><SquadPanel teams={teams} players={sold}/><HistoryPanel history={history} players={players} teams={teams}/></section>
+
+      {admin && sold.length > 0 && <AuctionTopPicksPoster
+        tournamentName={tournaments.find((row) => row.id === tournamentId)?.name || "Tournament"}
+        players={sold}
+        teams={teams}
+        autoDownloadToken={topPicksDownloadToken}
+        onDownloadComplete={() => {
+          if (topPicksDownloadToken) setMessage("Auction completed and the 4K Top Picks JPG was downloaded.");
+        }}
+      />}
 
       {admin && <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex items-center gap-3"><Download className="h-6 w-6 text-primary"/><div><h2 className="text-xl font-black">Bulk Card Downloads</h2><p className="text-sm text-muted-foreground">Download uploaded auction cards inside a ZIP archive.</p></div></div><div className="mt-4 flex flex-wrap gap-2"><DownloadButton label="All Player Cards" busy={busy === "zip-all"} onClick={() => void downloadZip("all")}/><DownloadButton label="Sold Cards" busy={busy === "zip-sold"} onClick={() => void downloadZip("sold")}/><DownloadButton label="Unsold Cards" busy={busy === "zip-unsold"} onClick={() => void downloadZip("unsold")}/></div></section>}
     </>}
