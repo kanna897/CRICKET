@@ -38,6 +38,11 @@ const securityHeaders = [
 ] as const;
 
 const config: NextConfig = {
+  images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400,
+    remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" }],
+  },
   turbopack: {
     root: path.resolve(__dirname),
   },

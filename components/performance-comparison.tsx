@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -269,7 +269,7 @@ function Identity({ row, mode, tone, audience }: { row: Team | Player; mode: Mod
   const photo = imageFor(row);
   const detail = mode === "players" && "playing_role" in row ? row.playing_role || "Player" : "Cricket team";
   const href = audience === "admin" ? `/admin/players/${row.id}` : `/players/${row.id}`;
-  return <article className={`admin-compare-identity tone-${tone}`}><span>{photo ? <img src={photo} alt="" /> : mode === "players" ? <UserRound /> : <Users />}</span><div><small>{detail}</small><h2>{row.name}</h2>{mode === "players" && <Link href={href}>View profile <ArrowRight /></Link>}</div></article>;
+  return <article className={`admin-compare-identity tone-${tone}`}><span>{photo ? <Image src={photo} alt="" width={128} height={128} sizes="128px" /> : mode === "players" ? <UserRound /> : <Users />}</span><div><small>{detail}</small><h2>{row.name}</h2>{mode === "players" && <Link href={href}>View profile <ArrowRight /></Link>}</div></article>;
 }
 
 function ChartCard({ title, subtitle, icon: Icon, children }: { title: string; subtitle: string; icon: typeof Activity; children: React.ReactNode }) {
@@ -302,21 +302,21 @@ const ComparisonPoster = ({ ref, mode, left, right, leftMetrics, rightMetrics, l
       } as React.CSSProperties}
     >
       <div className="comparison-poster-glow glow-left" /><div className="comparison-poster-glow glow-right" />
-      <header><img src="/brand/crickpulse-logo.png" alt="Crickpulse" className="poster-brand-logo" /><small>LIVE CRICKET EXPERIENCE</small></header>
+      <header><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} className="poster-brand-logo" /><small>LIVE CRICKET EXPERIENCE</small></header>
       <div className="poster-title"><p>{mode === "players" ? "PLAYER" : "TEAM"} PERFORMANCE COMPARISON</p><h2>HEAD TO HEAD</h2></div>
       <div className="poster-contenders">
         <PosterSide row={left} mode={mode} metrics={leftMetrics} labels={labels} side="left" />
         <div className="poster-vs">VS</div>
         <PosterSide row={right} mode={mode} metrics={rightMetrics} labels={labels} side="right" />
       </div>
-      <footer><img src="/brand/crickpulse-logo.png" alt="Crickpulse" /><span>PERFORMANCE INTELLIGENCE</span><b>EVERY BALL · EVERY MOMENT · ONE PULSE</b></footer>
+      <footer><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} /><span>PERFORMANCE INTELLIGENCE</span><b>EVERY BALL · EVERY MOMENT · ONE PULSE</b></footer>
     </div>
   );
 };
 
 function PosterSide({ row, mode, metrics, labels, side }: { row: Team | Player; mode: Mode; metrics: Metrics; labels: string[]; side: "left" | "right" }) {
   const photo = imageFor(row);
-  return <section className={`poster-side poster-${side} poster-${mode}`}><div className="poster-photo">{photo ? <img src={photo} alt="" crossOrigin="anonymous" /> : mode === "players" ? <UserRound /> : <Shield />}</div><h3>{row.name}</h3><small>{mode === "players" && "playing_role" in row ? row.playing_role || "PLAYER" : "CRICKET TEAM"}</small><div className="poster-stats">{labels.map((label) => <div key={label}><strong>{formatMetric(metrics[label])}</strong><span>{label}</span></div>)}</div></section>;
+  return <section className={`poster-side poster-${side} poster-${mode}`}><div className="poster-photo">{photo ? <Image src={photo} alt="" crossOrigin="anonymous" width={512} height={512} sizes="512px" /> : mode === "players" ? <UserRound /> : <Shield />}</div><h3>{row.name}</h3><small>{mode === "players" && "playing_role" in row ? row.playing_role || "PLAYER" : "CRICKET TEAM"}</small><div className="poster-stats">{labels.map((label) => <div key={label}><strong>{formatMetric(metrics[label])}</strong><span>{label}</span></div>)}</div></section>;
 }
 
 function imageFor(row: Team | Player) {

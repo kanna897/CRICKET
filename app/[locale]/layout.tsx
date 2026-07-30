@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
+import localFont from "next/font/local";
 
 import { asLocale, entityMetadata, seoCopy, siteUrl } from "@/lib/seo";
+
+const geist = localFont({
+  src: "../fonts/geist-latin.woff2",
+  display: "swap",
+  variable: "--font-geist",
+  fallback: ["system-ui", "Arial", "sans-serif"],
+});
 
 export async function generateMetadata({
   params,
@@ -72,9 +80,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
-      <body
-        className="antialiased bg-background text-foreground"
-      >
+      <body className={`${geist.variable} antialiased bg-background text-foreground`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Award, Loader2, Medal, RefreshCw, Shield, Swords, Target, Trophy } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -140,8 +141,7 @@ function TeamTable({ rows, tournamentName }: { rows: TeamRanking[]; tournamentNa
         <td className="px-4 py-4 text-lg font-black text-primary">{index + 1}</td>
         <td className="px-4 py-4"><div className="flex items-center gap-3">{row.logoUrl ? <>
           {/* Cloudinary URLs have dynamic transformations, so retain the native image element here. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={row.logoUrl} alt="" className="h-12 w-12 rounded-full border border-border bg-white object-contain p-0.5"/>
+          <Image src={row.logoUrl} alt="" width={48} height={48} sizes="48px" className="h-12 w-12 rounded-full border border-border bg-white object-contain p-0.5"/>
         </> : <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 font-black text-primary">{row.teamName[0]}</span>}<div><strong className="block">{row.teamName}</strong><small className="text-muted-foreground">Matches: {row.played} · W {row.won} · L {row.lost} · NRR {row.nrr >= 0 ? "+" : ""}{row.nrr.toFixed(3)}</small></div></div></td>
         <td className="px-3 py-4 text-center text-lg font-black">{row.rating}</td><td className="px-4 py-4 text-right text-lg font-black text-primary">{row.ratingPoints}</td>
       </tr>)}</tbody>
@@ -157,8 +157,7 @@ function PlayerTable({ title, subtitle, icon, rows, mode }: { title: string; sub
       <span className="font-black text-primary">{index + 1}</span>
       {row.photoUrl ? <>
         {/* Cloudinary URLs have dynamic transformations, so retain the native image element here. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={row.photoUrl} alt="" className="h-11 w-11 rounded-full border border-border bg-muted object-cover object-top"/>
+        <Image src={row.photoUrl} alt="" width={44} height={44} sizes="44px" className="h-11 w-11 rounded-full border border-border bg-muted object-cover object-top"/>
       </> : <span className="grid h-11 w-11 place-items-center rounded-full bg-primary/10 text-xs font-black text-primary">{initials(row.playerName)}</span>}
       <div className="min-w-0"><p className="truncate text-sm font-black">{row.playerName}</p><p className="truncate text-[.68rem] text-muted-foreground">{row.teamName}</p></div>
       <PlayerMetrics row={row} mode={mode}/>

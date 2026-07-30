@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 html { min-height: 100%; max-width: 100%; overflow-x: clip; background: var(--background); }
-body { min-height: 100dvh; max-width: 100%; overflow-x: clip; padding-top: env(safe-area-inset-top); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { min-height: 100dvh; max-width: 100%; overflow-x: clip; padding-top: env(safe-area-inset-top); font-family: var(--font-geist), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 *, *::before, *::after { box-sizing: border-box; }
 img, video, canvas, svg { max-width: 100%; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
@@ -50,7 +50,7 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   isolation: isolate;
   color: #0f2940;
   background-color: #e8f5fb;
-  background-image: url("/stadium/crickpulse-stadium-day.png");
+  background-image: url("/stadium/crickpulse-stadium-day.webp");
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;
@@ -127,7 +127,7 @@ html:not(.dark) .admin-theme-shell .admin-themed-page textarea {
 .dark .public-stadium-shell {
   color: #eaf5ff;
   background-color: #020817;
-  background-image: url("/stadium/crickpulse-stadium-night.png");
+  background-image: url("/stadium/crickpulse-stadium-night.webp");
 }
 .dark .public-stadium-shell::before {
   background: linear-gradient(to bottom, rgb(2 8 23 / 18%), rgb(2 10 27 / 82%) 36rem, #020817 78rem);
@@ -2549,7 +2549,7 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 
 .public-landing > main { max-width: 95rem; margin: 0 auto; padding: 1.8rem 2rem 2.5rem; }
 .landing-hero { position: relative; display: grid; min-height: 34rem; grid-template-columns: minmax(22rem, .9fr) minmax(20rem, .78fr) minmax(21rem, .72fr); align-items: center; gap: 1.5rem; overflow: hidden; border-bottom: 1px solid rgb(126 164 199 / 13%); padding: 1.4rem 0 1.6rem; }
-.landing-hero::before { position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgb(2 10 20 / 88%) 0%, rgb(2 11 21 / 18%) 43%, rgb(2 11 21 / 8%) 67%, rgb(2 11 21 / 82%) 100%), url("/landing/cricket-hero-background.png") center/auto 100% no-repeat, url("/stadium/crickpulse-stadium-night.png") center/cover no-repeat; content: ""; opacity: 1; }
+.landing-hero::before { position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgb(2 10 20 / 88%) 0%, rgb(2 11 21 / 18%) 43%, rgb(2 11 21 / 8%) 67%, rgb(2 11 21 / 82%) 100%), url("/landing/cricket-hero-background.webp") center/auto 100% no-repeat, url("/stadium/crickpulse-stadium-night.webp") center/cover no-repeat; content: ""; opacity: 1; }
 .landing-hero::after { position: absolute; inset: auto 0 0; z-index: 0; height: 9rem; background: linear-gradient(transparent, #03101b); content: ""; }
 .landing-stadium-glow { position: absolute; inset: 2rem 18% 0 30%; z-index: 0; border-radius: 999px; background: radial-gradient(circle, rgb(95 222 66 / 18%), transparent 65%); filter: blur(24px); }
 .landing-hero-copy,
@@ -2678,6 +2678,9 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 .landing-login-cta > a { display: flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: .45rem; border: 1px solid rgb(156 184 209 / 34%); border-radius: .4rem; padding: .6rem 1rem; color: #f7fbff; font-size: .68rem; font-weight: 900; }
 .landing-login-cta > a:first-child { border-color: #69d34b; background: linear-gradient(135deg, #75dc54, #4fb538); color: #071307; }
 .landing-login-cta svg { width: .85rem; height: .85rem; }
+
+/* Maintain Lighthouse mobile legibility while preserving the compact score layout. */
+.public-landing :where(.landing-live-pill, .landing-feature-row b, .landing-feature-row small, .landing-featured-match small, .landing-match-context, .landing-match-score span, .landing-team-crest b, .landing-toss, .landing-mini-scorecard span, .landing-mini-scorecard b, .landing-mini-scorecard strong, .landing-match-empty p, .landing-tournament-art > span, .landing-status, .landing-tournament-card p, .landing-tournament-card small, .landing-stat-strip span, .landing-bottom-cta p, .landing-login-cta > a) { font-size: .75rem !important; }
 
 html.light .public-landing {
   background:

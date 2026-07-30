@@ -7,5 +7,5 @@ type CrickpulseLogoProps = {
 export const CRICKPULSE_SLOGAN = "LIVE SCORE. PLAYER STATS. EVERY BALL.";
 
 export function CrickpulseLogo({ variant = "horizontal", className = "" }: CrickpulseLogoProps) {
-  return <Image unoptimized width={128} height={128} src="/brand/crickpulse-logo.png" alt="Crickpulse" className={`crickpulse-logo crickpulse-logo-${variant} ${className}`} />;
+  return <Image width={176} height={44} sizes="176px" src="/brand/crickpulse-logo.webp" alt="Crickpulse" className={`crickpulse-logo crickpulse-logo-${variant} ${className}`} />;
 }
