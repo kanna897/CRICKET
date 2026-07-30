@@ -3,18 +3,34 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 
-export const metadata: Metadata = {
-  title: "CRICKPULSE | Enterprise Tournament Management",
-  description: "Modern, fast, mobile-friendly cricket tournament management platform",
-  manifest: "/manifest.webmanifest",
-  applicationName: "CrickPulse",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "CrickPulse" },
-  icons: {
-    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }, { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-  formatDetection: { telephone: false },
-};
+import { asLocale, entityMetadata, seoCopy, siteUrl } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const locale = asLocale((await params).locale);
+  const localized = seoCopy(locale);
+  return {
+    ...entityMetadata({
+      locale,
+      path: "",
+      title: `${localized.site} | Live Cricket Scoring`,
+      description: localized.description,
+    }),
+    metadataBase: siteUrl(),
+    title: { default: `${localized.site} | Live Cricket Scoring`, template: `%s | ${localized.site}` },
+    manifest: "/manifest.webmanifest",
+    applicationName: "CrickPulse",
+    appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "CrickPulse" },
+    icons: {
+      icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }, { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }],
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+    formatDetection: { telephone: false },
+  };
+}
 
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
