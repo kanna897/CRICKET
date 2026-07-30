@@ -19,12 +19,15 @@ export default function PublicLiveMatch() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [innings, setInnings] = useState<Innings | null>(null);
   const [balls, setBalls] = useState<Ball[]>([]);
-  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [alertsEnabled, setAlertsEnabled] = useState(
+    () => typeof window !== "undefined"
+      && localStorage.getItem(`crickpulse-live-alert:${id}`) === "on"
+      && Notification.permission === "granted",
+  );
   const [alertMessage, setAlertMessage] = useState("");
 
   useEffect(() => {
     if (!id) return;
-    setAlertsEnabled(localStorage.getItem(`crickpulse-live-alert:${id}`) === "on" && Notification.permission === "granted");
     const load = async (notify = false) => {
       const { data: matchRow } = await supabase.from("matches").select("id,team_a_id,team_b_id,overs_per_match,status,winner_id").eq("id", id).maybeSingle();
       if (!matchRow) return;

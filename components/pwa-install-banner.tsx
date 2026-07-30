@@ -14,10 +14,12 @@ export function PwaInstallBanner() {
   const [updateWorker, setUpdateWorker] = useState<ServiceWorker | null>(null);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
-    const standalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-    setInstalled(standalone);
-    setHidden(sessionStorage.getItem("crickpulse-install-dismissed") === "1");
+    const initialize = window.setTimeout(() => {
+      setOnline(navigator.onLine);
+      const standalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+      setInstalled(standalone);
+      setHidden(sessionStorage.getItem("crickpulse-install-dismissed") === "1");
+    }, 0);
 
     const install = (event: Event) => { event.preventDefault(); setPrompt(event as InstallPrompt); setHidden(false); };
     const onInstalled = () => { setInstalled(true); setPrompt(null); setHidden(true); };
@@ -46,6 +48,7 @@ export function PwaInstallBanner() {
       });
     }
     return () => {
+      window.clearTimeout(initialize);
       window.removeEventListener("beforeinstallprompt", install);
       window.removeEventListener("appinstalled", onInstalled);
       window.removeEventListener("online", on);
@@ -72,6 +75,9 @@ export function PwaInstallBanner() {
 
 export function PwaInstalledBadge() {
   const [standalone, setStandalone] = useState(false);
-  useEffect(() => setStandalone(window.matchMedia("(display-mode: standalone)").matches), []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setStandalone(window.matchMedia("(display-mode: standalone)").matches), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   return standalone ? <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500"><CheckCircle2 className="h-4 w-4" />App mode</span> : null;
 }

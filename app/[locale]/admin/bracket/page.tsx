@@ -37,7 +37,10 @@ export default function KnockoutBracketPage() {
     setTeams((teamRows || []) as Team[]);
     setMatches((matchRows || []) as Match[]);
   }
-  useEffect(() => { void load(); }, [isMasterAdmin, userId]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [isMasterAdmin, userId]);
 
   const rounds = useMemo(() => [...new Set(matches.map((match) => match.bracket_round))].sort((a,b)=>a-b), [matches]);
   const team = (id: string) => teams.find((item) => item.id === id);

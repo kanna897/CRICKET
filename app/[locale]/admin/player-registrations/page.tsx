@@ -12,7 +12,10 @@ export default function PlayerRegistrationsPage(){
   const [rows,setRows]=useState<Registration[]>([]),[teams,setTeams]=useState<Named[]>([]),[tournaments,setTournaments]=useState<Named[]>([]);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState("");
   const load=useCallback(async()=>{setLoading(true);const [r,t,tr]=await Promise.all([supabase.from("player_registrations").select("*").order("created_at",{ascending:false}),supabase.from("teams").select("id,name"),supabase.from("tournaments").select("id,name")]);setRows(r.data||[]);setTeams(t.data||[]);setTournaments(tr.data||[]);setLoading(false)},[]);
-  useEffect(()=>{void load()},[load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
   const name=(list:Named[],id:string|null)=>list.find(x=>x.id===id)?.name||"Organizer assignment";
   async function review(row:Registration,approve:boolean){
     setBusy(row.id);

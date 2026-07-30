@@ -51,7 +51,10 @@ export default function PointsPage() {
     setLoading(false);
   }, [selectedTournament]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
   const tournamentName = tournaments.find((item) => item.id === selectedTournament)?.name || t("fallback");
   const tournamentLogo = tournaments.find((item) => item.id === selectedTournament)?.logo_url || null;
 

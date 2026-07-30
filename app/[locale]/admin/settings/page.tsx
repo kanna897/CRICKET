@@ -20,10 +20,13 @@ export default function SettingsPage() {
   const [passwordStatus, setPasswordStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    setNotifications(localStorage.getItem("cp-admin-notifications") !== "off");
-    setLanguage(localStorage.getItem("cp-admin-language") || "en");
-    if ("Notification" in window) setNotificationStatus(Notification.permission === "granted" ? "Enabled on this device" : Notification.permission === "denied" ? "Blocked by browser" : "Permission required");
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+      setNotifications(localStorage.getItem("cp-admin-notifications") !== "off");
+      setLanguage(localStorage.getItem("cp-admin-language") || "en");
+      if ("Notification" in window) setNotificationStatus(Notification.permission === "granted" ? "Enabled on this device" : Notification.permission === "denied" ? "Blocked by browser" : "Permission required");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const enablePush = async () => {

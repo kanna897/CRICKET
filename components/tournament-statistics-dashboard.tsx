@@ -68,7 +68,10 @@ export function TournamentStatisticsDashboard({ admin = false, organizerId, isMa
         setMessage(teamResult.error?.message || matchResult.error?.message || inningsResult.error?.message || playerResult.error?.message || ballResult.error?.message || "");
         setLoading(false);
     }, [selectedTournament]);
-    useEffect(() => { void load(); }, [load]);
+    useEffect(() => {
+        const timer = window.setTimeout(() => void load(), 0);
+        return () => window.clearTimeout(timer);
+    }, [load]);
     const batting = useMemo(() => [...stats].sort((a, b) => b.runs - a.runs || b.strikeRate - a.strikeRate), [stats]);
     const bowling = useMemo(() => [...stats].filter((row) => row.bowlingBalls > 0).sort((a, b) => b.wickets - a.wickets || a.economy - b.economy), [stats]);
     const tournamentName = tournaments.find((item) => item.id === selectedTournament)?.name || "Tournament";

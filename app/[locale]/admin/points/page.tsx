@@ -25,9 +25,12 @@ export default function AdminPointsPage() {
 
   useEffect(() => {
     if (!selectedTournament) return;
-    const saved = window.localStorage.getItem(`crickpulse-points-rules:${selectedTournament}`);
-    if (!saved) { setRules(defaultPointsRules); return; }
-    try { setRules({ ...defaultPointsRules, ...JSON.parse(saved) }); } catch { setRules(defaultPointsRules); }
+    const timer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem(`crickpulse-points-rules:${selectedTournament}`);
+      if (!saved) { setRules(defaultPointsRules); return; }
+      try { setRules({ ...defaultPointsRules, ...JSON.parse(saved) }); } catch { setRules(defaultPointsRules); }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [selectedTournament]);
 
   const updateRule = (key: keyof PointsRules, value: number) => {
@@ -69,7 +72,10 @@ export default function AdminPointsPage() {
     setLoading(false);
   }, [selectedTournament, rules]);
 
-  useEffect(() => { void loadStandings(); }, [loadStandings]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadStandings(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadStandings]);
 
   const team = (teamId: string) => teams.find((item) => item.id === teamId);
   const tournamentName = tournaments.find((item) => item.id === selectedTournament)?.name || "Tournament";

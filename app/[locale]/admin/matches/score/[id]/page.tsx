@@ -142,15 +142,15 @@ export default function LiveScorer() {
     const [showCelebration, setShowCelebration] = useState(false);
     const [boundaryPop, setBoundaryPop] = useState<{
         runs: 4 | 6;
-        key: number;
+        key: string;
     } | null>(null);
     const [wicketPop, setWicketPop] = useState<{
         type: string;
-        key: number;
+        key: string;
     } | null>(null);
     const [hatTrickPop, setHatTrickPop] = useState<{
         bowlerName: string;
-        key: number;
+        key: string;
     } | null>(null);
     const [tossWinner, setTossWinner] = useState("");
     const [tossDecision, setTossDecision] = useState("bat");
@@ -163,13 +163,15 @@ export default function LiveScorer() {
     const [redoSnapshot, setRedoSnapshot] = useState<{ ball: Ball; innings: Innings } | null>(null);
     const [voiceListening, setVoiceListening] = useState(false);
     const [voiceMessage, setVoiceMessage] = useState("");
-    const [autoCommentary, setAutoCommentary] = useState(false);
-    const [commentaryVoice, setCommentaryVoice] = useState("en-IN");
+    const [autoCommentary, setAutoCommentary] = useState(
+        () => typeof window !== "undefined" && window.localStorage.getItem("crickpulse:auto-commentary") === "on",
+    );
+    const [commentaryVoice, setCommentaryVoice] = useState(
+        () => typeof window !== "undefined" ? window.localStorage.getItem("crickpulse:commentary-voice") || "en-IN" : "en-IN",
+    );
     const lastSpokenCommentary = useRef("");
 
     useEffect(() => {
-        setAutoCommentary(window.localStorage.getItem("crickpulse:auto-commentary") === "on");
-        setCommentaryVoice(window.localStorage.getItem("crickpulse:commentary-voice") || "en-IN");
         return () => window.speechSynthesis?.cancel();
     }, []);
 
@@ -376,13 +378,13 @@ export default function LiveScorer() {
     const teamBWinChance = 100 - teamAWinChance;
     const requiresSetup = !innings?.striker_id || !innings?.non_striker_id || !innings?.current_bowler_id;
     useEffect(() => {
-        if (!winningTeamId) {
-            setShowCelebration(false);
-            return;
-        }
-        setShowCelebration(true);
+        const update = window.setTimeout(() => setShowCelebration(Boolean(winningTeamId)), 0);
+        if (!winningTeamId) return () => window.clearTimeout(update);
         const timeout = window.setTimeout(() => setShowCelebration(false), 120000);
-        return () => window.clearTimeout(timeout);
+        return () => {
+            window.clearTimeout(update);
+            window.clearTimeout(timeout);
+        };
     }, [winningTeamId]);
     useEffect(() => {
         if (!boundaryPop)
@@ -536,7 +538,7 @@ export default function LiveScorer() {
             return;
         setRedoSnapshot(null);
         if (runs === 4 || runs === 6)
-            setBoundaryPop({ runs, key: Date.now() });
+            setBoundaryPop({ runs, key: crypto.randomUUID() });
         setSaving(true);
         try {
             if (extrasType === "wide" && !match.allow_wides)
@@ -619,12 +621,12 @@ export default function LiveScorer() {
                 if (!offlineFailure)
                     throw ballError;
                 await saveToOfflineQueue(match.id, { ball: ballPayload, inningsId: innings.id, next });
-                const queuedBall = { id: `offline-${Date.now()}`, ...ballPayload } as Ball;
+                const queuedBall = { id: `offline-${crypto.randomUUID()}`, ...ballPayload } as Ball;
                 setInnings({ ...innings, ...next });
                 setBalls([...balls, queuedBall]);
                 setOfflinePending((count) => count + 1);
                 if (deliveryIsHatTrick)
-                    setHatTrickPop({ bowlerName: playerName(innings.current_bowler_id), key: Date.now() });
+                    setHatTrickPop({ bowlerName: playerName(innings.current_bowler_id), key: crypto.randomUUID() });
                 speakCommentary(generatedCommentary);
                 alert("Connection unavailable. Ball saved safely on this device and will sync automatically when online.");
                 return;
@@ -633,7 +635,7 @@ export default function LiveScorer() {
             setInnings(atomicResult.innings);
             setBalls([...balls, atomicResult.ball]);
             if (deliveryIsHatTrick)
-                setHatTrickPop({ bowlerName: playerName(innings.current_bowler_id), key: Date.now() });
+                setHatTrickPop({ bowlerName: playerName(innings.current_bowler_id), key: crypto.randomUUID() });
             speakCommentary(generatedCommentary);
             if (match.status === "scheduled") {
                 setMatch({ ...match, status: "live" });
@@ -850,7 +852,7 @@ export default function LiveScorer() {
             setSaving(false);
         }
     };
-    const openWicket = (type: string) => { setWicketType(type); setWicketPop({ type, key: Date.now() }); setPlayerOut(innings?.striker_id || ""); setNextBatter(""); setFielder(""); setWicketOpen(true); };
+    const openWicket = (type: string) => { setWicketType(type); setWicketPop({ type, key: crypto.randomUUID() }); setPlayerOut(innings?.striker_id || ""); setNextBatter(""); setFielder(""); setWicketOpen(true); };
     const saveWicket = () => {
         if (freeHitActive && wicketType !== "run_out")
             return alert("Free Hit: only a run out dismissal is allowed.");

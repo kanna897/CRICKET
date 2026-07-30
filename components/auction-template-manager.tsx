@@ -44,7 +44,10 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
     if (selected) setChoice(selected as Choice);
   }, [tournamentId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;

@@ -91,7 +91,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
         notOut: total.notOut || batting?.dismissal === "not out",
       };
     }, { runs: 0, balls: 0, wickets: 0, bowlingRuns: 0, fours: 0, sixes: 0, notOut: false });
-  }, [cards, match?.player_of_match_id]);
+  }, [cards, match]);
   const result = useMemo(() => {
     if (!match?.winner_id) return match?.status === "completed" ? "Match completed" : "Match in progress";
     const winnerName = teamName(match.winner_id).replace(/\s+/g, " ").trim();

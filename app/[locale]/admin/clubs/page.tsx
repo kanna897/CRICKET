@@ -32,7 +32,10 @@ export default function ClubsPage() {
     setClubs(clubResult.data||[]); setSeasons(seasonResult.data||[]); setTournaments(tournamentResult.data||[]);
     setSelectedClubId(current=>current||clubResult.data?.[0]?.id||""); setLoading(false);
   },[isMasterAdmin,userId]);
-  useEffect(()=>{ void load(); },[load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const selectedClub=clubs.find(club=>club.id===selectedClubId)||null;
   const selectedSeasons=useMemo(()=>seasons.filter(season=>season.club_id===selectedClubId),[seasons,selectedClubId]);
