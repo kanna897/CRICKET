@@ -81,6 +81,21 @@ async function waitForPosterImages(node: HTMLElement) {
   }))]);
 }
 
+async function loadCanvasImage(url: string) {
+  return await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new window.Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Could not load poster image: ${url}`));
+    image.src = url;
+  });
+}
+
+function roundedRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  context.beginPath();
+  context.roundRect(x, y, width, height, radius);
+}
+
 export function AuctionTopPicksPoster({
   tournamentName,
   tournamentLogo,
@@ -106,17 +121,23 @@ export function AuctionTopPicksPoster({
     setDownloadError("");
     try {
       await waitForPosterImages(posterRef.current);
-      const dataUrl = await toJpeg(posterRef.current, {
-        cacheBust: false,
-        width: 960,
-        height: 540,
-        canvasWidth: 3840,
-        canvasHeight: 2160,
-        pixelRatio: 1,
-        quality: 0.98,
-        backgroundColor: "#07152b",
-        skipFonts: true,
-      });
+      let dataUrl: string;
+      try {
+        dataUrl = await toJpeg(posterRef.current, {
+          cacheBust: false,
+          width: 960,
+          height: 540,
+          canvasWidth: 3840,
+          canvasHeight: 2160,
+          pixelRatio: 1,
+          quality: 0.98,
+          backgroundColor: "#07152b",
+          skipFonts: true,
+        });
+      } catch (domCaptureError) {
+        console.warn("DOM poster capture failed; using native canvas fallback.", domCaptureError);
+        dataUrl = await renderCanvasFallback();
+      }
       await downloadPosterDataUrl(dataUrl, `${safeFilename(tournamentName)}-top-picks-4k.jpg`);
       onDownloadComplete?.();
     } catch (reason) {
@@ -125,6 +146,163 @@ export function AuctionTopPicksPoster({
     } finally {
       setDownloading(false);
     }
+  }
+
+  async function renderCanvasFallback() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 3840;
+    canvas.height = 2160;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("4K canvas is not available.");
+    const scale = 4;
+    context.scale(scale, scale);
+
+    const background = context.createLinearGradient(0, 0, 960, 540);
+    background.addColorStop(0, "#050b26");
+    background.addColorStop(0.55, "#09265e");
+    background.addColorStop(1, "#050617");
+    context.fillStyle = background;
+    context.fillRect(0, 0, 960, 540);
+    const gold = context.createLinearGradient(0, 0, 960, 0);
+    gold.addColorStop(0, "#e7b84d");
+    gold.addColorStop(0.5, "#fff2a8");
+    gold.addColorStop(1, "#e7b84d");
+    context.fillStyle = gold;
+    context.fillRect(0, 0, 960, 16);
+    context.strokeStyle = "rgba(255,255,255,.25)";
+    context.lineWidth = 1;
+    roundedRect(context, 16, 16, 928, 508, 22);
+    context.stroke();
+
+    const tournamentImage = tournamentLogo ? await loadCanvasImage(exportSafeUrl(tournamentLogo)).catch(() => null) : null;
+    if (tournamentImage) {
+      context.save();
+      context.beginPath();
+      context.arc(48, 49, 18, 0, Math.PI * 2);
+      context.clip();
+      context.fillStyle = "#fff";
+      context.fillRect(30, 31, 36, 36);
+      context.drawImage(tournamentImage, 32, 33, 32, 32);
+      context.restore();
+    }
+    context.fillStyle = "#ffe99b";
+    context.font = "900 11px Arial";
+    context.fillText(tournamentName.toUpperCase().slice(0, 60), tournamentImage ? 76 : 34, 49);
+    context.fillStyle = "#fff";
+    context.font = "900 31px Arial";
+    context.fillText("TOP PICKS", 34, 86);
+
+    context.fillStyle = "#0a1f53";
+    roundedRect(context, 688, 30, 240, 62, 7);
+    context.fill();
+    context.strokeStyle = "#facc15";
+    context.stroke();
+    context.fillStyle = "#facc15";
+    context.font = "900 30px Arial";
+    context.fillText("⚒", 706, 70);
+    context.fillStyle = "#ffe99b";
+    context.font = "900 9px Arial";
+    context.fillText("LIVE AUCTION", 750, 50);
+    context.fillStyle = "#fff";
+    context.font = "900 18px Arial";
+    context.fillText("OFFICIAL RESULTS", 750, 73);
+    context.strokeStyle = "rgba(255,255,255,.18)";
+    context.beginPath();
+    context.moveTo(34, 106);
+    context.lineTo(926, 106);
+    context.stroke();
+
+    const drawPortrait = async (player: AuctionPlayer, x: number, y: number, width: number, height: number, radius: number) => {
+      const image = await loadCanvasImage(exportSafeUrl(player.player_card_url || player.photo_url));
+      context.save();
+      roundedRect(context, x, y, width, height, radius);
+      context.clip();
+      if (player.player_card_url) context.drawImage(image, 85, 294, 348, 515, x, y, width, height);
+      else context.drawImage(image, x, y, width, height);
+      context.restore();
+      context.strokeStyle = "#fff";
+      context.lineWidth = 2;
+      roundedRect(context, x, y, width, height, radius);
+      context.stroke();
+    };
+    const drawLogo = async (url: string | null | undefined, x: number, y: number, size: number) => {
+      context.save();
+      context.beginPath();
+      context.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+      context.clip();
+      context.fillStyle = "#fff";
+      context.fillRect(x, y, size, size);
+      if (url) {
+        const image = await loadCanvasImage(exportSafeUrl(url)).catch(() => null);
+        if (image) {
+          const ratio = Math.min((size - 4) / image.naturalWidth, (size - 4) / image.naturalHeight);
+          const width = image.naturalWidth * ratio;
+          const height = image.naturalHeight * ratio;
+          context.drawImage(image, x + (size - width) / 2, y + (size - height) / 2, width, height);
+        }
+      }
+      context.restore();
+    };
+
+    context.fillStyle = "#071c43";
+    roundedRect(context, 34, 122, 334, 354, 17);
+    context.fill();
+    context.strokeStyle = "#facc15";
+    context.stroke();
+    await drawPortrait(hero, 125, 168, 182, 270, 24);
+    context.fillStyle = "#facc15";
+    roundedRect(context, 55, 143, 108, 25, 13);
+    context.fill();
+    context.fillStyle = "#07152b";
+    context.font = "900 12px Arial";
+    context.fillText("#1 TOP PICK", 68, 160);
+    await drawLogo(heroTeam?.logo_url, 54, 385, 55);
+    context.fillStyle = "#fff";
+    context.font = "900 22px Arial";
+    context.fillText(hero.player_name.toUpperCase().slice(0, 20), 120, 419);
+    context.fillStyle = "#bfe8ff";
+    context.font = "900 9px Arial";
+    context.fillText((heroTeam?.name || "WINNING TEAM").toUpperCase().slice(0, 30), 120, 438);
+    context.fillStyle = "#e7b84d";
+    roundedRect(context, 55, 448, 292, 28, 6);
+    context.fill();
+    context.fillStyle = "#07152b";
+    context.font = "900 19px Arial";
+    context.textAlign = "center";
+    context.fillText(`${money(Number(hero.winning_bid || 0))} POINTS`, 201, 469);
+    context.textAlign = "left";
+
+    for (let index = 0; index < runners.length; index += 1) {
+      const player = runners[index];
+      const winningTeam = team(player.winning_team_id);
+      const y = 126 + index * 90;
+      context.fillStyle = "#06122d";
+      roundedRect(context, 390, y, 540, 80, 13);
+      context.fill();
+      context.strokeStyle = "rgba(255,255,255,.2)";
+      context.stroke();
+      await drawPortrait(player, 402, y + 9, 62, 62, 10);
+      context.fillStyle = "#fff";
+      context.font = "900 20px Arial";
+      context.fillText(`${index + 2}. ${player.player_name.toUpperCase().slice(0, 24)}`, 480, y + 35);
+      context.fillStyle = "#7dd3fc";
+      context.font = "900 9px Arial";
+      context.fillText((winningTeam?.name || "WINNING TEAM").toUpperCase().slice(0, 32), 480, y + 53);
+      context.fillStyle = "#facc15";
+      context.font = "900 18px Arial";
+      context.textAlign = "right";
+      context.fillText(`${money(Number(player.winning_bid || 0))} PTS`, 870, y + 45);
+      context.textAlign = "left";
+      await drawLogo(winningTeam?.logo_url, 882, y + 14, 52);
+    }
+    context.fillStyle = "#bfe8ff";
+    context.font = "700 9px Arial";
+    context.fillText("HIGHEST WINNING BIDS · OFFICIAL AUCTION RESULTS", 34, 516);
+    context.fillStyle = "#ffe99b";
+    context.textAlign = "right";
+    context.fillText("CRICKPULSE · THE RHYTHM OF THE GAME", 926, 516);
+    context.textAlign = "left";
+    return canvas.toDataURL("image/jpeg", 0.96);
   }
 
   useEffect(() => {
@@ -187,7 +365,7 @@ export function AuctionTopPicksPoster({
                     {heroTeam?.logo_url ? <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white"><Image unoptimized fill src={exportSafeUrl(heroTeam.logo_url)} alt="" crossOrigin="anonymous" className="object-contain p-0.5" /></span> : null}
                     <div className="min-w-0"><p className="truncate text-[24px] font-black uppercase leading-none">{hero.player_name}</p><p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-sky-200">{heroTeam?.name || "Winning team"}</p></div>
                   </div>
-                  <p className="mt-2 rounded-md bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] py-1.5 text-center text-[20px] font-black text-[#06122d]">{money(Number(hero.winning_bid || 0))} POINTS</p>
+                  <p className="mt-1 flex h-9 items-center justify-center rounded-md bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] text-center text-[18px] font-black leading-none text-[#06122d]">{money(Number(hero.winning_bid || 0))} POINTS</p>
                 </div>
               </div>
 
