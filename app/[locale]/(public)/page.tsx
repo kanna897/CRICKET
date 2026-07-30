@@ -1,18 +1,17 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
   ArrowRight,
-  CalendarDays,
   Eye,
   FileImage,
   FileText,
   Radio,
   ShieldCheck,
-  Sparkles,
   Trophy,
   UserRound,
   Users,
@@ -188,7 +187,7 @@ export default function PublicHome() {
               <Link href={`/tournaments/${item.id}`} key={item.id} className={`landing-tournament-card landing-tournament-${index % 4}`}>
                 <div className="landing-tournament-art">
                   <StatusBadge status={item.status} />
-                  {item.logo_url ? <img src={item.logo_url} alt="" /> : <Trophy />}
+                  {item.logo_url ? <Image unoptimized width={128} height={128} src={item.logo_url} alt="" /> : <Trophy />}
                   <span>CRICKET LEAGUE</span>
                 </div>
                 <div><h3>{item.name}</h3><p><Users />{teams.filter((entry) => entry.tournament_id === item.id).length} teams <Activity />{matches.filter((entry) => entry.tournament_id === item.id).length} matches</p><small>{dateRange(item.start_date, item.end_date)}</small></div>
@@ -221,7 +220,7 @@ function FeatureMini({ icon: Icon, title, text }: { icon: typeof Zap; title: str
 }
 
 function TeamCrest({ team }: { team?: Team }) {
-  return <div className="landing-team-crest">{team?.logo_url ? <img src={team.logo_url} alt="" /> : <span>{team?.name.slice(0, 2).toUpperCase() || "CP"}</span>}<b>{team?.name || "Team"}</b></div>;
+  return <div className="landing-team-crest">{team?.logo_url ? <Image unoptimized width={128} height={128} src={team.logo_url} alt="" /> : <span>{team?.name.slice(0, 2).toUpperCase() || "CP"}</span>}<b>{team?.name || "Team"}</b></div>;
 }
 
 function StatusBadge({ status }: { status: string }) {

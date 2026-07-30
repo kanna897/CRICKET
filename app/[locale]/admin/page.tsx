@@ -1,7 +1,8 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -157,8 +158,8 @@ export default function AdminDashboard() {
   const playerCountByTeam = new Map(teams.map((item) => [item.id, players.filter((player) => player.team_id === item.id).length]));
   const teamsNeedingPlayers = teams.filter((item) => (playerCountByTeam.get(item.id) || 0) < 6);
   const incompleteFixtures = matches.filter((item) => !completedStatuses.includes(item.status) && (!item.match_date || !item.ground));
-  const team = (id: string) => teams.find((item) => item.id === id);
-  const tournament = (id: string) => tournaments.find((item) => item.id === id);
+  const team = useCallback((id: string) => teams.find((item) => item.id === id), [teams]);
+  const tournament = useCallback((id: string) => tournaments.find((item) => item.id === id), [tournaments]);
   const latestInnings = (matchId: string) =>
     innings
       .filter((item) => item.match_id === matchId)
@@ -186,7 +187,7 @@ export default function AdminDashboard() {
       ]
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .slice(0, 5),
-    [matches, tournaments, teams],
+    [matches, tournaments, team, tournament],
   );
 
   const dashboardDate = new Intl.DateTimeFormat("en-GB", {
@@ -325,7 +326,7 @@ function LiveMatchCard({ match, teamA, teamB, innings, tournamentName }: { match
 }
 
 function TeamMark({ name, logo, size = "md" }: { name: string; logo?: string | null; size?: "md" | "lg" }) {
-  return <span className={`dashboard-team-mark dashboard-team-mark-${size}`}>{logo ? <img src={logo} alt="" /> : <i>{name.slice(0, 2).toUpperCase()}</i>}<b>{name}</b></span>;
+  return <span className={`dashboard-team-mark dashboard-team-mark-${size}`}>{logo ? <Image unoptimized width={128} height={128} src={logo} alt="" /> : <i>{name.slice(0, 2).toUpperCase()}</i>}<b>{name}</b></span>;
 }
 
 function StatusPill({ status }: { status: string }) {

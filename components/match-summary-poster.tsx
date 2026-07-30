@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { toJpeg } from "html-to-image";
@@ -43,15 +44,15 @@ export function MatchSummaryPoster({ teams, innings, result, playerOfMatch, tour
       <div className="absolute bottom-4 right-4 h-24 w-24 rounded-tl-[4rem] border-l border-t border-cyan-200/40" />
       <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-r from-[#e7b84d] via-[#fff2a8] to-[#e7b84d]" />
       <div className="relative flex h-[calc(100%-16px)] min-h-0 flex-col p-7">
-        <div className="relative border-b border-white/15 pb-4"><div className="flex items-center justify-between"><div className="min-w-0 flex-1 pr-4"><p className="text-lg font-black tracking-[0.12em] text-amber-200 drop-shadow">{tournament?.name || "CRICKET TOURNAMENT"}</p><img src="/brand/crickpulse-logo.png" alt="Crickpulse" className="mt-1 h-10 w-44 rounded-md border border-white bg-white p-1 object-contain object-left shadow-[0_2px_8px_rgba(34,211,238,0.45)]" /></div><p className="mt-1 rounded-sm border-y-2 border-amber-300 bg-[#0a1f53] px-5 py-2 text-xs font-black tracking-[0.16em] shadow-lg">MATCH SUMMARY</p></div><p className="absolute left-1/2 top-7 -translate-x-1/2 rounded-full border border-amber-200/80 bg-amber-100/10 px-3 py-1 text-xs font-black tracking-[0.2em] text-amber-100 shadow-[0_0_12px_rgba(231,184,77,0.2)]">MATCH {matchNumber ?? "—"}</p></div>
+        <div className="relative border-b border-white/15 pb-4"><div className="flex items-center justify-between"><div className="min-w-0 flex-1 pr-4"><p className="text-lg font-black tracking-[0.12em] text-amber-200 drop-shadow">{tournament?.name || "CRICKET TOURNAMENT"}</p><Image unoptimized width={128} height={128} src="/brand/crickpulse-logo.png" alt="Crickpulse" className="mt-1 h-10 w-44 rounded-md border border-white bg-white p-1 object-contain object-left shadow-[0_2px_8px_rgba(34,211,238,0.45)]" /></div><p className="mt-1 rounded-sm border-y-2 border-amber-300 bg-[#0a1f53] px-5 py-2 text-xs font-black tracking-[0.16em] shadow-lg">MATCH SUMMARY</p></div><p className="absolute left-1/2 top-7 -translate-x-1/2 rounded-full border border-amber-200/80 bg-amber-100/10 px-3 py-1 text-xs font-black tracking-[0.2em] text-amber-100 shadow-[0_0_12px_rgba(231,184,77,0.2)]">MATCH {matchNumber ?? "—"}</p></div>
         <div className="mt-4 shrink-0 space-y-3">
           {innings.map((item, index) => {
             const currentTeam = team(item.batting_team_id);
             const color = currentTeam?.primary_color || (index ? "#facc15" : "#0ea5e9");
             return <div key={`${item.batting_team_id}-${index}`} className="overflow-hidden rounded-xl border border-white/15 bg-[#06122d]/90 shadow-[0_12px_22px_rgba(0,0,0,0.24)]">
               <div className="flex items-center gap-3 border-l-4 px-4 py-2.5" style={{ borderColor: color, background: `linear-gradient(90deg, ${color}d9, ${color}6b)` }}>
-                {currentTeam?.logo_url ? <img src={currentTeam.logo_url} alt="" className="h-10 w-10 rounded-full bg-white object-cover ring-2 ring-white/80 shadow-md" /> : <div className="h-10 w-10 rounded-full bg-white/20" />}
-                <div className="min-w-0"><div className="flex items-center gap-2.5"><p className="truncate text-lg font-black tracking-wide">{currentTeam?.name || "TEAM"}</p>{currentTeam?.id === tossWinnerTeamId && tournament?.logo_url && <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-amber-100 bg-white p-0.5 shadow-[0_0_0_2px_rgba(231,184,77,0.45)]"><img src={tournament.logo_url} alt={`${tournament.name} logo`} className="h-full w-full rounded-full object-cover" /></span>}</div><p className="text-xs font-semibold opacity-85">{item.summary.overs} overs</p></div>
+                {currentTeam?.logo_url ? <Image unoptimized width={128} height={128} src={currentTeam.logo_url} alt="" className="h-10 w-10 rounded-full bg-white object-cover ring-2 ring-white/80 shadow-md" /> : <div className="h-10 w-10 rounded-full bg-white/20" />}
+                <div className="min-w-0"><div className="flex items-center gap-2.5"><p className="truncate text-lg font-black tracking-wide">{currentTeam?.name || "TEAM"}</p>{currentTeam?.id === tossWinnerTeamId && tournament?.logo_url && <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-amber-100 bg-white p-0.5 shadow-[0_0_0_2px_rgba(231,184,77,0.45)]"><Image unoptimized width={128} height={128} src={tournament.logo_url} alt={`${tournament.name} logo`} className="h-full w-full rounded-full object-cover" /></span>}</div><p className="text-xs font-semibold opacity-85">{item.summary.overs} overs</p></div>
                 <div className="ml-auto border-l border-white/30 pl-4 text-right"><p className="text-[0.6rem] font-bold tracking-[0.14em] text-white/70">SCORE</p><p className="text-3xl font-black leading-none">{item.total_runs}/{item.total_wickets}</p></div>
               </div>
               <div className="grid grid-cols-2 gap-x-5 p-3 text-slate-100">
@@ -66,7 +67,7 @@ export function MatchSummaryPoster({ teams, innings, result, playerOfMatch, tour
             <div className="grid h-full grid-cols-[0.8fr_1.2fr] items-stretch">
               <div className="flex min-h-0 items-center justify-center bg-[radial-gradient(circle_at_center,#1c62ba_0%,#0a1f4a_58%,#050b26_100%)] p-4">
                 <div className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-white bg-white/10 shadow-2xl shadow-black/40 backdrop-blur">
-                  {playerOfMatch.photo_url ? <img src={playerOfMatch.photo_url} alt={playerOfMatch.name} className="h-full w-full object-cover object-top" /> : <div className="flex h-full w-full items-center justify-center bg-white/10 text-4xl font-black text-white/50">POM</div>}
+                  {playerOfMatch.photo_url ? <Image unoptimized width={128} height={128} src={playerOfMatch.photo_url} alt={playerOfMatch.name} className="h-full w-full object-cover object-top" /> : <div className="flex h-full w-full items-center justify-center bg-white/10 text-4xl font-black text-white/50">POM</div>}
                 </div>
               </div>
               <div className="flex flex-col justify-center p-4">
@@ -82,7 +83,7 @@ export function MatchSummaryPoster({ teams, innings, result, playerOfMatch, tour
             </div>
           </div>
         </div>}
-        <div className="mt-auto shrink-0 pt-3"><div className="overflow-hidden rounded-xl border border-amber-200/70 bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] px-5 py-3 text-[#06122d] shadow-lg"><div className="flex items-center justify-center gap-3">{winningTeam?.logo_url && <img src={winningTeam.logo_url} alt="" className="h-10 w-10 rounded-full bg-white object-cover ring-2 ring-white shadow-md" />}<p className="text-center text-xl font-black uppercase tracking-wide">{result}</p></div></div></div>
+        <div className="mt-auto shrink-0 pt-3"><div className="overflow-hidden rounded-xl border border-amber-200/70 bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] px-5 py-3 text-[#06122d] shadow-lg"><div className="flex items-center justify-center gap-3">{winningTeam?.logo_url && <Image unoptimized width={128} height={128} src={winningTeam.logo_url} alt="" className="h-10 w-10 rounded-full bg-white object-cover ring-2 ring-white shadow-md" />}<p className="text-center text-xl font-black uppercase tracking-wide">{result}</p></div></div></div>
       </div>
     </div>
     <div className="flex flex-wrap gap-3">{(["4k"] as PosterQuality[]).map((quality) => <button key={quality} onClick={() => void download(quality)} disabled={!!downloading} className="control bg-primary text-primary-foreground"><Download className="w-4 h-4 mr-1" />{downloading === quality ? `Creating ${posterQualityLabel(quality)}...` : `Download ${posterQualityLabel(quality)} JPG`}</button>)}</div>

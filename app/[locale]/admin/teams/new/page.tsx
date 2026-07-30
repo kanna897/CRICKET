@@ -88,7 +88,7 @@ export default function NewTeamPage() {
         logo_url = url;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { error: insertError } = await supabase.from('teams')
         .insert([
           {

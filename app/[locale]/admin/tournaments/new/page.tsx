@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -56,7 +57,7 @@ export default function NewTournamentPage() {
       }
 
       // Insert Tournament
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { data: createdTournament, error: insertError } = await supabase.from('tournaments')
         .insert([
           {
@@ -109,7 +110,7 @@ export default function NewTournamentPage() {
             <div className="flex items-center gap-6">
               <div className="w-24 h-24 rounded-full border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/50">
                 {logoPreview ? (
-                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                  <Image unoptimized width={128} height={128} src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
                 ) : (
                   <Trophy className="w-8 h-8 text-muted-foreground" />
                 )}

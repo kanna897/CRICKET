@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, FileText, Trophy } from "lucide-react";
@@ -69,7 +70,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refreshPlayerPhotos); };
   }, []);
 
-  const teamName = (teamId: string | null) => teams.find((team) => team.id === teamId)?.name || "Team";
+  const teamName = useCallback((teamId: string | null) => teams.find((team) => team.id === teamId)?.name || "Team", [teams]);
   const cards = useMemo(
     () => innings.map((item) => ({ item, summary: buildScorecard(item, balls.filter((ball) => ball.innings_id === item.id), players) })),
     [innings, balls, players],
@@ -104,7 +105,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
     }
     const runMargin = Math.max((firstInnings?.summary.total || 0) - (chase?.summary.total || 0), 0);
     return `${winnerName} win by ${runMargin} run${runMargin === 1 ? "" : "s"}.`;
-  }, [cards, match, players, teams]);
+  }, [cards, match, players, teamName]);
 
   if (!match) return <div className="p-10 text-center text-muted-foreground">Loading scorecard...</div>;
 
@@ -142,10 +143,10 @@ function InningsTable({ summary, teamName, teamLogo, players }: { summary: Retur
   const player = (playerId: string) => players.find((item) => item.id === playerId);
   const avatar = (playerId: string, name: string) => {
     const photoUrl = player(playerId)?.photo_url;
-    return photoUrl ? <img src={photoUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" /> : <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[0.62rem] font-black text-primary">{name.slice(0, 2).toUpperCase()}</span>;
+    return photoUrl ? <Image unoptimized width={128} height={128} src={photoUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" /> : <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[0.62rem] font-black text-primary">{name.slice(0, 2).toUpperCase()}</span>;
   };
   return <section className="overflow-hidden rounded-xl border border-amber-200/40 bg-[#06122d] text-slate-100 shadow-xl">
-    <div className="flex justify-between bg-gradient-to-r from-[#0d4e9c] via-[#0b3b83] to-[#071b49] p-4 text-white"><div className="flex items-center gap-3">{teamLogo ? <img src={teamLogo} alt="" className="h-10 w-10 rounded-full bg-white object-cover ring-2 ring-amber-200 shadow-md" /> : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-xs font-black">{teamName.slice(0, 2)}</div>}<h2 className="font-black tracking-wide">{teamName}</h2></div><strong className="text-amber-200">{summary.total}/{summary.wickets} ({summary.overs} ov)</strong></div>
+    <div className="flex justify-between bg-gradient-to-r from-[#0d4e9c] via-[#0b3b83] to-[#071b49] p-4 text-white"><div className="flex items-center gap-3">{teamLogo ? <Image unoptimized width={128} height={128} src={teamLogo} alt="" className="h-10 w-10 rounded-full bg-white object-cover ring-2 ring-amber-200 shadow-md" /> : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-xs font-black">{teamName.slice(0, 2)}</div>}<h2 className="font-black tracking-wide">{teamName}</h2></div><strong className="text-amber-200">{summary.total}/{summary.wickets} ({summary.overs} ov)</strong></div>
     <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-[#0b2b61] text-left text-[0.82rem] font-black tracking-wide text-amber-200"><tr><th className="p-3 text-[0.92rem] font-black tracking-wide">Batter</th><th className="text-[0.92rem] font-black tracking-wide">Dismissal</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr></thead><tbody>{summary.batting.map((row) => <tr key={row.playerId} className="border-t border-white/10"><td className="p-3 font-medium"><div className="flex items-center gap-2">{avatar(row.playerId, row.name)}<span className="text-[0.92rem] font-bold tracking-tight text-white">{row.name}{row.dismissal === "not out" && <sup className="ml-1 text-sm text-amber-300">★</sup>}</span></div></td><td className="capitalize text-slate-300">{row.dismissal}</td><td>{row.runs}</td><td>{row.balls}</td><td>{row.fours}</td><td>{row.sixes}</td><td className="font-bold text-cyan-200">{row.strikeRate}</td></tr>)}<tr className="border-t border-white/10 font-semibold text-amber-100"><td className="p-3">Extras</td><td colSpan={5} /><td>{summary.extras}</td></tr><tr className="bg-white/5 font-black text-white"><td className="p-3">Total</td><td colSpan={5}>{summary.overs} overs</td><td className="text-amber-200">{summary.total}/{summary.wickets}</td></tr></tbody></table></div>
     {summary.partnership.batters.length > 0 && <div className="border-t border-amber-200/20 bg-white/[0.04] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">Current partnership</p><p className="mt-1 text-2xl font-black text-white">{summary.partnership.runs} runs <span className="text-sm font-semibold text-slate-400">({summary.partnership.balls} balls)</span></p></div><div className="flex -space-x-2">{summary.partnership.batters.map((batter) => <div key={batter.playerId} className="rounded-full ring-2 ring-[#06122d]">{avatar(batter.playerId, batter.name)}</div>)}</div></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{summary.partnership.batters.map((batter) => <div key={batter.playerId} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] p-3">{avatar(batter.playerId, batter.name)}<div className="min-w-0"><p className="truncate text-sm font-bold text-white">{batter.name}</p><p className="text-xs font-semibold text-slate-300">{batter.runs} runs · {batter.balls} balls</p></div></div>)}</div></div>}
     <div className="border-t border-amber-200/20 overflow-x-auto"><table className="w-full text-sm"><thead className="bg-[#0b2b61] text-left text-[0.82rem] font-black tracking-wide text-amber-200"><tr><th className="p-3">Bowler</th><th>O</th><th>R</th><th>W</th><th>WD</th><th>NB</th><th>ECO</th></tr></thead><tbody>{summary.bowling.map((row) => <tr key={row.playerId} className="border-t border-white/10"><td className="p-3 font-medium"><div className="flex items-center gap-2">{avatar(row.playerId, row.name)}<span className="text-[0.92rem] font-bold tracking-tight text-white">{row.name}</span></div></td><td>{Math.floor(row.balls / 6)}.{row.balls % 6}</td><td>{row.runs}</td><td className="font-bold text-amber-200">{row.wickets}</td><td>{row.wides}</td><td>{row.noBalls}</td><td className="font-bold text-cyan-200">{row.economy}</td></tr>)}</tbody></table></div>

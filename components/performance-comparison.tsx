@@ -1,7 +1,7 @@
 "use client";
-/* eslint-disable @next/next/no-img-element, @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -134,13 +134,13 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
   const metricFor = mode === "players" ? playerMetrics : teamMetrics;
   const leftMetrics = left ? metricFor(left) : {};
   const rightMetrics = right ? metricFor(right) : {};
-  const chartData = useMemo(() => Object.keys(leftMetrics).map((metric) => ({
+  const chartData = Object.keys(leftMetrics).map((metric) => ({
     metric,
     left: leftMetrics[metric] || 0,
     right: rightMetrics[metric] || 0,
     leftRadar: normalize(leftMetrics[metric] || 0, rightMetrics[metric] || 0),
     rightRadar: normalize(rightMetrics[metric] || 0, leftMetrics[metric] || 0),
-  })), [leftMetrics, rightMetrics]);
+  }));
   const leftWins = chartData.filter((item) => item.left > item.right).length;
   const rightWins = chartData.filter((item) => item.right > item.left).length;
 

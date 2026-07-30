@@ -56,7 +56,6 @@ export function PlayerCareerFilters({ playerId }: { playerId: string }) {
     return () => { active = false; };
   }, [playerId]);
 
-  const inningsById = useMemo(() => new Map(innings.map((row) => [row.id, row])), [innings]);
   const tournamentById = useMemo(() => new Map(tournaments.map((row) => [row.id, row])), [tournaments]);
   const teamById = useMemo(() => new Map(teams.map((row) => [row.id, row.name])), [teams]);
   const rows = useMemo<MatchRow[]>(() => matches.map((match) => {

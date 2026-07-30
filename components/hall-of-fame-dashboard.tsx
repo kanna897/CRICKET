@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element -- live scoring tables and Cloudinary URLs are dynamic */
+/* eslint-disable @next/next/no-img-element -- live scoring tables and Cloudinary URLs are dynamic */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Crown, Loader2, Medal, RefreshCw, ShieldCheck, Sparkles, Target, Trophy, UserRound } from "lucide-react";

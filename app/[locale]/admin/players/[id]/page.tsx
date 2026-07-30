@@ -105,7 +105,7 @@ export default function PlayerProfilePage() {
     setIsSaving(true);
     try {
       // Legacy database columns are not represented in the generated local type yet.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { error } = await supabase.from('players')
         .update({
           name: editValues.name.trim(),

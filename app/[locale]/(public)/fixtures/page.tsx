@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Radio } from "lucide-react";
@@ -40,5 +41,5 @@ export default function FixturesPage() {
 }
 
 function TeamMark({ team }: { team?: Team }) {
-  return <div className="min-w-0"><div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-sky-200 bg-sky-50">{team?.logo_url ? <img src={team.logo_url} alt="" className="h-full w-full object-cover" /> : <span className="font-black text-sky-700">{team?.name?.slice(0, 1) || "T"}</span>}</div><p className="mt-2 truncate font-bold text-slate-900 dark:text-slate-50">{team?.name || "Team"}</p></div>;
+  return <div className="min-w-0"><div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-sky-200 bg-sky-50">{team?.logo_url ? <Image unoptimized width={128} height={128} src={team.logo_url} alt="" className="h-full w-full object-cover" /> : <span className="font-black text-sky-700">{team?.name?.slice(0, 1) || "T"}</span>}</div><p className="mt-2 truncate font-bold text-slate-900 dark:text-slate-50">{team?.name || "Team"}</p></div>;
 }

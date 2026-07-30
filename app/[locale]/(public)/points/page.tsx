@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any -- live match columns are newer than generated local Supabase types */
+ 
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCw, Trophy } from "lucide-react";

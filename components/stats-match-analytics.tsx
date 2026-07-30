@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any -- matches are newer than generated local Supabase types */
+ 
 
 import { useEffect, useState } from "react";
 import { Activity, Loader2 } from "lucide-react";

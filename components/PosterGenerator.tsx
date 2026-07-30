@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useRef, useState } from "react";
 import * as htmlToImage from "html-to-image";
 import { Download, Loader2, Upload } from "lucide-react";
@@ -99,7 +100,7 @@ export function PosterGenerator({ matchData }: PosterProps) {
           <div className="flex items-center justify-between border-b border-white/20 pb-8">
             <div className="flex items-center gap-6">
               {matchData.tournamentLogo ? (
-                <img src={matchData.tournamentLogo} alt={`${matchData.tournamentName} logo`} className="w-24 h-24 rounded-full bg-white object-cover" />
+                <Image unoptimized width={128} height={128} src={matchData.tournamentLogo} alt={`${matchData.tournamentName} logo`} className="w-24 h-24 rounded-full bg-white object-cover" />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center font-bold text-3xl">SPL</div>
               )}
@@ -192,7 +193,7 @@ export function PosterGenerator({ matchData }: PosterProps) {
               </div>
               <div className="bg-black flex-1 rounded-xl mt-6 p-6 flex flex-col items-center justify-end text-center relative overflow-hidden">
                 {matchData.playerOfMatch.photo ? (
-                  <img src={matchData.playerOfMatch.photo} alt={matchData.playerOfMatch.name} className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity" />
+                  <Image unoptimized width={128} height={128} src={matchData.playerOfMatch.photo} alt={matchData.playerOfMatch.name} className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity" />
                 ) : (
                   <div className="absolute inset-0 w-full h-full bg-white/5"></div>
                 )}

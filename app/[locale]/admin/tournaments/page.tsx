@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Plus, Search, Trophy, Trash2, RotateCcw } from "lucide-react";
@@ -46,14 +47,14 @@ export default function TournamentsPage() {
 
   const handleSoftDelete = async (id: string) => {
     if (!confirm("Are you sure you want to move this tournament to the trash?")) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     await supabase.from("tournaments").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     fetchTournaments();
   };
 
   const handleRestore = async (id: string) => {
     if (!confirm("Restore this tournament?")) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     await supabase.from("tournaments").update({ deleted_at: null }).eq("id", id);
     fetchTournaments();
   };
@@ -131,7 +132,7 @@ export default function TournamentsPage() {
                   <tr key={tournament.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 font-medium flex items-center gap-3">
                       {tournament.logo_url ? (
-                        <img src={tournament.logo_url} alt={`${tournament.name} logo`} className="w-8 h-8 rounded-full object-cover bg-muted" />
+                        <Image unoptimized width={128} height={128} src={tournament.logo_url} alt={`${tournament.name} logo`} className="w-8 h-8 rounded-full object-cover bg-muted" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                           {tournament.name.charAt(0)}

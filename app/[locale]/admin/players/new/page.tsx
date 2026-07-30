@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -135,7 +136,7 @@ export default function NewPlayerPage() {
           <label className="text-sm font-medium">Player Photo (optional)</label>
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full overflow-hidden border border-dashed border-input bg-muted flex items-center justify-center">
-              {photoPreview ? <img src={photoPreview} alt="Player preview" className="w-full h-full object-cover" /> : <User className="w-8 h-8 text-muted-foreground" />}
+              {photoPreview ? <Image unoptimized width={128} height={128} src={photoPreview} alt="Player preview" className="w-full h-full object-cover" /> : <User className="w-8 h-8 text-muted-foreground" />}
             </div>
             <div>
               <input id="player-photo" type="file" className="hidden" accept="image/jpeg,image/png" onChange={handlePhotoChange} />

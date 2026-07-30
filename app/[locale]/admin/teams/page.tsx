@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Shield } from "lucide-react";
@@ -94,7 +95,7 @@ export default function TeamsPage() {
                   <tr key={team.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 font-medium flex items-center gap-3">
                       {team.logo_url ? (
-                        <img src={team.logo_url} alt="" className="w-8 h-8 rounded-full object-cover bg-muted" />
+                        <Image unoptimized width={128} height={128} src={team.logo_url} alt="" className="w-8 h-8 rounded-full object-cover bg-muted" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                           {team.name.charAt(0)}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { Loader2, Save, X } from "lucide-react";
 import {
@@ -80,7 +81,7 @@ export function PlayerCardLayoutEditor({
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(22rem,1fr)_minmax(36rem,1.35fr)]">
         <div className="space-y-4">
           <div className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-black" style={{ containerType: "inline-size" }}>
-            <img src={imageUrl} alt={`${templateName} layout preview`} className="absolute inset-0 h-full w-full object-fill" />
+            <Image unoptimized width={128} height={128} src={imageUrl} alt={`${templateName} layout preview`} className="absolute inset-0 h-full w-full object-fill" />
             <div className="absolute border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" style={{
               left: `${layout.photo.x * scale}%`,
               top: `${layout.photo.y * scale}%`,

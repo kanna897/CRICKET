@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any -- legacy Supabase schema relations are not represented in the generated local types */
+ 
 
 import { useEffect, useState } from "react";
 import Link from "next/link";

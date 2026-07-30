@@ -1,7 +1,7 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any -- live scoring columns are newer than generated local Supabase types */
+ 
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Activity, ArrowLeft, BarChart3, Download, Loader2, Radar, ShieldCheck, TrendingUp } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -48,7 +48,7 @@ export function MatchAnalyticsDashboard({ matchId, locale = "en", admin = false,
 
   const filteredBalls = useMemo(() => balls.filter((ball) => (batter === "all" || ball.batsman_id === batter) && (bowler === "all" || ball.bowler_id === bowler)), [balls, batter, bowler]);
   const distribution = [0, 1, 2, 3, 4, 6].map((runs) => ({ runs: String(runs), balls: filteredBalls.filter((ball) => ball.runs === runs).length }));
-  const teamName = (id: string) => teams.find((team) => team.id === id)?.name || "Team";
+  const teamName = useCallback((id: string) => teams.find((team) => team.id === id)?.name || "Team", [teams]);
   const overData = useMemo(() => {
     const rows = new Map<number, Record<string, number>>();
     innings.forEach((item) => balls.filter((ball) => ball.innings_id === item.id).forEach((ball) => { const row = rows.get(ball.over_number) || { over: ball.over_number }; const key = `innings${item.innings_number}`; row[key] = (row[key] || 0) + ball.runs + ball.extras; rows.set(ball.over_number, row); }));
@@ -70,7 +70,6 @@ export function MatchAnalyticsDashboard({ matchId, locale = "en", admin = false,
     return [{ over: 0, innings1: 0, innings2: 0 }, ...[...totals.values()].sort((a, b) => Number(a.over) - Number(b.over))];
   }, [balls, innings]);
   const wagonShots = filteredBalls.map((ball) => ({ ...ball, zone: ball.commentary?.match(/\[zone:([a-z_]+)\]/)?.[1] })).filter((ball) => ball.zone && ball.runs > 0);
-  const playerName = (id: string | null) => players.find((player) => player.id === id)?.name || "Unknown";
   const inningsSummary = useMemo(() => innings.map((item) => {
     const rows = balls.filter((ball) => ball.innings_id === item.id);
     const total = rows.reduce((sum, ball) => sum + ball.runs + ball.extras, 0);
@@ -86,7 +85,7 @@ export function MatchAnalyticsDashboard({ matchId, locale = "en", admin = false,
       dotPercent: legal ? Math.round(rows.filter((ball) => ball.is_legal && ball.runs + ball.extras === 0).length * 100 / legal) : 0,
       boundaryPercent: total ? Math.round(boundaryRuns * 100 / total) : 0,
     };
-  }), [balls, innings, teams]);
+  }), [balls, innings, teamName]);
   const phaseData = useMemo(() => {
     const maxOver = Math.max(1, ...balls.map((ball) => ball.over_number));
     const phaseSize = Math.max(1, Math.ceil(maxOver / 3));

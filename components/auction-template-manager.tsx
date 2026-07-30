@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Eye, EyeOff, ImagePlus, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -192,7 +193,7 @@ export function AuctionTemplateManager({ tournamentId }: { tournamentId: string 
     </div>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{templates.map((template) => {
       const active = choice.player_template_id === template.id || choice.team_player_template_id === template.id;
-      return <article key={template.id} className={`overflow-hidden rounded-2xl border ${active ? "border-emerald-400 ring-2 ring-emerald-200" : "border-border"} ${template.is_visible ? "bg-background" : "bg-muted opacity-70"}`}><div className="aspect-square overflow-hidden bg-black/5"><img src={template.image_url} alt={template.name} className="h-full w-full object-cover"/></div><div className="space-y-3 p-4"><div className="flex items-start justify-between gap-2"><div><h3 className="font-black">{template.name}</h3><p className="text-xs capitalize text-muted-foreground">{template.template_type.replace("_", " ")}</p></div>{active && <CheckCircle2 className="h-5 w-5 text-emerald-600"/>}</div><button type="button" disabled={busy === template.id} onClick={() => void toggle(template)} className="control w-full justify-center">{template.is_visible ? <Eye className="mr-2 h-4 w-4"/> : <EyeOff className="mr-2 h-4 w-4"/>}{template.is_visible ? "Visible · Hide" : "Hidden · Show"}</button></div></article>;
+      return <article key={template.id} className={`overflow-hidden rounded-2xl border ${active ? "border-emerald-400 ring-2 ring-emerald-200" : "border-border"} ${template.is_visible ? "bg-background" : "bg-muted opacity-70"}`}><div className="aspect-square overflow-hidden bg-black/5"><Image unoptimized width={128} height={128} src={template.image_url} alt={template.name} className="h-full w-full object-cover"/></div><div className="space-y-3 p-4"><div className="flex items-start justify-between gap-2"><div><h3 className="font-black">{template.name}</h3><p className="text-xs capitalize text-muted-foreground">{template.template_type.replace("_", " ")}</p></div>{active && <CheckCircle2 className="h-5 w-5 text-emerald-600"/>}</div><button type="button" disabled={busy === template.id} onClick={() => void toggle(template)} className="control w-full justify-center">{template.is_visible ? <Eye className="mr-2 h-4 w-4"/> : <EyeOff className="mr-2 h-4 w-4"/>}{template.is_visible ? "Visible · Hide" : "Hidden · Show"}</button></div></article>;
     })}</div>
     {editing && <PlayerCardLayoutEditor templateName={editing.name} imageUrl={editing.image_url} initialLayout={editing.layout} onClose={() => setEditing(null)} onSave={saveLayout} />}
   </section>;

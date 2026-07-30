@@ -1,3 +1,4 @@
+import Image from "next/image";
 type CrickpulseLogoProps = {
   variant?: "horizontal" | "primary";
   className?: string;
@@ -6,5 +7,5 @@ type CrickpulseLogoProps = {
 export const CRICKPULSE_SLOGAN = "LIVE SCORE. PLAYER STATS. EVERY BALL.";
 
 export function CrickpulseLogo({ variant = "horizontal", className = "" }: CrickpulseLogoProps) {
-  return <img src="/brand/crickpulse-logo.png" alt="Crickpulse" className={`crickpulse-logo crickpulse-logo-${variant} ${className}`} />;
+  return <Image unoptimized width={128} height={128} src="/brand/crickpulse-logo.png" alt="Crickpulse" className={`crickpulse-logo crickpulse-logo-${variant} ${className}`} />;
 }
