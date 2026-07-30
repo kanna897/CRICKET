@@ -13,7 +13,7 @@ export async function GET() {
 
     const csv = rowsToCsv(
       ["Tournament ID", "Name", "Venue", "Start Date", "Status"],
-      (tournaments || []).map((t: { id: string; name: string; venue: string; start_date: string; status: string }) => [
+      (tournaments || []).map((t: { id: string; name: string; venue: string | null; start_date: string; status: string }) => [
         t.id,
         t.name,
         t.venue,

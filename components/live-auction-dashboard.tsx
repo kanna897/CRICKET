@@ -228,7 +228,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       p_auction_player_id: player.id,
       p_player_name: recognized.playerName,
       p_playing_role: recognized.playingRole || "Player",
-      p_registration_number: recognized.registrationNumber,
+      p_registration_number: recognized.registrationNumber ?? undefined,
     });
     if (error) throw error;
     return data as AuctionPlayer;
@@ -295,7 +295,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       p_auction_player_id: selected.id,
       p_player_name: editPlayerName.trim(),
       p_playing_role: editPlayingRole.trim() || "Player",
-      p_registration_number: Number.isInteger(serial) && serial > 0 ? serial : null,
+      p_registration_number: Number.isInteger(serial) && serial > 0 ? serial : undefined,
     });
     if (error) setMessage(error.message);
     else {

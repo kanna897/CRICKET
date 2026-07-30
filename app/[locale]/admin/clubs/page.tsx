@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/components/admin-shell";
 
 type Club = { id:string; organizer_id:string; name:string; short_name:string|null; location:string|null; website_url:string|null; social_url:string|null; created_at:string };
-type Season = { id:string; club_id:string; name:string; start_date:string|null; end_date:string|null; status:"upcoming"|"active"|"completed"; created_at:string };
+type Season = { id:string; club_id:string; name:string; start_date:string|null; end_date:string|null; status:string; created_at:string };
 type Tournament = { id:string; name:string; club_id:string|null; season_id:string|null; organizer_id:string };
 
 export default function ClubsPage() {

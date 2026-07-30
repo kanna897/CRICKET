@@ -45,7 +45,7 @@ export default function NewTeamPage() {
       if (!isMasterAdmin) query = query.eq('organizer_id', userId);
       const { data } = await query;
       if (data) {
-        const tournamentRows = data as unknown as Tournament[];
+        const tournamentRows = data;
         setTournaments(tournamentRows);
         const requestedTournament = new URLSearchParams(window.location.search).get("tournament");
         if (tournamentRows.some((tournament) => tournament.id === requestedTournament)) setValue("tournament_id", requestedTournament!);

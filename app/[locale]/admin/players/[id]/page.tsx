@@ -87,7 +87,7 @@ export default function PlayerProfilePage() {
     if (!player) return;
     setEditValues({
       name: player.name,
-      phone_number: player.phone_number,
+      phone_number: player.phone_number || '',
       playing_role: player.playing_role || 'Batsman',
       team_id: player.team_id || '',
       batting_style: player.batting_style?.toLowerCase().startsWith('right')

@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { PublicNav } from "@/components/public-nav";
 
 type Team = { id: string; name: string; logo_url: string | null };
-type Match = { id: string; team_a_id: string; team_b_id: string; status: string; match_date: string | null; match_time: string | null; ground: string | null; overs_per_match: number; match_scope: "tournament" | "standalone"; match_type: string; title: string | null };
+type Match = { id: string; team_a_id: string; team_b_id: string; status: string; match_date: string | null; match_time: string | null; ground: string | null; overs_per_match: number; match_scope: string; match_type: string; title: string | null };
 
 export default function FixturesPage() {
   const t = useTranslations("Fixtures");

@@ -45,7 +45,7 @@ export default function NewPlayerPage() {
     async function loadTeams() {
       const { data } = await supabase.from("teams").select("*").order("name");
       if (data) {
-        const teamRows = data as unknown as Team[];
+        const teamRows = data;
         setTeams(teamRows);
         const requestedTeam = new URLSearchParams(window.location.search).get("team");
         const requestedReturn = new URLSearchParams(window.location.search).get("returnTo");

@@ -11,6 +11,7 @@ import { LiveCommentary } from "@/components/live-commentary";
 import { getOfflineQueue, removeOfflineQueueItem, saveToOfflineQueue, type OfflineQueueItem } from "@/lib/offlineSync";
 import { useAdminAccess } from "@/components/admin-shell";
 import { localePath } from "@/lib/locale-path";
+import type { Json } from "@/types/database.types";
 type Match = {
     id: string;
     team_a_id: string;
@@ -29,7 +30,7 @@ type Match = {
     allow_wides: boolean;
     allow_no_balls: boolean;
     revised_overs: number | null;
-    target_method: "manual" | "dls" | null;
+    target_method: string | null;
     interruption_notes: string | null;
 };
 type Team = {
@@ -269,9 +270,9 @@ export default function LiveScorer() {
             if (!navigator.onLine)
                 return;
             const items = await getOfflineQueue() as OfflineQueueItem<{
-                ball: Record<string, unknown>;
+                ball: Json;
                 inningsId: string;
-                next: Record<string, unknown>;
+                next: { striker_id?: string | null; non_striker_id?: string | null; is_completed?: boolean };
             }>[];
             const current = items.filter((item) => item.matchId === id);
             setOfflinePending(current.length);
@@ -279,8 +280,8 @@ export default function LiveScorer() {
             for (const item of current) {
                 const { error } = await supabase.rpc("record_scoring_delivery", {
                     p_ball: item.payload.ball,
-                    p_next_striker_id: item.payload.next.striker_id || null,
-                    p_next_non_striker_id: item.payload.next.non_striker_id || null,
+                    p_next_striker_id: item.payload.next.striker_id || "",
+                    p_next_non_striker_id: item.payload.next.non_striker_id || "",
                     p_innings_complete: Boolean(item.payload.next.is_completed),
                 });
                 if (error)
@@ -613,8 +614,8 @@ export default function LiveScorer() {
             const ballPayload = { client_event_id: crypto.randomUUID(), innings_id: innings.id, over_number: Math.floor(innings.balls_bowled / ballsPerOver) + 1, ball_number: innings.balls_bowled % ballsPerOver + 1, batsman_id: innings.striker_id, non_striker_id: innings.non_striker_id, bowler_id: innings.current_bowler_id, runs, extras, extras_type: extrasType || null, is_legal: legal, is_wicket: wicket, dismissal_type: dismissalType || null, player_out_id: outId || null, fielder_id: fielderId || null, commentary };
             const { data: atomicData, error: ballError } = await supabase.rpc("record_scoring_delivery", {
                 p_ball: ballPayload,
-                p_next_striker_id: next.striker_id,
-                p_next_non_striker_id: next.non_striker_id,
+                p_next_striker_id: next.striker_id || "",
+                p_next_non_striker_id: next.non_striker_id || "",
                 p_innings_complete: inningsComplete,
             });
             if (ballError) {
@@ -749,7 +750,7 @@ export default function LiveScorer() {
     const openInterruption = () => {
         setRevisedOvers(String(match?.revised_overs || match?.overs_per_match || ""));
         setRevisedTarget(innings?.innings_number === 2 && innings.target ? String(innings.target) : "");
-        setTargetMethod(match?.target_method || "manual");
+        setTargetMethod(match?.target_method === "dls" ? "dls" : "manual");
         setInterruptionNotes(match?.interruption_notes || "");
         setInterruptionOpen(true);
     };
@@ -835,8 +836,8 @@ export default function LiveScorer() {
             const { ball, innings: restoredInnings } = redoSnapshot;
             const { data, error } = await supabase.rpc("record_scoring_delivery", {
                 p_ball: ball,
-                p_next_striker_id: restoredInnings.striker_id,
-                p_next_non_striker_id: restoredInnings.non_striker_id,
+                p_next_striker_id: restoredInnings.striker_id || "",
+                p_next_non_striker_id: restoredInnings.non_striker_id || "",
                 p_innings_complete: restoredInnings.is_completed,
             });
             if (error)

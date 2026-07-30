@@ -10,8 +10,9 @@ export function LiveCommentary({ inningsId }: { inningsId: string | null }) {
   const [items, setItems] = useState<CommentaryBall[]>([]);
   useEffect(() => {
     if (!inningsId) return;
+    const activeInningsId = inningsId;
     async function load() {
-      const { data } = await supabase.from("ball_by_ball").select("id,commentary,created_at").eq("innings_id", inningsId).not("commentary", "is", null).order("created_at", { ascending: false }).limit(1);
+      const { data } = await supabase.from("ball_by_ball").select("id,commentary,created_at").eq("innings_id", activeInningsId).not("commentary", "is", null).order("created_at", { ascending: false }).limit(1);
       if (data) setItems(data);
     }
     load();

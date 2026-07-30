@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { Json } from '@/types/database.types';
 
 type AuditAction = 
   | 'Admin Login'
@@ -29,8 +30,8 @@ interface AuditLogPayload {
   action: AuditAction;
   entityType: string;
   entityId: string;
-  oldValues?: unknown;
-  newValues?: unknown;
+  oldValues?: Json;
+  newValues?: Json;
   ipAddress?: string;
   deviceBrowser?: string;
 }

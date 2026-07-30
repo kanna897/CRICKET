@@ -15,11 +15,11 @@ export default async function EditTournamentPage({ params }: { params: Promise<{
     supabase.from("teams").select("id").eq("tournament_id", id),
     supabase.from("matches").select("id,status").eq("tournament_id", id),
   ]);
-  const profile = profileData as { role: string } | null;
-  const tournament = tournamentData as unknown as (EditableTournament & { organizer_id: string }) | null;
+  const profile = profileData;
+  const tournament: (EditableTournament & { organizer_id: string }) | null = tournamentData;
   if (!tournament) notFound();
   if (resolveApplicationRole(profile?.role) !== "master_admin" && tournament.organizer_id !== user.id) redirect(`/${locale}/admin/tournaments`);
-  const teamIds = ((teamRows || []) as unknown as Array<{ id: string }>).map((team) => team.id);
+  const teamIds = (teamRows || []).map((team) => team.id);
   const { count: playerCount } = teamIds.length
     ? await supabase.from("players").select("id", { count: "exact", head: true }).in("team_id", teamIds)
     : { count: 0 };

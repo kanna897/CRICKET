@@ -178,7 +178,7 @@ async function createTeamPlayerCard(auctionPlayerId?: string) {
     .eq("id", auctionPlayerId)
     .maybeSingle();
   if (error) throw error;
-  if (!auctionPlayer || auctionPlayer.status !== "sold" || !auctionPlayer.winning_team_id) {
+  if (!auctionPlayer || auctionPlayer.status !== "sold" || !auctionPlayer.registration_id || !auctionPlayer.winning_team_id || !auctionPlayer.tournament_id) {
     return NextResponse.json({ error: "Only sold players can receive a team card." }, { status: 409 });
   }
   const [{ data: registration }, { data: team }, { data: choice }] = await Promise.all([

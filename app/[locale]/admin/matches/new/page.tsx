@@ -38,7 +38,7 @@ export default function NewMatchPage() {
       const tournamentIds = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);
       const teamsResult = await supabase.from("teams").select("*").order("name");
       const manageableTeams = ((teamsResult.data || []) as Team[]).filter((team) =>
-        isMasterAdmin || tournamentIds.includes(team.tournament_id) || team.organizer_id === userId
+        isMasterAdmin || tournamentIds.includes(team.tournament_id || "") || team.organizer_id === userId
       );
       const teamIds = manageableTeams.map((item) => item.id);
       const playersResult = teamIds.length ? await supabase.from("players").select("*").in("team_id", teamIds).order("name") : { data: [] };

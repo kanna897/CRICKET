@@ -57,7 +57,7 @@ export default function MatchesPage() {
       );
       const manageableTeamIds = new Set(manageableMatches.flatMap((match) => [match.team_a_id, match.team_b_id]));
       const manageableTeams = (teamsResult.data || []).filter((team: Team & { organizer_id?: string | null }) =>
-        isMasterAdmin || ids.includes(team.tournament_id) || team.organizer_id === userId || manageableTeamIds.has(team.id)
+        isMasterAdmin || ids.includes(team.tournament_id || "") || team.organizer_id === userId || manageableTeamIds.has(team.id)
       );
       setMatches(manageableMatches);
       setTeams(manageableTeams);
@@ -96,7 +96,7 @@ export default function MatchesPage() {
     try {
       const existing = matches.filter((match) => match.tournament_id === generator.tournamentId);
       const existingPairs = new Set(existing.map((match) => [match.team_a_id, match.team_b_id].sort().join(":")));
-      const rows: Record<string, unknown>[] = [];
+      const rows: Database["public"]["Tables"]["matches"]["Insert"][] = [];
       let dayOffset = 0;
       const interval = Math.max(1, Number(generator.restDays) || 1);
       const tournament = tournaments.find((item) => item.id === generator.tournamentId);

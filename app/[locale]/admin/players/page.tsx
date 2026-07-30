@@ -92,8 +92,10 @@ export default function PlayersPage() {
             // Create new player
             await supabase.from('players').insert([{
               name: String(name).trim(),
+              player_name: String(name).trim(),
               phone_number: String(phone).trim(),
               playing_role: String(role).trim(),
+              role: String(role).trim().toLowerCase(),
             }]);
           }
           // If player exists, we just skip creating a new one as per BRD ("reuse existing profile")
@@ -116,7 +118,7 @@ export default function PlayersPage() {
 
   const filteredPlayers = players.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.phone_number.includes(search)
+    p.phone_number?.includes(search)
   );
 
   return (
