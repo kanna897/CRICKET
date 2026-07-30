@@ -59,6 +59,29 @@ test("production responses define the complete security header baseline", () => 
   assert.match(config, /https:\/\/challenges\.cloudflare\.com/);
 });
 
+test("SEO exposes localized discovery and dynamic entity metadata", () => {
+  const sitemap = readFileSync(resolve(root, "app/sitemap.ts"), "utf8");
+  const robots = readFileSync(resolve(root, "app/robots.ts"), "utf8");
+  const seo = readFileSync(resolve(root, "lib/seo.ts"), "utf8");
+  assert.match(sitemap, /tournaments/);
+  assert.match(sitemap, /matches/);
+  assert.match(sitemap, /teams/);
+  assert.match(sitemap, /players/);
+  assert.match(robots, /sitemap\.xml/);
+  assert.match(robots, /admin/);
+  assert.match(seo, /openGraph/);
+  assert.match(seo, /twitter/);
+  assert.match(seo, /languageAlternates/);
+  for (const entity of ["tournaments", "match", "teams", "players"]) {
+    const layout = readFileSync(
+      resolve(root, `app/[locale]/(public)/${entity}/[id]/layout.tsx`),
+      "utf8",
+    );
+    assert.match(layout, /generateMetadata/);
+    assert.match(layout, /entityMetadata/);
+  }
+});
+
 test("scoring retains offline queue and handover controls", () => {
   const scoring = readFileSync(resolve(root, "app/[locale]/admin/matches/score/[id]/page.tsx"), "utf8");
   assert.match(scoring, /saveToOfflineQueue/);
