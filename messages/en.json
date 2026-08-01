@@ -9,7 +9,7 @@
     "rankings": "Team & Player Rankings",
     "dashboard": "Dashboard", "tournaments": "Tournaments", "clubs": "Clubs & Seasons", "teams": "Teams",
     "players": "Players", "registrations": "Registrations", "auction": "Live Auction", "matches": "Matches & Scoring",
-    "bracket": "Knockout Bracket", "points": "Points Table", "scoreImport": "Score Import",
+    "bracket": "Playoff Matches", "points": "Points Table", "scoreImport": "Score Import",
     "statistics": "Statistics", "compare": "Compare", "awards": "Awards",
     "settings": "Settings", "organizers": "Organizers", "signOut": "Sign out",
     "masterAdmin": "Master Admin", "organizer": "Organizer", "search": "Search"
