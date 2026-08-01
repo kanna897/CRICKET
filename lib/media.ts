@@ -29,6 +29,14 @@ export function cloudinaryPlayerPhotoUrl(url: string) {
   );
 }
 
+export function cloudinaryLogoUrl(url: string) {
+  if (!url.includes("res.cloudinary.com/") || !url.includes("/image/upload/") || url.includes("/e_trim:")) return url;
+  return url.replace(
+    "/image/upload/",
+    "/image/upload/e_trim:12,c_fit,w_512,h_512,q_auto,f_auto/",
+  );
+}
+
 async function readJson<T>(response: Response): Promise<T & ErrorPayload> {
   const body = await response.text();
   if (!body) throw new Error(`Upload service returned an empty response (${response.status}).`);

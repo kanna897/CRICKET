@@ -22,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { cloudinaryLogoUrl } from "@/lib/media";
 import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { useAdminAccess } from "@/components/admin-shell";
 
@@ -327,7 +328,7 @@ function LiveMatchCard({ match, teamA, teamB, innings, tournamentName }: { match
 }
 
 function TeamMark({ name, logo, size = "md" }: { name: string; logo?: string | null; size?: "md" | "lg" }) {
-  return <span className={`dashboard-team-mark dashboard-team-mark-${size}`}>{logo ? <Image unoptimized width={128} height={128} src={logo} alt="" /> : <i>{name.slice(0, 2).toUpperCase()}</i>}<b>{name}</b></span>;
+  return <span className={`dashboard-team-mark dashboard-team-mark-${size}`}>{logo ? <Image unoptimized width={128} height={128} src={cloudinaryLogoUrl(logo)} alt="" /> : <i>{name.slice(0, 2).toUpperCase()}</i>}<b>{name}</b></span>;
 }
 
 function StatusPill({ status }: { status: string }) {

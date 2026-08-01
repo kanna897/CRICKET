@@ -21,6 +21,7 @@ import { PublicNav } from "@/components/public-nav";
 import { supabase } from "@/lib/supabase";
 import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { preload } from "react-dom";
+import { cloudinaryLogoUrl } from "@/lib/media";
 
 type Tournament = {
   id: string;
@@ -226,7 +227,7 @@ export default function PublicHome() {
                 <div className="landing-tournament-art">
                   {item.banner_url && <Image fill sizes="(max-width: 640px) 100vw, 33vw" src={item.banner_url} alt="" className="landing-tournament-banner" />}
                   <StatusBadge status={item.status} />
-                  {item.logo_url ? <Image width={128} height={128} sizes="128px" src={item.logo_url} alt="" className="landing-tournament-logo" /> : <Trophy />}
+                  {item.logo_url ? <Image unoptimized width={128} height={128} sizes="128px" src={cloudinaryLogoUrl(item.logo_url)} alt="" className="landing-tournament-logo" /> : <Trophy />}
                   <span>CRICKET LEAGUE</span>
                 </div>
                 <div><h3>{item.name}</h3><p><Users />{tournamentTeamCounts.get(item.id) ?? 0} teams <Activity />{tournamentMatchCounts.get(item.id) ?? 0} matches</p><small>{dateRange(item.start_date, item.end_date)}</small></div>
