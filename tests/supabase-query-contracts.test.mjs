@@ -13,7 +13,10 @@ function keysBetween(start, end) {
 }
 
 async function sourceFiles(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
+  const entries = await readdir(directory, { withFileTypes: true }).catch((error) => {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  });
   const files = await Promise.all(entries.map(async (entry) => {
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(target);
