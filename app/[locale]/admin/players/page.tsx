@@ -22,8 +22,20 @@ export default function PlayersPage() {
 
   const fetchPlayers = useCallback(async () => {
     setLoading(true);
+    if (isMasterAdmin) {
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) console.error("Failed to load players:", error);
+      setPlayers(data || []);
+      setLoading(false);
+      return;
+    }
+
     let tournamentQuery = supabase.from("tournaments").select("*").is("deleted_at", null);
-    if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
+    tournamentQuery = tournamentQuery.eq("organizer_id", userId);
     const { data: tournaments } = await tournamentQuery;
     const tournamentIds = (tournaments || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
     const { data: teams } = await supabase.from("teams").select("id,tournament_id,organizer_id");
@@ -73,13 +85,20 @@ export default function PlayersPage() {
           return;
         }
 
+        let importedCount = 0;
+        let duplicateCount = 0;
+        const failedRows: string[] = [];
+
         // Process data
         for (const row of jsonData) {
           const name = row['Player Name'] || row['name'] || row['Name'];
           const phone = row['Phone Number'] || row['phone_number'] || row['Phone'];
           const role = row['Playing Role'] || row['playing_role'] || row['Role'] || 'Batsman';
 
-          if (!name || !phone) continue; // Skip invalid rows
+          if (!name || !phone) {
+            failedRows.push(name || phone || "Unnamed row");
+            continue;
+          }
 
           // Check if player exists by phone number (Duplicate prevention as per BRD)
           const { data: existingPlayer } = await supabase
@@ -90,20 +109,34 @@ export default function PlayersPage() {
 
           if (!existingPlayer) {
             // Create new player
-            await supabase.from('players').insert([{
+            const { error: insertError } = await supabase.from('players').insert([{
               name: String(name).trim(),
               player_name: String(name).trim(),
               phone_number: String(phone).trim(),
               playing_role: String(role).trim(),
               role: String(role).trim().toLowerCase(),
             }]);
+
+            if (insertError) {
+              console.error("Player import failed:", { name, error: insertError });
+              failedRows.push(String(name));
+            } else {
+              importedCount += 1;
+            }
+          } else {
+            duplicateCount += 1;
           }
           // If player exists, we just skip creating a new one as per BRD ("reuse existing profile")
           // Logic for linking to a specific tournament/team can be handled in the Team Squad management.
         }
 
-        alert("Import successful!");
-        fetchPlayers();
+        await fetchPlayers();
+
+        if (failedRows.length > 0) {
+          alert(`Imported ${importedCount} player${importedCount === 1 ? "" : "s"}. ${failedRows.length} row${failedRows.length === 1 ? "" : "s"} failed: ${failedRows.join(", ")}`);
+        } else {
+          alert(`Import complete: ${importedCount} added, ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"} skipped.`);
+        }
       } catch (err) {
         console.error("Import error:", err);
         alert("An error occurred during import.");
