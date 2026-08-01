@@ -58,7 +58,7 @@ type Innings = {
 };
 
 export default function PublicHome() {
-  preload("/landing/sangakkara-stadium-hero.png", { as: "image", fetchPriority: "high" });
+  preload("/landing/cricket-hero-background.webp", { as: "image", fetchPriority: "high" });
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
