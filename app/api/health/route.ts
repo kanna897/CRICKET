@@ -7,10 +7,16 @@ export const revalidate = 0;
 
 type CheckStatus = "ok" | "unavailable" | "misconfigured";
 
-async function timedCheck(url: string, headers: HeadersInit, timeoutMs: number) {
+async function timedCheck(
+  url: string,
+  headers: HeadersInit,
+  timeoutMs: number,
+  init: Pick<RequestInit, "method" | "body"> = {},
+) {
   const startedAt = performance.now();
   try {
     const response = await fetch(url, {
+      ...init,
       headers,
       cache: "no-store",
       signal: AbortSignal.timeout(timeoutMs),
@@ -50,10 +56,14 @@ export async function GET(request: Request) {
 
   if (supabaseUrl && supabaseKey) {
     const headers = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
-    const projectRef = new URL(supabaseUrl).hostname.split(".")[0];
     [database, realtime] = await Promise.all([
       timedCheck(`${supabaseUrl}/rest/v1/tournaments?select=id&limit=1`, headers, 1200),
-      timedCheck(`${supabaseUrl}/realtime/v1/api/tenants/${encodeURIComponent(projectRef)}/health`, headers, 1200),
+      timedCheck(
+        `${supabaseUrl}/realtime/v1/api/broadcast/crickpulse-health/events/probe`,
+        { ...headers, "content-type": "application/json" },
+        1200,
+        { method: "POST", body: JSON.stringify({ probe: "health" }) },
+      ),
     ]);
   }
 
