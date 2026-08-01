@@ -12,6 +12,7 @@ const routes = [
   "app/[locale]/(public)/compare/page.tsx",
   "app/[locale]/(public)/register-player/page.tsx",
   "app/[locale]/(public)/rankings/page.tsx",
+  "app/[locale]/(public)/statistics/page.tsx",
   "app/[locale]/admin/players/import/page.tsx",
   "app/[locale]/admin/player-registrations/page.tsx",
   "app/[locale]/admin/settings/page.tsx",
@@ -20,6 +21,11 @@ const routes = [
 
 test("required viewer and admin routes exist", () => {
   for (const route of routes) assert.equal(existsSync(resolve(root, route)), true, `${route} must exist`);
+});
+
+test("legacy statistics route preserves locale and redirects to stats", () => {
+  const statistics = readFileSync(resolve(root, "app/[locale]/(public)/statistics/page.tsx"), "utf8");
+  assert.match(statistics, /redirect\(`\/\$\{locale\}\/stats`\)/);
 });
 
 test("PWA manifest is valid and standalone", () => {
