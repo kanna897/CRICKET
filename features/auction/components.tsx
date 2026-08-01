@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { Clock3, Download, History, Loader2, RefreshCw, UsersRound, X } from "lucide-react";
 import type { AuctionPlayer, HistoryRow, Purse, Team } from "./types";
 import { displaySerial, money, pretty } from "./utils";
@@ -70,4 +71,35 @@ export function AuctionPlayerDialog(props: AuctionPlayerDialogProps) {
     <div className="mt-4 grid gap-3 rounded-xl border border-border bg-muted/30 p-3 sm:grid-cols-[1fr_1fr_6rem_auto]"><input aria-label="Player name" className="input" value={editPlayerName} onChange={(event) => props.onEditPlayerName(event.target.value)} placeholder="Player name"/><input aria-label="Playing role" className="input" value={editPlayingRole} onChange={(event) => props.onEditPlayingRole(event.target.value)} placeholder="Playing role"/><input aria-label="S.NO" className="input" type="number" min="1" value={editSerial} onChange={(event) => props.onEditSerial(event.target.value)} placeholder="S.NO"/><button disabled={busy === "save-player-text"} onClick={props.onSaveText} className="rounded-xl bg-primary px-4 py-2 text-sm font-black text-primary-foreground">{busy === "save-player-text" ? <Loader2 className="h-4 w-4 animate-spin"/> : "Save text"}</button></div>
     {selected.status === "unsold" ? <button onClick={props.onReopen} className="mt-6 w-full rounded-xl bg-primary px-4 py-3 font-black text-primary-foreground"><RefreshCw className="mr-2 inline h-4 w-4"/>Reopen Player</button> : selected.status === "sold" ? <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-emerald-900"><strong>Sold to {props.teamName(selected.winning_team_id)}</strong><p>{money(Number(selected.winning_bid || 0))}</p></div> : <><div className="mt-6 grid gap-4 sm:grid-cols-2"><label className="space-y-2 text-sm font-bold">Winning Team<select className="input" value={saleTeamId} onChange={(event) => props.onSaleTeamId(event.target.value)}><option value="">Select team</option>{teams.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label><label className="space-y-2 text-sm font-bold">Winning Bid Amount<input className="input" type="number" min="0" step=".01" value={winningBid} onChange={(event) => props.onWinningBid(event.target.value)}/></label></div>{saleTeamId && !selectedPurse && <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-bold text-amber-900">Team purse is not configured. Set its Initial Purse in Auction Controls and click Save Team Purses.</p>}{saleTeamId && selectedPurse && <div className={`mt-3 rounded-lg border p-3 text-sm font-bold ${remaining < 0 ? "border-red-300 bg-red-50 text-red-800" : "border-emerald-300 bg-emerald-50 text-emerald-900"}`}><p>Available before bid: {money(availableBeforeBid)}</p><p className="mt-1 text-base">Remaining after this bid: {money(remaining)}</p>{remaining < 0 && <p className="mt-1 text-xs">Winning bid exceeds the available purse.</p>}</div>}<div className="mt-6 grid grid-cols-2 gap-3"><button disabled={busy === "unsold"} onClick={props.onUnsold} className="rounded-xl border border-red-300 px-4 py-3 font-black text-red-600">Mark Unsold</button><button disabled={busy === "sell" || saleBlocked} onClick={props.onConfirmSale} className="rounded-xl bg-emerald-600 px-4 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{busy === "sell" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin"/>}Confirm Sale</button></div></>}
   </section></div>;
+}
+
+export function AuctionPlayerDetailsDialog({ selected, teamName, onClose }: {
+  selected: AuctionPlayer;
+  teamName: (id: string | null) => string | undefined;
+  onClose: () => void;
+}) {
+  const soldTeam = selected.status === "sold" ? teamName(selected.winning_team_id) : undefined;
+  const statusStyle = selected.status === "sold"
+    ? "bg-emerald-500/15 text-emerald-600"
+    : selected.status === "unsold"
+      ? "bg-red-500/15 text-red-600"
+      : selected.status === "live"
+        ? "bg-amber-500/15 text-amber-600"
+        : "bg-sky-500/15 text-sky-600";
+
+  return <div className="fixed inset-0 z-[80] grid place-items-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label={`${selected.player_name} auction details`}>
+    <section className="w-full max-w-lg overflow-hidden rounded-3xl border border-border bg-card text-foreground shadow-2xl">
+      <div className="relative aspect-square bg-muted">
+        <Image unoptimized fill sizes="(max-width: 32rem) 100vw, 32rem" src={selected.player_card_url || selected.photo_url} alt={`${selected.player_name} player card`} className="object-cover"/>
+        <button onClick={onClose} aria-label="Close player details" className="absolute right-3 top-3 rounded-full bg-black/65 p-2 text-white"><X className="h-5 w-5"/></button>
+      </div>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-sm font-black text-primary">S.NO {String(displaySerial(selected)).padStart(2, "0")}</p><h2 className="mt-1 text-2xl font-black">{selected.player_name}</h2><p className="mt-1 capitalize text-muted-foreground">{pretty(selected.playing_role)}</p></div><span className={`rounded-full px-3 py-1.5 text-xs font-black uppercase ${statusStyle}`}>{selected.status}</span></div>
+        {selected.status === "sold" && <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4"><p className="text-xs font-black uppercase tracking-wider text-emerald-600">Sold to</p><p className="mt-1 text-lg font-black">{soldTeam || "Team unavailable"}</p><p className="mt-1 text-2xl font-black text-emerald-600">{money(Number(selected.winning_bid || 0))} points</p></div>}
+        {selected.status === "unsold" && <p className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 font-black text-red-600">This player was unsold.</p>}
+        {selected.status === "live" && <p className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 font-black text-amber-600">Auction is currently live for this player.</p>}
+        {selected.status === "available" && <p className="mt-5 rounded-xl border border-sky-500/25 bg-sky-500/10 p-4 font-black text-sky-600">This player is available for auction.</p>}
+      </div>
+    </section>
+  </div>;
 }

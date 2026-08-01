@@ -70,15 +70,19 @@ function cleanText(value: string) {
   return value
     .replace(/[|_[\]{}]/g, "")
     .replace(/\s+/g, " ")
-    .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9.)'-]+$/g, "")
+    .replace(/^[^A-Za-z0-9]+/, "")
+    .replace(/[^A-Za-z0-9.)'-]+$/, "")
     .trim();
+}
+
+function cleanPlayerName(value: string) {
+  return cleanText(value).replace(/^([A-Za-z])\s+([A-Za-z])(?=\s)/, "$1$2");
 }
 
 export async function recognizeAuctionCard(url: string): Promise<AuctionCardText> {
   const [image, worker] = await Promise.all([loadImage(url), getWorker()]);
   const nameCanvas = cropAndPrepare(image, { x: 500, y: 285, width: 540, height: 155 });
   const roleCanvas = cropAndPrepare(image, { x: 590, y: 430, width: 460, height: 125 });
-  const serialCanvas = cropAndPrepare(image, { x: 115, y: 735, width: 330, height: 230 });
 
   await worker.setParameters({
     tessedit_pageseg_mode: PSM.SINGLE_LINE,
@@ -87,16 +91,11 @@ export async function recognizeAuctionCard(url: string): Promise<AuctionCardText
   const nameResult = await worker.recognize(nameCanvas);
   const roleResult = await worker.recognize(roleCanvas);
 
-  await worker.setParameters({
-    tessedit_pageseg_mode: PSM.SINGLE_WORD,
-    tessedit_char_whitelist: "0123456789",
-  });
-  const serialResult = await worker.recognize(serialCanvas);
-  const serialMatch = serialResult.data.text.match(/\d{1,4}/);
-
   return {
-    playerName: cleanText(nameResult.data.text),
+    playerName: cleanPlayerName(nameResult.data.text),
     playingRole: cleanText(roleResult.data.text),
-    registrationNumber: serialMatch ? Number(serialMatch[0]) : null,
+    // Decorative numeric fonts are unreliable for OCR. Preserve the
+    // filename/database S.NO; admins can still correct it in the dialog.
+    registrationNumber: null,
   };
 }

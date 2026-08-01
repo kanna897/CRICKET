@@ -197,9 +197,12 @@ test("live auction is modular, realtime and transaction-backed", () => {
   assert.match(dashboard, /Bulk Card Downloads/);
   assert.match(dashboard, /Bulk Player Profile Card Upload/);
   assert.match(dashboard, /create_bulk_auction_players/);
+  assert.match(dashboard, /playerDetailsFromFilename/);
   assert.match(dashboard, /Complete & Hide/);
   assert.match(auctionComponents, /latestPlayerActions/);
   assert.match(dashboard, /Scan Cards to Text/);
+  assert.match(dashboard, /AuctionPlayerDetailsDialog/);
+  assert.match(dashboard, /points/);
   assert.match(dashboard, /recognizeAuctionCard/);
   assert.match(dashboard, /\["available","live","sold","unsold"\]/);
   assert.doesNotMatch(registration, /kind: "player"/);
@@ -210,6 +213,9 @@ test("live auction is modular, realtime and transaction-backed", () => {
   assert.match(ocrMigration, /update_bulk_auction_player_text/);
   assert.match(ocr, /createWorker/);
   assert.match(ocr, /PSM\.SINGLE_LINE/);
+  const nextConfig = readFileSync(resolve(root, "next.config.ts"), "utf8");
+  assert.match(nextConfig, /https:\/\/cdn\.jsdelivr\.net/);
+  assert.match(nextConfig, /wasm-unsafe-eval/);
 });
 
 test("player cards use stored template layouts instead of renderer coordinates", () => {

@@ -15,11 +15,12 @@ export function displaySerial(player: AuctionPlayer) {
 export function playerDetailsFromFilename(filename: string) {
   const base = filename.replace(/\.[^.]+$/, "").trim();
   const parts = base.split(/\s+(?:-|–|—)\s+|_+/).map((part) => part.trim()).filter(Boolean);
-  if (parts.length && /^\d+$/.test(parts[0])) parts.shift();
+  const serialPart = parts.length && /^\d+$/.test(parts[0]) ? parts.shift()! : "";
   const rolePattern = /^(all[\s_-]?rounder|batsman|batter|bowler|wicket[\s_-]?keeper|player)$/i;
   const rolePart = parts.length > 1 && rolePattern.test(parts.at(-1) || "") ? parts.pop()! : "Player";
   const playerName = parts.join(" - ").trim() || base.replace(/^\d+\s*/, "").trim() || "Player";
   return {
+    registration_number: serialPart ? Number(serialPart) : undefined,
     player_name: playerName,
     playing_role: rolePart.replaceAll("-", " ").replaceAll("_", " "),
   };
