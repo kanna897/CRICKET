@@ -62,6 +62,7 @@ test("production responses define the complete security header baseline", () => 
   assert.match(config, /https:\/\/\*\.supabase\.co/);
   assert.match(config, /wss:\/\/\*\.supabase\.co/);
   assert.match(config, /https:\/\/res\.cloudinary\.com/);
+  assert.match(config, /connect-src[^\n]*https:\/\/res\.cloudinary\.com/);
   assert.match(config, /https:\/\/challenges\.cloudflare\.com/);
 });
 
