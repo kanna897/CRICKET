@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
 import { localePath } from "@/lib/locale-path";
+import { MatchSchedulePoster } from "@/components/match-schedule-poster";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
@@ -150,6 +151,8 @@ export default function MatchesPage() {
       </div>
       {message && <p role="status" className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-bold text-foreground">{message}</p>}
       {generatorOpen&&<section className="rounded-2xl border border-primary/30 bg-card p-5 shadow-lg"><div><p className="text-xs font-black uppercase tracking-widest text-primary">Automatic fixture generator</p><h2 className="mt-1 text-xl font-black">Round-robin schedule</h2><p className="mt-1 text-sm text-muted-foreground">Every team plays every other team once. Existing pairings are skipped.</p></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><label className="space-y-2 text-sm font-bold lg:col-span-2">Tournament<select className="input" value={generator.tournamentId} onChange={(event)=>setGenerator({...generator,tournamentId:event.target.value})}><option value="">Select tournament</option>{tournaments.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="space-y-2 text-sm font-bold">Start date<input type="date" className="input" value={generator.startDate} onChange={(event)=>setGenerator({...generator,startDate:event.target.value})}/></label><label className="space-y-2 text-sm font-bold">Match time<input type="time" className="input" value={generator.matchTime} onChange={(event)=>setGenerator({...generator,matchTime:event.target.value})}/></label><label className="space-y-2 text-sm font-bold">Days between matches<input type="number" min="1" max="30" className="input" value={generator.restDays} onChange={(event)=>setGenerator({...generator,restDays:event.target.value})}/></label><label className="space-y-2 text-sm font-bold sm:col-span-2 lg:col-span-4">Ground / Venue<input className="input" placeholder="Tournament venue used if empty" value={generator.ground} onChange={(event)=>setGenerator({...generator,ground:event.target.value})}/></label><button type="button" disabled={generating} onClick={()=>void generateFixtures()} className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 font-black text-primary-foreground disabled:opacity-50">{generating?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Sparkles className="mr-2 h-4 w-4"/>}Generate fixtures</button></div></section>}
+
+      {!loading && matches.length > 0 && <MatchSchedulePoster matches={matches} teams={teams} tournaments={tournaments}/>}
 
       <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         {loading ? <div className="py-14 text-center text-muted-foreground">Loading matches…</div> : matches.length === 0 ? (
