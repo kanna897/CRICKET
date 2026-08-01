@@ -50,9 +50,10 @@ export async function GET(request: Request) {
 
   if (supabaseUrl && supabaseKey) {
     const headers = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
+    const projectRef = new URL(supabaseUrl).hostname.split(".")[0];
     [database, realtime] = await Promise.all([
       timedCheck(`${supabaseUrl}/rest/v1/tournaments?select=id&limit=1`, headers, 1200),
-      timedCheck(`${supabaseUrl}/realtime/v1/api/health`, headers, 750),
+      timedCheck(`${supabaseUrl}/realtime/v1/api/tenants/${encodeURIComponent(projectRef)}/health`, headers, 1200),
     ]);
   }
 

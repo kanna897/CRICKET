@@ -29,7 +29,9 @@ test("API monitoring emits structured logs and request IDs", () => {
 
 test("health monitoring covers database, realtime, alerts and versioning", () => {
   const health = read("app/api/health/route.ts");
-  assert.match(health, /realtime\/v1\/api\/health/);
+  assert.match(health, /realtime\/v1\/api\/tenants\/\$\{encodeURIComponent\(projectRef\)\}\/health/);
+  assert.match(health, /new URL\(supabaseUrl\)\.hostname\.split\("\."\)\[0\]/);
+  assert.doesNotMatch(health, /realtime\/v1\/api\/health/);
   assert.match(health, /MONITOR_ALERT_WEBHOOK/);
   assert.match(health, /after\(/);
   assert.match(health, /VERCEL_GIT_COMMIT_SHA/);
