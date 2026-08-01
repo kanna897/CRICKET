@@ -2642,7 +2642,9 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 .landing-tournament-2 .landing-tournament-art { background: radial-gradient(circle at 50% 90%, rgb(45 126 202 / 40%), transparent 52%), linear-gradient(135deg, #0c416a, #071526 70%); }
 .landing-tournament-3 .landing-tournament-art { background: radial-gradient(circle at 50% 90%, rgb(54 167 74 / 36%), transparent 52%), linear-gradient(135deg, #124d24, #071a0d 70%); }
 .landing-tournament-art::after { position: absolute; inset: 0; background-image: linear-gradient(rgb(255 255 255 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px); background-size: 16px 16px; content: ""; mask-image: linear-gradient(transparent, #000); }
-.landing-tournament-art img { position: relative; z-index: 1; width: 4.5rem; height: 4.5rem; border-radius: 999px; background: #fff; object-fit: contain; padding: .2rem; }
+.landing-tournament-art .landing-tournament-banner { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; border-radius: 0; background: transparent; object-fit: cover; padding: 0; }
+.landing-tournament-art:has(.landing-tournament-banner)::before { position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgb(2 10 22 / 40%), rgb(2 10 22 / 8%) 48%, rgb(2 10 22 / 46%)); content: ""; }
+.landing-tournament-art .landing-tournament-logo { position: relative; z-index: 2; width: 4.5rem; height: 4.5rem; border-radius: 999px; background: #fff; object-fit: contain; padding: .2rem; box-shadow: 0 5px 20px rgb(0 0 0 / 38%); }
 .landing-tournament-art > svg { position: relative; z-index: 1; width: 3.8rem; height: 3.8rem; color: #f4d16e; }
 .landing-tournament-art > span { position: absolute; right: .65rem; bottom: .5rem; z-index: 1; color: rgb(255 255 255 / 72%); font-size: .55rem; font-weight: 950; letter-spacing: .13em; }
 .landing-status { position: absolute; top: .55rem; left: .55rem; z-index: 2; border-radius: .3rem; background: #3567da; padding: .24rem .38rem; color: #fff; font-size: .52rem; font-weight: 950; text-transform: uppercase; }

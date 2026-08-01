@@ -26,6 +26,7 @@ type Tournament = {
   id: string;
   name: string;
   logo_url: string | null;
+  banner_url: string | null;
   venue: string | null;
   start_date: string | null;
   end_date: string | null;
@@ -68,7 +69,7 @@ export default function PublicHome() {
     async function loadLanding() {
       const [tournamentResult, matchResult, playerResult] = await Promise.all([
         supabase.from("tournaments")
-          .select("id,name,logo_url,venue,start_date,end_date,status")
+          .select("id,name,logo_url,banner_url,venue,start_date,end_date,status")
           .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(8),
@@ -116,6 +117,7 @@ export default function PublicHome() {
     };
     const channel = supabase
       .channel("public-landing-v2")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh);
     subscribeWithMonitoring(channel, "public-landing-v2");
@@ -222,8 +224,9 @@ export default function PublicHome() {
             {visibleTournaments.map((item, index) => (
               <Link href={`/tournaments/${item.id}`} key={item.id} className={`landing-tournament-card landing-tournament-${index % 4}`}>
                 <div className="landing-tournament-art">
+                  {item.banner_url && <Image fill sizes="(max-width: 640px) 100vw, 33vw" src={item.banner_url} alt="" className="landing-tournament-banner" />}
                   <StatusBadge status={item.status} />
-                  {item.logo_url ? <Image width={128} height={128} sizes="128px" src={item.logo_url} alt="" /> : <Trophy />}
+                  {item.logo_url ? <Image width={128} height={128} sizes="128px" src={item.logo_url} alt="" className="landing-tournament-logo" /> : <Trophy />}
                   <span>CRICKET LEAGUE</span>
                 </div>
                 <div><h3>{item.name}</h3><p><Users />{tournamentTeamCounts.get(item.id) ?? 0} teams <Activity />{tournamentMatchCounts.get(item.id) ?? 0} matches</p><small>{dateRange(item.start_date, item.end_date)}</small></div>

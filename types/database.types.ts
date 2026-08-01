@@ -1623,6 +1623,7 @@ export type Database = {
       }
       tournaments: {
         Row: {
+          banner_url: string | null
           ball_type: string | null
           club_id: string | null
           created_at: string
@@ -1645,6 +1646,7 @@ export type Database = {
           venue: string | null
         }
         Insert: {
+          banner_url?: string | null
           ball_type?: string | null
           club_id?: string | null
           created_at?: string
@@ -1667,6 +1669,7 @@ export type Database = {
           venue?: string | null
         }
         Update: {
+          banner_url?: string | null
           ball_type?: string | null
           club_id?: string | null
           created_at?: string
