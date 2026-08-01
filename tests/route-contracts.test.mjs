@@ -159,6 +159,14 @@ test("team sheet can register a late player and return to the same match", () =>
   assert.match(newPlayer, /router\.push\(localePath\(locale, returnPath\)\)/);
 });
 
+test("team management can securely replace a team logo", () => {
+  const manageTeam = readFileSync(resolve(root, "app/[locale]/admin/teams/[id]/page.tsx"), "utf8");
+  assert.match(manageTeam, /uploadImage\(logoFile, "team-logos"\)/);
+  assert.match(manageTeam, /logo_url: logoUrl/);
+  assert.match(manageTeam, /Change team logo/);
+  assert.match(manageTeam, /image\/jpeg,image\/png,image\/webp/);
+});
+
 test("player registration supports hide/unhide and organizer approval", () => {
   const editor = readFileSync(resolve(root, "components/tournament-editor.tsx"), "utf8");
   const form = readFileSync(resolve(root, "app/[locale]/(public)/register-player/page.tsx"), "utf8");
