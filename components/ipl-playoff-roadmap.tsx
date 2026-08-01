@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Crown, Download, Trophy } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import { downloadPosterDataUrl, posterPixelRatio } from "@/lib/poster-export";
-import { loserOf, shortTeamName, type IplPlayoffMatch } from "@/lib/ipl-playoffs";
+import { loserOf, playoffFormat, shortTeamName, type IplPlayoffMatch } from "@/lib/ipl-playoffs";
 import { supabase } from "@/lib/supabase";
 
 type Team = { id: string; name: string; logo_url: string | null };
@@ -18,7 +18,10 @@ export function IplPlayoffRoadmap({ tournamentId, tournamentName, tournamentLogo
   const q1 = matches.find((match) => match.bracket_round === 1 && match.bracket_slot === 1);
   const eliminator = matches.find((match) => match.bracket_round === 1 && match.bracket_slot === 2);
   const q2 = matches.find((match) => match.bracket_round === 2 && match.bracket_slot === 1);
-  const final = matches.find((match) => match.bracket_round === 3 && match.bracket_slot === 1);
+  const format = playoffFormat(matches);
+  const semi1 = matches.find((match) => match.bracket_round === 10 && match.bracket_slot === 1);
+  const semi2 = matches.find((match) => match.bracket_round === 10 && match.bracket_slot === 2);
+  const final = matches.find((match) => match.bracket_round === (format === "knockout" ? 11 : 3) && match.bracket_slot === 1);
   const team = (id?: string | null) => teams.find((item) => item.id === id);
   const exportPoster = async () => {
     if (!ref.current) return;
@@ -41,17 +44,17 @@ export function IplPlayoffRoadmap({ tournamentId, tournamentName, tournamentLogo
       <div className="relative flex h-full flex-col p-7 sm:p-10">
         <header className="flex items-center justify-between border-b border-white/15 pb-4">
           <div className="flex min-w-0 items-center gap-3">{tournamentLogo ? <Image unoptimized src={tournamentLogo} width={128} height={128} alt="" className="h-14 w-14 rounded-xl bg-white object-contain p-1"/> : <Trophy className="h-12 w-12 text-amber-300"/>}<div className="min-w-0"><p className="truncate text-lg font-black tracking-wide text-amber-200">{tournamentName}</p><h2 className="text-2xl font-black sm:text-4xl">ROAD TO THE FINAL</h2></div></div>
-          <div className="rounded-xl border border-amber-300/50 bg-amber-300/10 px-3 py-2 text-center"><Crown className="mx-auto h-7 w-7 text-amber-300"/><span className="text-[.6rem] font-black tracking-widest">IPL PLAYOFFS</span></div>
+          <div className="rounded-xl border border-amber-300/50 bg-amber-300/10 px-3 py-2 text-center"><Crown className="mx-auto h-7 w-7 text-amber-300"/><span className="text-[.6rem] font-black tracking-widest">{format === "knockout" ? "KNOCKOUT FINALS" : "IPL PLAYOFFS"}</span></div>
         </header>
-        <div className="grid flex-1 grid-cols-[1fr_.9fr_1fr] items-center gap-3 py-5 sm:gap-8">
+        {format === "league" ? <div className="grid flex-1 grid-cols-[1fr_.9fr_1fr] items-center gap-3 py-5 sm:gap-8">
           <div className="space-y-8"><MatchNode title="QUALIFIER 1" a={team(q1?.team_a_id)} b={team(q1?.team_b_id)} winner={q1?.winner_id}/><MatchNode title="ELIMINATOR" a={team(eliminator?.team_a_id)} b={team(eliminator?.team_b_id)} winner={eliminator?.winner_id}/></div>
           <div><MatchNode title="QUALIFIER 2" a={team(q2?.team_a_id || loserOf(q1))} b={team(q2?.team_b_id || eliminator?.winner_id)} winner={q2?.winner_id} aFallback="LOSER Q1" bFallback="WINNER ELIMINATOR"/></div>
           <div><MatchNode title="THE FINAL" a={team(final?.team_a_id || q1?.winner_id)} b={team(final?.team_b_id || q2?.winner_id)} winner={final?.winner_id} aFallback="WINNER Q1" bFallback="WINNER Q2" champion/></div>
-        </div>
-        <footer className="flex items-center justify-between border-t border-white/15 pt-3 text-[.65rem] font-black tracking-[.18em] text-cyan-100"><span>1 vs 2 · 3 vs 4 · LOSER Q1 GETS A SECOND CHANCE</span><span>{final?.winner_id ? `${shortTeamName(team(final.winner_id)?.name || "CHAMPION")} · CHAMPION` : "CHAMPION ROADMAP"}</span></footer>
+        </div> : <div className="grid flex-1 grid-cols-[1fr_.8fr_1fr] items-center gap-4 py-7 sm:gap-10"><div className="space-y-8"><MatchNode title="SEMI FINAL 1" a={team(semi1?.team_a_id)} b={team(semi1?.team_b_id)} winner={semi1?.winner_id}/><MatchNode title="SEMI FINAL 2" a={team(semi2?.team_a_id)} b={team(semi2?.team_b_id)} winner={semi2?.winner_id}/></div><div className="text-center text-xs font-black tracking-widest text-cyan-100">SEMI FINAL<br/>WINNERS<br/><span className="text-3xl text-amber-300">→</span></div><div><MatchNode title="THE FINAL" a={team(final?.team_a_id || semi1?.winner_id)} b={team(final?.team_b_id || semi2?.winner_id)} winner={final?.winner_id} aFallback="WINNER SF1" bFallback="WINNER SF2" champion/></div></div>}
+        <footer className="flex items-center justify-between border-t border-white/15 pt-3 text-[.65rem] font-black tracking-[.18em] text-cyan-100"><span>{format === "knockout" ? "SEMI FINAL 1 · SEMI FINAL 2 · FINAL" : "1 vs 2 · 3 vs 4 · LOSER Q1 GETS A SECOND CHANCE"}</span><span>{final?.winner_id ? `${shortTeamName(team(final.winner_id)?.name || "CHAMPION")} · CHAMPION` : "CHAMPION ROADMAP"}</span></footer>
       </div>
     </div>
-    {!publicMode && <p className="text-xs text-muted-foreground">Top 4 are seeded from league points, NRR and wins. Results update the next IPL playoff automatically.</p>}
+    {!publicMode && <p className="text-xs text-muted-foreground">{format === "knockout" ? "Four teams play two semi finals; both winners automatically advance to the Final." : "Top 4 are seeded from league points, NRR and wins. Results update the next IPL playoff automatically."}</p>}
     <button type="button" onClick={() => void exportPoster()} disabled={downloading} className="control bg-primary text-primary-foreground"><Download className="mr-2 h-4 w-4"/>{downloading ? "Creating 4K poster..." : "Download 4K Playoff Poster"}</button>
   </section>;
 }

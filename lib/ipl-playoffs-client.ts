@@ -17,10 +17,23 @@ export async function syncIplPlayoffMatches(supabase: SupabaseClient, tournament
   ]);
   if (error) throw error;
   const matches = (rows || []) as IplPlayoffMatch[];
+  const semiFinals = matches.filter((match) => match.bracket_round === 10).sort((a, b) => a.bracket_slot - b.bracket_slot);
+  const knockoutFinal = matches.find((match) => match.bracket_round === 11 && match.bracket_slot === 1);
+  const settings = tournament as TournamentSettings | null;
+  if (semiFinals.length === 2 && semiFinals.every((match) => match.winner_id) && !knockoutFinal) {
+    const { error: insertError } = await supabase.from("matches").insert({
+      tournament_id: tournamentId, team_a_id: semiFinals[0].winner_id, team_b_id: semiFinals[1].winner_id,
+      match_date: nextDate(semiFinals[1].match_date), overs_per_match: settings?.overs || 20,
+      ground: settings?.venue || null, status: "scheduled", competition_stage: "knockout",
+      bracket_round: 11, bracket_slot: 1, assigned_scorer_id: settings?.organizer_id || null, scoring_locked: false,
+    });
+    if (insertError) throw insertError;
+    return;
+  }
+  if (semiFinals.length) return;
   const q1 = matches.find((match) => match.bracket_round === 1 && match.bracket_slot === 1);
   const eliminator = matches.find((match) => match.bracket_round === 1 && match.bracket_slot === 2);
   const q2 = matches.find((match) => match.bracket_round === 2 && match.bracket_slot === 1);
-  const settings = tournament as TournamentSettings | null;
   if (q1?.winner_id && eliminator?.winner_id && !q2) {
     const { error: insertError } = await supabase.from("matches").insert({
       tournament_id: tournamentId, team_a_id: loserOf(q1), team_b_id: eliminator.winner_id,

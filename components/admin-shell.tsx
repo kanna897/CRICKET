@@ -20,7 +20,7 @@ const baseNavigation = [
   { name: "Registrations", translationKey: "registrations", href: "/admin/player-registrations", icon: UserCheck },
   { name: "Live Auction", translationKey: "auction", href: "/admin/auction", icon: Gavel },
   { name: "Matches & Scoring", translationKey: "matches", href: "/admin/matches", icon: PlayCircle },
-  { name: "Knockout Bracket", translationKey: "bracket", href: "/admin/bracket", icon: GitBranch },
+  { name: "Playoff Matches", translationKey: "bracket", href: "/admin/bracket", icon: GitBranch },
   { name: "Points Table", translationKey: "points", href: "/admin/points", icon: ListOrdered },
   { name: "Score Import", translationKey: "scoreImport", href: "/admin/score-import", icon: History },
   { name: "Statistics", translationKey: "statistics", href: "/admin/stats", icon: Activity },
