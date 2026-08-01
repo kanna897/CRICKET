@@ -28,10 +28,13 @@ export function TournamentEditor({ tournament, snapshot }: { tournament: Editabl
   }
 
   async function remove() {
-    if (!confirm("Delete this tournament? This action is restricted to its organizer or the Master Admin.")) return;
-    const { data, error } = await supabase.from("tournaments").delete().eq("id", tournament.id).select("id").maybeSingle();
+    if (!confirm("Permanently delete this tournament and all its matches, scores, teams, registrations and auction data? Players will be kept as Unassigned. This cannot be undone.")) return;
+    setSaving(true);
+    setMessage(null);
+    const { data, error } = await supabase.rpc("delete_tournament_cascade", { p_tournament_id: tournament.id });
+    setSaving(false);
     if (error) return setMessage(error.message);
-    if (!data) return setMessage("Unauthorized: you cannot delete this tournament.");
+    if (!data) return setMessage("Tournament was not found or could not be deleted.");
     router.replace("/admin/tournaments");
     router.refresh();
   }

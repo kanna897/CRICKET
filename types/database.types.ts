@@ -1742,6 +1742,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_tournament_cascade: {
+        Args: { p_tournament_id: string }
+        Returns: boolean
+      }
       consume_registration_lookup_attempt: {
         Args: {
           p_identifier_hash: string

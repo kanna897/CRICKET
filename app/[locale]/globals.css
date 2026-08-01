@@ -2547,7 +2547,7 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 .public-nav-actions a:hover,
 .public-nav-actions button:hover { border-color: #75dc53; }
 
-.public-landing > main { max-width: 95rem; margin: 0 auto; padding: 1.8rem 2rem 2.5rem; }
+.public-landing > main { width: 100%; margin: 0; padding: 1.8rem clamp(1rem, 2.1vw, 2.5rem) 2.5rem; }
 .landing-hero { position: relative; display: grid; min-height: 34rem; grid-template-columns: minmax(22rem, .9fr) minmax(20rem, .78fr) minmax(21rem, .72fr); align-items: center; gap: 1.5rem; overflow: hidden; border-bottom: 1px solid rgb(126 164 199 / 13%); padding: 1.4rem 0 1.6rem; }
 .landing-hero::before { position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgb(2 10 20 / 88%) 0%, rgb(2 11 21 / 18%) 43%, rgb(2 11 21 / 8%) 67%, rgb(2 11 21 / 82%) 100%), url("/landing/cricket-hero-background.webp") center/auto 100% no-repeat, url("/stadium/crickpulse-stadium-night.webp") center/cover no-repeat; content: ""; opacity: 1; }
 .landing-hero::after { position: absolute; inset: auto 0 0; z-index: 0; height: 9rem; background: linear-gradient(transparent, #03101b); content: ""; }

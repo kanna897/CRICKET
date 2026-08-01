@@ -45,10 +45,17 @@ export function PosterGenerator({ matchData }: PosterProps) {
   const downloadPoster = async (quality: PosterQuality) => {
     setDownloading(quality);
     try {
-      const file = await createPosterFile(quality);
-      const objectUrl = URL.createObjectURL(file);
-      await downloadPosterDataUrl(objectUrl, file.name);
-      URL.revokeObjectURL(objectUrl);
+      if (!posterRef.current) throw new Error("Poster is not ready.");
+      const dataUrl = await htmlToImage.toJpeg(posterRef.current, {
+        cacheBust: true,
+        quality: 0.99,
+        pixelRatio: posterPixelRatio(posterRef.current, quality),
+        width: 1080,
+        height: 1080,
+        backgroundColor: "#0f172a",
+        style: { transform: "none", transformOrigin: "center", margin: "0" },
+      });
+      await downloadPosterDataUrl(dataUrl, `match-${matchData.matchNumber}-${quality}-summary.jpg`);
     } catch (err) {
       console.error("Error generating poster", err);
       alert("Failed to generate poster.");

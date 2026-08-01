@@ -45,11 +45,12 @@ export default function TournamentsPage() {
     fetchTournaments();
   }, [fetchTournaments]);
 
-  const handleSoftDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to move this tournament to the trash?")) return;
-     
-    await supabase.from("tournaments").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    fetchTournaments();
+  const handleDelete = async (id: string) => {
+    if (!confirm("Permanently delete this tournament and all related data? Players will remain in the player list as Unassigned. This cannot be undone.")) return;
+    const { data, error } = await supabase.rpc("delete_tournament_cascade", { p_tournament_id: id });
+    if (error) return alert(error.message);
+    if (!data) return alert("Tournament was not found or could not be deleted.");
+    await fetchTournaments();
   };
 
   const handleRestore = async (id: string) => {
@@ -162,9 +163,9 @@ export default function TournamentsPage() {
                             Manage
                           </Link>
                           <button 
-                            onClick={() => handleSoftDelete(tournament.id)}
+                            onClick={() => void handleDelete(tournament.id)}
                             className="text-red-500 hover:text-red-600 p-1"
-                            title="Move to trash"
+                            title="Delete tournament permanently"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
