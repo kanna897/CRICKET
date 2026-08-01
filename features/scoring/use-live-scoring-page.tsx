@@ -18,6 +18,8 @@ import { BoundaryPop, HatTrickPop, ModalActions, NumberChoice, ScoreCelebration,
 import { useReducerState } from "@/features/scoring/state";
 import { useCommentaryVoice } from "@/features/scoring/use-commentary-voice";
 import { rankPlayerOfMatch } from "@/features/scoring/actions";
+import { syncIplPlayoffMatches } from "@/lib/ipl-playoffs-client";
+import { supabase } from "@/lib/supabase";
 
 export function useLiveScoringPage() {
     const { userId, isMasterAdmin } = useAdminAccess();
@@ -487,6 +489,7 @@ export function useLiveScoringPage() {
                 if (finishError)
                     throw finishError;
                 setMatch({ ...match, status: "completed", player_of_match_id: playerOfMatch?.playerId || null, player_of_match_summary: playerOfMatch?.summary || null });
+                if (match.tournament_id) await syncIplPlayoffMatches(supabase, match.tournament_id);
             }
             if (isOverEnd) {
                 setNewBowler("");

@@ -1,5 +1,5 @@
 export type Match = {
-  id: string; team_a_id: string; team_b_id: string; overs_per_match: number; status: string;
+  id: string; tournament_id: string | null; team_a_id: string; team_b_id: string; overs_per_match: number; status: string;
   toss_winner_id: string | null; toss_decision: string | null; player_of_match_id: string | null;
   player_of_match_summary: string | null; assigned_scorer_id: string | null; scoring_locked: boolean;
   balls_per_over: number; wickets_per_innings: number; last_man_stands: boolean; allow_wides: boolean;
