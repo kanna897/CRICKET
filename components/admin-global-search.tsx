@@ -24,7 +24,7 @@ export function AdminGlobalSearch() {
       const pattern = `%${term.replaceAll("%", "")}%`;
       const db = supabase;
       const [tournaments, teams, players] = await Promise.all([
-        db.from("tournaments").select("id,name,status").ilike("name", pattern).limit(5),
+        db.from("tournaments").select("id,name,status").is("deleted_at", null).ilike("name", pattern).limit(5),
         db.from("teams").select("id,name,tournament_id").ilike("name", pattern).limit(5),
         db.from("players").select("id,name,playing_role").ilike("name", pattern).limit(5),
       ]);

@@ -22,7 +22,7 @@ export default function PlayersPage() {
 
   const fetchPlayers = useCallback(async () => {
     setLoading(true);
-    let tournamentQuery = supabase.from("tournaments").select("*");
+    let tournamentQuery = supabase.from("tournaments").select("*").is("deleted_at", null);
     if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
     const { data: tournaments } = await tournamentQuery;
     const tournamentIds = (tournaments || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);

@@ -21,7 +21,7 @@ export default function TeamsPage() {
 
   useEffect(() => {
     async function fetchTeams() {
-      let tournamentQuery = supabase.from("tournaments").select("*");
+    let tournamentQuery = supabase.from("tournaments").select("*").is("deleted_at", null);
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: manageable } = await tournamentQuery;
       const ids = (manageable || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);

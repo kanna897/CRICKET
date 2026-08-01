@@ -30,7 +30,7 @@ export function TournamentStatisticsDashboard({ admin = false, organizerId, isMa
     const card = "border-border bg-card text-foreground";
     useEffect(() => {
         void (async () => {
-            let query = supabase.from("tournaments").select("id,name").order("created_at", { ascending: false });
+    let query = supabase.from("tournaments").select("id,name").is("deleted_at", null).order("created_at", { ascending: false });
             if (admin && !isMasterAdmin && organizerId)
                 query = query.eq("organizer_id", organizerId);
             const { data, error } = await query;

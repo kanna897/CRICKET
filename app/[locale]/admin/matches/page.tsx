@@ -44,7 +44,7 @@ export default function MatchesPage() {
 
   useEffect(() => {
     async function loadMatches() {
-      let tournamentQuery = supabase.from("tournaments").select("*").order("created_at", { ascending: false });
+    let tournamentQuery = supabase.from("tournaments").select("*").is("deleted_at", null).order("created_at", { ascending: false });
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const tournamentsResult = await tournamentQuery;
       const ids = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);

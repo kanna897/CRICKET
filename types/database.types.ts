@@ -1746,6 +1746,14 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: boolean
       }
+      hide_tournament: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
+      unhide_tournament: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
       consume_registration_lookup_attempt: {
         Args: {
           p_identifier_hash: string

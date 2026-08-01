@@ -21,7 +21,7 @@ export function DashboardLivePanels() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      let tournamentQuery = supabase.from("tournaments").select("id,name,status,organizer_id,created_at").order("created_at", { ascending: false });
+    let tournamentQuery = supabase.from("tournaments").select("id,name,status,organizer_id,created_at").is("deleted_at", null).order("created_at", { ascending: false });
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: tournamentRows } = await tournamentQuery;
       const scoped = (tournamentRows || []) as Tournament[];

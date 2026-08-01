@@ -50,7 +50,24 @@ export const POST = withApiMonitoring<NextRequest>("/api/media", async (request)
     }
     await validateImage(file);
     const upload = await uploadToCloudinary(file, MEDIA_FOLDERS[kind], process.env.CLOUDINARY_ADMIN_UPLOAD_PRESET);
-    await writeUploadAudit(supabase, { userId: user.id, role, action: "Media Uploaded", kind, publicId: upload.publicId, ip, success: true });
+    await writeUploadAudit(supabase, {
+      userId: user.id,
+      role,
+      action: "Media Uploaded",
+      kind,
+      ip,
+      success: true,
+      upload: {
+        publicId: upload.publicId,
+        secureUrl: upload.url,
+        resourceType: upload.resourceType,
+        folder: upload.folder,
+        format: upload.format,
+        bytes: upload.bytes,
+        width: upload.width,
+        height: upload.height,
+      },
+    });
     return NextResponse.json(upload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Image upload failed.";

@@ -19,7 +19,7 @@ export function HallOfFameDashboard({ admin = false, organizerId, isMasterAdmin 
   const card = "border-border bg-card text-foreground";
 
   useEffect(() => { void (async () => {
-    let query = supabase.from("tournaments").select("id,name,status").order("created_at", { ascending: false });
+    let query = supabase.from("tournaments").select("id,name,status").is("deleted_at", null).order("created_at", { ascending: false });
     if (admin && !isMasterAdmin && organizerId) query = query.eq("organizer_id", organizerId);
     const { data, error } = await query;
     const rows = (data || []) as Tournament[];

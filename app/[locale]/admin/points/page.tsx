@@ -43,7 +43,7 @@ export default function AdminPointsPage() {
   useEffect(() => {
     void (async () => {
       setLoading(true);
-      let query = supabase.from("tournaments").select("id,name,logo_url").order("created_at", { ascending: false });
+    let query = supabase.from("tournaments").select("id,name,logo_url").is("deleted_at", null).order("created_at", { ascending: false });
       if (!isMasterAdmin) query = query.eq("organizer_id", userId);
       const { data, error } = await query;
       const rows = (data || []) as Tournament[];

@@ -44,7 +44,7 @@ export function PlayerCareerFilters({ playerId }: { playerId: string }) {
       const tournamentIds = [...new Set(matchRows.map((row) => row.tournament_id).filter(Boolean) as string[])];
       const teamIds = [...new Set(matchRows.flatMap((row) => [row.team_a_id, row.team_b_id]))];
       const [tournamentResult, teamResult] = await Promise.all([
-        tournamentIds.length ? supabase.from("tournaments").select("id,name,ball_type").in("id", tournamentIds) : Promise.resolve({ data: [], error: null }),
+      tournamentIds.length ? supabase.from("tournaments").select("id,name,ball_type").in("id", tournamentIds).is("deleted_at", null) : Promise.resolve({ data: [], error: null }),
         teamIds.length ? supabase.from("teams").select("id,name").in("id", teamIds) : Promise.resolve({ data: [], error: null }),
       ]);
       if (!active) return;

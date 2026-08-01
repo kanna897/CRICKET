@@ -149,32 +149,85 @@ export async function uploadToCloudinary(file: File, folder: string, preset?: st
     body,
     cache: "no-store",
   });
-  const result = await response.json() as { secure_url?: string; public_id?: string; error?: { message?: string } };
+  const result = await response.json() as {
+    secure_url?: string;
+    public_id?: string;
+    resource_type?: string;
+    format?: string;
+    bytes?: number;
+    width?: number;
+    height?: number;
+    folder?: string;
+    error?: { message?: string };
+  };
   if (!response.ok || !result.secure_url || !result.public_id) {
     throw new Error(result.error?.message || "Cloudinary upload failed.");
   }
-  return { url: result.secure_url, publicId: result.public_id };
+  return {
+    url: result.secure_url,
+    publicId: result.public_id,
+    resourceType: result.resource_type ?? "image",
+    folder: result.folder ?? folder,
+    format: result.format ?? null,
+    bytes: result.bytes ?? file.size,
+    width: result.width ?? null,
+    height: result.height ?? null,
+  };
 }
+
+type UploadAuditMetadata = {
+  publicId?: string;
+  secureUrl?: string;
+  resourceType?: string;
+  folder?: string;
+  format?: string | null;
+  bytes?: number;
+  width?: number | null;
+  height?: number | null;
+};
 
 export async function writeUploadAudit(
   supabase: SupabaseClient<Database>,
-  input: { userId: string; role: string; action: string; kind: MediaKind; publicId?: string; ip: string; success: boolean },
+  input: { userId: string; role: string; action: string; kind: MediaKind; ip: string; success: boolean; upload?: UploadAuditMetadata },
 ) {
   const newValues: Json = {
     kind: input.kind,
-    public_id: input.publicId ?? null,
+    public_id: input.upload?.publicId ?? null,
+    secure_url: input.upload?.secureUrl ?? null,
+    resource_type: input.upload?.resourceType ?? null,
+    folder: input.upload?.folder ?? null,
+    format: input.upload?.format ?? null,
+    bytes: input.upload?.bytes ?? null,
+    width: input.upload?.width ?? null,
+    height: input.upload?.height ?? null,
     success: input.success,
   };
-  const { error } = await supabase.from("audit_logs").insert({
-    user_id: input.userId,
-    user_name: "Upload Security",
-    user_role: input.role,
-    action: input.action,
-    entity_type: "cloudinary_upload",
-    entity_id: input.publicId ?? crypto.randomUUID(),
-    new_values: newValues,
-    ip_address: input.ip,
-    device_browser: "server",
-  });
-  if (error) console.error("upload_audit_failure", { code: error.code, action: input.action });
+  try {
+    const { error } = await supabase.from("audit_logs").insert({
+      user_id: input.userId,
+      user_name: "Upload Security",
+      user_role: input.role,
+      action: input.action,
+      entity_type: "cloudinary_upload",
+      entity_id: crypto.randomUUID(),
+      new_values: newValues,
+      ip_address: input.ip,
+      device_browser: "server",
+    });
+    if (error) {
+      console.error("upload_audit_failure", {
+        code: error.code,
+        message: error.message,
+        action: input.action,
+        kind: input.kind,
+      });
+    }
+  } catch (error) {
+    console.error("upload_audit_failure", {
+      code: error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : "unexpected_error",
+      message: error instanceof Error ? error.message : "Unexpected audit failure",
+      action: input.action,
+      kind: input.kind,
+    });
+  }
 }

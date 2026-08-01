@@ -3,35 +3,44 @@
 
 import { useEffect, useState } from "react";
 import { Activity, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { MatchAnalyticsDashboard } from "@/components/match-analytics-dashboard";
+import { supabase } from "@/lib/supabase";
 
-type MatchOption = { id: string; team_a_id: string; team_b_id: string; status: string };
-type Team = { id: string; name: string };
+export type StatsMatchOption = { id: string; tournament_id: string | null; team_a_id: string; team_b_id: string; status: string };
+export type StatsTeam = { id: string; name: string };
 
-export function StatsMatchAnalytics() {
-  const [matches, setMatches] = useState<MatchOption[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState("");
-  const [loading, setLoading] = useState(true);
+export function StatsMatchAnalytics({ initialMatches, initialTeams }: { initialMatches?: StatsMatchOption[]; initialTeams?: StatsTeam[] }) {
+  const [matches, setMatches] = useState(initialMatches ?? []);
+  const [teams, setTeams] = useState(initialTeams ?? []);
+  const [selectedMatch, setSelectedMatch] = useState(initialMatches?.[0]?.id || "");
+  const [loading, setLoading] = useState(initialMatches === undefined);
   const [message, setMessage] = useState("");
 
-  useEffect(() => { void (async () => {
-    const matchResult = await supabase.from("matches")
-      .select("id,team_a_id,team_b_id,status")
-      .in("status", ["live", "completed"])
-      .order("created_at", { ascending: false });
-    const rows = (matchResult.data || []) as MatchOption[];
-    const teamIds = [...new Set(rows.flatMap((match) => [match.team_a_id, match.team_b_id]))];
-    const teamResult = teamIds.length
-      ? await supabase.from("teams").select("id,name").in("id", teamIds)
-      : { data: [], error: null };
-    setMatches(rows);
-    setTeams((teamResult.data || []) as Team[]);
-    setSelectedMatch(rows[0]?.id || "");
-    setMessage(matchResult.error?.message || teamResult.error?.message || "");
-    setLoading(false);
-  })(); }, []);
+  useEffect(() => {
+    if (initialMatches !== undefined && initialTeams !== undefined) return;
+    void (async () => {
+      const tournamentResult = await supabase.from("tournaments").select("id").is("deleted_at", null);
+      const activeTournamentIds = (tournamentResult.data ?? []).map((row) => row.id);
+      let matchQuery = supabase.from("matches")
+        .select("id,tournament_id,team_a_id,team_b_id,status")
+        .in("status", ["live", "completed"])
+        .order("created_at", { ascending: false });
+      matchQuery = activeTournamentIds.length
+        ? matchQuery.or(`tournament_id.is.null,tournament_id.in.(${activeTournamentIds.join(",")})`)
+        : matchQuery.is("tournament_id", null);
+      const matchResult = await matchQuery;
+      const rows = (matchResult.data ?? []) as StatsMatchOption[];
+      const teamIds = [...new Set(rows.flatMap((match) => [match.team_a_id, match.team_b_id]))];
+      const teamResult = teamIds.length
+        ? await supabase.from("teams").select("id,name").in("id", teamIds)
+        : { data: [], error: null };
+      setMatches(rows);
+      setTeams((teamResult.data ?? []) as StatsTeam[]);
+      setSelectedMatch(rows[0]?.id || "");
+      setMessage(tournamentResult.error?.message || matchResult.error?.message || teamResult.error?.message || "");
+      setLoading(false);
+    })();
+  }, [initialMatches, initialTeams]);
 
   const teamName = (id: string) => teams.find((team) => team.id === id)?.name || "Team";
 

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { asLocale, entityMetadata, publicSupabase, seoCopy } from "@/lib/seo";
+import { getActivePublicMatchById } from "@/lib/public-match";
 
 export async function generateMetadata({
   params,
@@ -8,6 +10,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale: rawLocale, id } = await params;
   const locale = asLocale(rawLocale);
+  if (!await getActivePublicMatchById(id)) {
+    return { title: "Cricket Match", robots: { index: false, follow: false } };
+  }
   const db = publicSupabase();
   if (!db) return { title: "Cricket Match", robots: { index: false, follow: false } };
   const { data: match } = await db.from("matches")
@@ -29,6 +34,14 @@ export async function generateMetadata({
   });
 }
 
-export default function MatchMetadataLayout({ children }: { children: React.ReactNode }) {
+export default async function MatchMetadataLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string; id: string }>;
+}) {
+  const { id } = await params;
+  if (!await getActivePublicMatchById(id)) notFound();
   return children;
 }

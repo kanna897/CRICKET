@@ -23,7 +23,7 @@ export default function PointsPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => { void (async () => {
-    const { data, error } = await supabase.from("tournaments").select("id,name,logo_url").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("tournaments").select("id,name,logo_url").is("deleted_at", null).order("created_at", { ascending: false });
     const items = (data || []) as Tournament[];
     setTournaments(items);
     setSelectedTournament(items[0]?.id || "");

@@ -12,7 +12,7 @@ const playerRole = (role:string) => role === "all_rounder" ? "all-rounder" : rol
 export default function PlayerRegistrationsPage(){
   const [rows,setRows]=useState<Registration[]>([]),[teams,setTeams]=useState<Named[]>([]),[tournaments,setTournaments]=useState<Named[]>([]);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState("");
-  const load=useCallback(async()=>{setLoading(true);const [r,t,tr]=await Promise.all([supabase.from("player_registrations").select("*").order("created_at",{ascending:false}),supabase.from("teams").select("id,name"),supabase.from("tournaments").select("id,name")]);setRows(r.data||[]);setTeams(t.data||[]);setTournaments(tr.data||[]);setLoading(false)},[]);
+  const load=useCallback(async()=>{setLoading(true);const [r,t,tr]=await Promise.all([supabase.from("player_registrations").select("*").order("created_at",{ascending:false}),supabase.from("teams").select("id,name"),supabase.from("tournaments").select("id,name").is("deleted_at",null)]);const active=(tr.data||[]) as Named[];const activeIds=new Set(active.map(item=>item.id));setRows(((r.data||[]) as Registration[]).filter(item=>activeIds.has(item.tournament_id)));setTeams(t.data||[]);setTournaments(active);setLoading(false)},[]);
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);

@@ -86,10 +86,11 @@ Deno.serve(async (request: Request) => {
   const { data, error } = await supabase
     .from("player_registrations")
     .select(
-      "player_name,status,created_at,reviewed_at,tournaments!inner(name)",
+      "player_name,status,created_at,reviewed_at,tournaments!inner(name,deleted_at)",
     )
     .eq("tracking_code", trackingCode)
     .eq("contact_number_normalized", contactNumber)
+    .is("tournaments.deleted_at", null)
     .maybeSingle();
 
   if (error) {

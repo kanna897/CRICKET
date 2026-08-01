@@ -11,7 +11,7 @@ export default async function EditTournamentPage({ params }: { params: Promise<{
 
   const [{ data: profileData }, { data: tournamentData }, { data: teamRows }, { data: matchRows }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-    supabase.from("tournaments").select("*").eq("id", id).maybeSingle(),
+      supabase.from("tournaments").select("*").eq("id", id).is("deleted_at", null).maybeSingle(),
     supabase.from("teams").select("id").eq("tournament_id", id),
     supabase.from("matches").select("id,status").eq("tournament_id", id),
   ]);

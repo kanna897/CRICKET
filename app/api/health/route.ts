@@ -7,17 +7,18 @@ export const revalidate = 0;
 
 type CheckStatus = "ok" | "unavailable" | "misconfigured";
 
-async function timedCheck(url: string, headers: HeadersInit) {
+async function timedCheck(url: string, headers: HeadersInit, timeoutMs: number) {
   const startedAt = performance.now();
   try {
     const response = await fetch(url, {
       headers,
       cache: "no-store",
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
-    return { status: response.ok ? "ok" as const : "unavailable" as const, latencyMs: Math.round(performance.now() - startedAt) };
-  } catch {
-    return { status: "unavailable" as const, latencyMs: Math.round(performance.now() - startedAt) };
+    return { status: response.ok ? "ok" as const : "unavailable" as const, latencyMs: Math.round(performance.now() - startedAt), reason: response.ok ? null : `HTTP ${response.status}` };
+  } catch (error) {
+    const timedOut = error instanceof DOMException && error.name === "TimeoutError";
+    return { status: "unavailable" as const, latencyMs: Math.round(performance.now() - startedAt), reason: timedOut ? `Timed out after ${timeoutMs}ms` : "Connection failed" };
   }
 }
 
@@ -44,14 +45,14 @@ export async function GET(request: Request) {
   const requestId = requestIdFrom(request);
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  let database: { status: CheckStatus; latencyMs: number | null } = { status: "misconfigured", latencyMs: null };
-  let realtime: { status: CheckStatus; latencyMs: number | null } = { status: "misconfigured", latencyMs: null };
+  let database: { status: CheckStatus; latencyMs: number | null; reason?: string | null } = { status: "misconfigured", latencyMs: null, reason: "Missing Supabase URL or public key" };
+  let realtime: { status: CheckStatus; latencyMs: number | null; reason?: string | null } = { status: "misconfigured", latencyMs: null, reason: "Missing Supabase URL or public key" };
 
   if (supabaseUrl && supabaseKey) {
     const headers = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
     [database, realtime] = await Promise.all([
-      timedCheck(`${supabaseUrl}/rest/v1/tournaments?select=id&limit=1`, headers),
-      timedCheck(`${supabaseUrl}/realtime/v1/api/health`, headers),
+      timedCheck(`${supabaseUrl}/rest/v1/tournaments?select=id&limit=1`, headers, 1200),
+      timedCheck(`${supabaseUrl}/realtime/v1/api/health`, headers, 750),
     ]);
   }
 
