@@ -53,11 +53,15 @@ export default function MatchesPage() {
         supabase.from("teams").select("*").order("name"),
       ]);
       const manageableMatches = ((matchesResult.data || []) as Match[]).filter((match) =>
-        isMasterAdmin || ids.includes(match.tournament_id || "") || match.organizer_id === userId
+        match.tournament_id
+          ? ids.includes(match.tournament_id)
+          : isMasterAdmin || match.organizer_id === userId
       );
       const manageableTeamIds = new Set(manageableMatches.flatMap((match) => [match.team_a_id, match.team_b_id]));
       const manageableTeams = (teamsResult.data || []).filter((team: Team & { organizer_id?: string | null }) =>
-        isMasterAdmin || ids.includes(team.tournament_id || "") || team.organizer_id === userId || manageableTeamIds.has(team.id)
+        team.tournament_id
+          ? ids.includes(team.tournament_id)
+          : isMasterAdmin || team.organizer_id === userId || manageableTeamIds.has(team.id)
       );
       setMatches(manageableMatches);
       setTeams(manageableTeams);

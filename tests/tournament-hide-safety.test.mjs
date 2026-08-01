@@ -134,6 +134,20 @@ test("fixtures and stats loaders exclude hidden parents on the server", () => {
   assert.match(statsClient, /tournament_id\.is\.null,tournament_id\.in/);
 });
 
+test("admin team and match lists require an active tournament parent", () => {
+  const teamsPage = readFileSync(path.join(root, "app", "[locale]", "admin", "teams", "page.tsx"), "utf8");
+  const matchesPage = readFileSync(path.join(root, "app", "[locale]", "admin", "matches", "page.tsx"), "utf8");
+
+  for (const page of [teamsPage, matchesPage]) {
+    assert.match(page, /from\("tournaments"\)[\s\S]*is\("deleted_at", null\)/);
+  }
+  assert.match(teamsPage, /team\.tournament_id[\s\S]{0,100}ids\.includes\(team\.tournament_id\)/);
+  assert.match(matchesPage, /team\.tournament_id[\s\S]{0,100}ids\.includes\(team\.tournament_id\)/);
+  assert.match(matchesPage, /match\.tournament_id[\s\S]*ids\.includes\(match\.tournament_id\)/);
+  assert.doesNotMatch(teamsPage, /isMasterAdmin \|\| ids\.includes\(team\.tournament_id/);
+  assert.doesNotMatch(matchesPage, /isMasterAdmin \|\| ids\.includes\(match\.tournament_id/);
+});
+
 test("active fixtures and analytics preserve standalone matches", () => {
   const rows = [
     { id: "active", tournament_id: "tournament-a", tournaments: { deleted_at: null } },
