@@ -245,6 +245,18 @@ test("bulk auction card OCR saves the real player phone number", () => {
   assert.match(migration, /sync_auction_player_contact/);
 });
 
+test("bulk auction card OCR saves batting and bowling styles", () => {
+  const ocr = readFileSync(resolve(root, "lib/auction-card-ocr.ts"), "utf8");
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260803183200_capture_auction_player_styles.sql"), "utf8");
+  assert.match(ocr, /battingStyle/);
+  assert.match(ocr, /bowlingStyle/);
+  assert.match(dashboard, /p_batting_style/);
+  assert.match(dashboard, /p_bowling_style/);
+  assert.match(migration, /batting_style = coalesce/);
+  assert.match(migration, /bowling_style = coalesce/);
+});
+
 test("player cards use stored template layouts instead of renderer coordinates", () => {
   const renderer = readFileSync(resolve(root, "lib/auction-card-generator.ts"), "utf8");
   const editor = readFileSync(resolve(root, "components/player-card-layout-editor.tsx"), "utf8");

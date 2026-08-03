@@ -1967,6 +1967,8 @@ export type Database = {
       update_bulk_auction_player_text: {
         Args: {
           p_auction_player_id: string
+          p_batting_style?: string
+          p_bowling_style?: string
           p_contact_number?: string
           p_player_name: string
           p_playing_role: string

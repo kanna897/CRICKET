@@ -7,6 +7,8 @@ export type AuctionCardText = {
   playingRole: string;
   registrationNumber: number | null;
   contactNumber: string | null;
+  battingStyle: string;
+  bowlingStyle: string;
 };
 
 let workerPromise: Promise<Worker> | null = null;
@@ -90,6 +92,8 @@ export async function recognizeAuctionCard(url: string): Promise<AuctionCardText
   const [image, worker] = await Promise.all([loadImage(url), getWorker()]);
   const nameCanvas = cropAndPrepare(image, { x: 500, y: 285, width: 540, height: 155 });
   const roleCanvas = cropAndPrepare(image, { x: 590, y: 430, width: 460, height: 125 });
+  const battingCanvas = cropAndPrepare(image, { x: 590, y: 555, width: 390, height: 105 });
+  const bowlingCanvas = cropAndPrepare(image, { x: 590, y: 675, width: 390, height: 105 });
   const phoneCanvas = cropAndPrepare(image, { x: 590, y: 760, width: 390, height: 110 });
 
   await worker.setParameters({
@@ -98,6 +102,8 @@ export async function recognizeAuctionCard(url: string): Promise<AuctionCardText
   });
   const nameResult = await worker.recognize(nameCanvas);
   const roleResult = await worker.recognize(roleCanvas);
+  const battingResult = await worker.recognize(battingCanvas);
+  const bowlingResult = await worker.recognize(bowlingCanvas);
   await worker.setParameters({
     tessedit_pageseg_mode: PSM.SINGLE_LINE,
     tessedit_char_whitelist: "0123456789+ -()",
@@ -111,5 +117,7 @@ export async function recognizeAuctionCard(url: string): Promise<AuctionCardText
     // filename/database S.NO; admins can still correct it in the dialog.
     registrationNumber: null,
     contactNumber: extractPhoneNumber(phoneResult.data.text),
+    battingStyle: cleanText(battingResult.data.text),
+    bowlingStyle: cleanText(bowlingResult.data.text),
   };
 }
