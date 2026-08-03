@@ -30,7 +30,7 @@ export function QualificationSimulator({ teams, matches, standings, rules = { wi
     {remaining.length ? <div className="grid gap-3 border-b border-border p-5 lg:grid-cols-2">{remaining.map((match) =>
       <article key={match.id} className="rounded-2xl border border-border bg-muted/30 p-4">
         <p className="mb-3 text-[.65rem] font-black uppercase tracking-wider text-muted-foreground">Remaining fixture</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_4.25rem_minmax(0,1fr)] items-stretch gap-2">
           <OutcomeButton active={predictions[match.id] === "team_a"} label={teamName(match.team_a_id)} onClick={() => setPredictions({ ...predictions, [match.id]: "team_a" })} />
           <OutcomeButton active={predictions[match.id] === "tie"} label="Tie / NR" onClick={() => setPredictions({ ...predictions, [match.id]: "tie" })} />
           <OutcomeButton active={predictions[match.id] === "team_b"} label={teamName(match.team_b_id)} onClick={() => setPredictions({ ...predictions, [match.id]: "team_b" })} />
@@ -53,7 +53,7 @@ export function QualificationSimulator({ teams, matches, standings, rules = { wi
 }
 
 function OutcomeButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className={`min-h-14 rounded-xl border px-2 py-2 text-xs font-black transition ${active ? "border-primary bg-primary text-primary-foreground shadow-lg" : "border-border bg-background text-foreground hover:border-primary/60"}`}>{label}</button>;
+  return <button type="button" onClick={onClick} className={`flex min-h-14 h-full min-w-0 items-center justify-center break-words rounded-xl border px-2 py-2 text-center text-xs font-black leading-tight transition ${active ? "border-primary bg-primary text-primary-foreground shadow-lg" : "border-border bg-background text-foreground hover:border-primary/60"}`}>{label}</button>;
 }
 
 function projectTable(base: StandingRow[], remaining: StandingsMatch[], predictions: Record<string, Prediction>, rules: PointsRules) {

@@ -259,6 +259,17 @@ test("bulk auction card OCR saves batting and bowling styles", () => {
   assert.match(dashboard, /playerToSell = await scanPlayerCard\(selected\)/);
 });
 
+test("public points table and fixture outcomes fit narrow mobile screens", () => {
+  const poster = readFileSync(resolve(root, "components/points-table-poster.tsx"), "utf8");
+  const simulator = readFileSync(resolve(root, "components/qualification-simulator.tsx"), "utf8");
+  const css = readFileSync(resolve(root, "app/[locale]/globals.css"), "utf8");
+  assert.match(poster, /points-scoreboard-scroll/);
+  assert.match(css, /min-width: 0 !important/);
+  assert.match(css, /table-layout: fixed/);
+  assert.match(simulator, /grid-cols-\[minmax\(0,1fr\)_4\.25rem_minmax\(0,1fr\)\]/);
+  assert.match(simulator, /break-words/);
+});
+
 test("player cards use stored template layouts instead of renderer coordinates", () => {
   const renderer = readFileSync(resolve(root, "lib/auction-card-generator.ts"), "utf8");
   const editor = readFileSync(resolve(root, "components/player-card-layout-editor.tsx"), "utf8");
