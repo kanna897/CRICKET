@@ -251,10 +251,12 @@ test("bulk auction card OCR saves batting and bowling styles", () => {
   const migration = readFileSync(resolve(root, "supabase/migrations/20260803183200_capture_auction_player_styles.sql"), "utf8");
   assert.match(ocr, /battingStyle/);
   assert.match(ocr, /bowlingStyle/);
+  assert.match(ocr, /cleanPlayingStyle/);
   assert.match(dashboard, /p_batting_style/);
   assert.match(dashboard, /p_bowling_style/);
   assert.match(migration, /batting_style = coalesce/);
   assert.match(migration, /bowling_style = coalesce/);
+  assert.match(dashboard, /playerToSell = await scanPlayerCard\(selected\)/);
 });
 
 test("player cards use stored template layouts instead of renderer coordinates", () => {

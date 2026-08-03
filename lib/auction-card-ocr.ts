@@ -88,6 +88,13 @@ export function extractPhoneNumber(value: string) {
   return digits.length >= 7 && digits.length <= 15 ? compact : null;
 }
 
+export function cleanPlayingStyle(value: string) {
+  const cleaned = cleanText(value).replace(/[^A-Za-z -]/g, "").replace(/\s+/g, " ").trim();
+  if (/right.*hand/i.test(cleaned)) return "Right Hand";
+  if (/left.*hand/i.test(cleaned)) return "Left Hand";
+  return cleaned;
+}
+
 export async function recognizeAuctionCard(url: string): Promise<AuctionCardText> {
   const [image, worker] = await Promise.all([loadImage(url), getWorker()]);
   const nameCanvas = cropAndPrepare(image, { x: 500, y: 285, width: 540, height: 155 });
@@ -117,7 +124,7 @@ export async function recognizeAuctionCard(url: string): Promise<AuctionCardText
     // filename/database S.NO; admins can still correct it in the dialog.
     registrationNumber: null,
     contactNumber: extractPhoneNumber(phoneResult.data.text),
-    battingStyle: cleanText(battingResult.data.text),
-    bowlingStyle: cleanText(bowlingResult.data.text),
+    battingStyle: cleanPlayingStyle(battingResult.data.text),
+    bowlingStyle: cleanPlayingStyle(bowlingResult.data.text),
   };
 }

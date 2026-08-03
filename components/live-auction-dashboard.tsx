@@ -253,7 +253,8 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     setBusy(player.id);
     setMessage("");
     try {
-      if (admin && (player.player_name === "Player" || !player.ocr_serial_number)) {
+      if (admin && (player.player_name === "Player" || !player.ocr_serial_number
+        || !player.contact_number || !player.batting_style || !player.bowling_style)) {
         resolvedPlayer = await scanPlayerCard(player);
       }
       setSelected(resolvedPlayer);
@@ -299,6 +300,12 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     if (!selected || !saleTeamId || winningBid === "") return setMessage("Select a team and enter the winning bid.");
     setBusy("sell"); setMessage("");
     try {
+      let playerToSell = selected;
+      if (selected.source_type === "bulk_upload"
+        && (!selected.contact_number || !selected.batting_style || !selected.bowling_style)) {
+        playerToSell = await scanPlayerCard(selected);
+        setSelected(playerToSell);
+      }
       const bid = Number(winningBid);
       if (!Number.isFinite(bid) || bid < 0) throw new Error("Enter a valid winning bid.");
       const purse = purses.find((row) => row.team_id === saleTeamId);
@@ -307,7 +314,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       if (bid > availablePurse) throw new Error("Winning bid exceeds the team's remaining purse.");
       const soldTeamName = team(saleTeamId)?.name || "selected team";
       const { error } = await supabase.rpc("sell_auction_player", {
-        p_auction_player_id: selected.id, p_team_id: saleTeamId, p_winning_bid: bid,
+        p_auction_player_id: playerToSell.id, p_team_id: saleTeamId, p_winning_bid: bid,
       });
       if (error) throw error;
       setSelected(null);
