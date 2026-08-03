@@ -228,10 +228,10 @@ test("live auction is modular, realtime and transaction-backed", () => {
 });
 
 test("bulk auction cards become cropped player profile photos when sold", () => {
-  const migration = readFileSync(resolve(root, "supabase/migrations/20260803120000_crop_bulk_auction_player_profile_photos.sql"), "utf8");
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260803183000_match_squad_player_card_crop.sql"), "utf8");
   assert.match(migration, /auction_profile_photo_url/);
-  assert.match(migration, /c_fill,g_auto,w_1200,h_1200,q_auto,f_auto/);
-  assert.match(migration, /sync_auction_player_profile_photo/);
+  assert.match(migration, /c_crop,x_80,y_328,w_351,h_351/);
+  assert.match(migration, /c_fill,w_1200,h_1200,q_auto,f_auto/);
   assert.match(migration, /source_type = 'bulk_upload'/);
 });
 
