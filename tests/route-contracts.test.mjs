@@ -241,8 +241,18 @@ test("bulk auction card OCR saves the real player phone number", () => {
   const migration = readFileSync(resolve(root, "supabase/migrations/20260803183100_capture_auction_player_phone.sql"), "utf8");
   assert.match(ocr, /contactNumber/);
   assert.match(ocr, /extractPhoneNumber/);
+  assert.match(ocr, /\^\\d\{10\}\$/);
+  assert.match(ocr, /\^\\\+94\\d\{9\}\$/);
   assert.match(dashboard, /p_contact_number/);
   assert.match(migration, /sync_auction_player_contact/);
+});
+
+test("points poster offers a fast HD download and waits for team logos", () => {
+  const poster = readFileSync(resolve(root, "components/points-table-poster.tsx"), "utf8");
+  assert.match(poster, /\["hd", "4k"\]/);
+  assert.match(poster, /waitForPosterImages/);
+  assert.match(poster, /image\.decode\(\)/);
+  assert.match(poster, /cacheBust: false/);
 });
 
 test("bulk auction card OCR saves batting and bowling styles", () => {

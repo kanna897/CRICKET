@@ -83,9 +83,10 @@ function cleanPlayerName(value: string) {
 }
 
 export function extractPhoneNumber(value: string) {
-  const compact = value.replace(/[^0-9+]/g, "");
-  const digits = compact.replace(/\D/g, "");
-  return digits.length >= 7 && digits.length <= 15 ? compact : null;
+  const compact = value.replace(/[\s().-]/g, "");
+  if (/^\d{10}$/.test(compact)) return compact;
+  if (/^\+94\d{9}$/.test(compact)) return compact;
+  return null;
 }
 
 export function cleanPlayingStyle(value: string) {
