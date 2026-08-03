@@ -6,6 +6,7 @@ export type AuctionCardText = {
   playerName: string;
   playingRole: string;
   registrationNumber: number | null;
+  contactNumber: string | null;
 };
 
 let workerPromise: Promise<Worker> | null = null;
@@ -79,10 +80,17 @@ function cleanPlayerName(value: string) {
   return cleanText(value).replace(/^([A-Za-z])\s+([A-Za-z])(?=\s)/, "$1$2");
 }
 
+export function extractPhoneNumber(value: string) {
+  const compact = value.replace(/[^0-9+]/g, "");
+  const digits = compact.replace(/\D/g, "");
+  return digits.length >= 7 && digits.length <= 15 ? compact : null;
+}
+
 export async function recognizeAuctionCard(url: string): Promise<AuctionCardText> {
   const [image, worker] = await Promise.all([loadImage(url), getWorker()]);
   const nameCanvas = cropAndPrepare(image, { x: 500, y: 285, width: 540, height: 155 });
   const roleCanvas = cropAndPrepare(image, { x: 590, y: 430, width: 460, height: 125 });
+  const phoneCanvas = cropAndPrepare(image, { x: 590, y: 760, width: 390, height: 110 });
 
   await worker.setParameters({
     tessedit_pageseg_mode: PSM.SINGLE_LINE,
@@ -90,6 +98,11 @@ export async function recognizeAuctionCard(url: string): Promise<AuctionCardText
   });
   const nameResult = await worker.recognize(nameCanvas);
   const roleResult = await worker.recognize(roleCanvas);
+  await worker.setParameters({
+    tessedit_pageseg_mode: PSM.SINGLE_LINE,
+    tessedit_char_whitelist: "0123456789+ -()",
+  });
+  const phoneResult = await worker.recognize(phoneCanvas);
 
   return {
     playerName: cleanPlayerName(nameResult.data.text),
@@ -97,5 +110,6 @@ export async function recognizeAuctionCard(url: string): Promise<AuctionCardText
     // Decorative numeric fonts are unreliable for OCR. Preserve the
     // filename/database S.NO; admins can still correct it in the dialog.
     registrationNumber: null,
+    contactNumber: extractPhoneNumber(phoneResult.data.text),
   };
 }

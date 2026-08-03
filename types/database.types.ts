@@ -83,6 +83,7 @@ export type Database = {
         Row: {
           batting_style: string
           bowling_style: string
+          contact_number: string | null
           created_at: string
           id: string
           ocr_serial_number: number | null
@@ -105,6 +106,7 @@ export type Database = {
         Insert: {
           batting_style: string
           bowling_style: string
+          contact_number?: string | null
           created_at?: string
           id?: string
           ocr_serial_number?: number | null
@@ -127,6 +129,7 @@ export type Database = {
         Update: {
           batting_style?: string
           bowling_style?: string
+          contact_number?: string | null
           created_at?: string
           id?: string
           ocr_serial_number?: number | null
@@ -1964,6 +1967,7 @@ export type Database = {
       update_bulk_auction_player_text: {
         Args: {
           p_auction_player_id: string
+          p_contact_number?: string
           p_player_name: string
           p_playing_role: string
           p_registration_number?: number
@@ -1971,6 +1975,7 @@ export type Database = {
         Returns: {
           batting_style: string
           bowling_style: string
+          contact_number: string | null
           created_at: string
           id: string
           ocr_serial_number: number | null

@@ -211,6 +211,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       p_player_name: recognized.playerName,
       p_playing_role: recognized.playingRole || "Player",
       p_registration_number: recognized.registrationNumber ?? undefined,
+      p_contact_number: recognized.contactNumber ?? undefined,
     });
     if (error) throw error;
     return data as AuctionPlayer;
@@ -218,7 +219,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   async function scanExistingCards() {
     const pending = players.filter((player) =>
-      player.player_name === "Player" || !player.ocr_serial_number
+      player.player_name === "Player" || !player.ocr_serial_number || !player.contact_number
     );
     if (!pending.length) return setMessage("All uploaded cards already have scanned text.");
     setBusy("ocr-all");

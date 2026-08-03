@@ -7,6 +7,7 @@ export type AuctionPlayer = {
   player_id: string | null;
   registration_number: number;
   ocr_serial_number: number | null;
+  contact_number: string | null;
   player_name: string;
   photo_url: string;
   playing_role: string;

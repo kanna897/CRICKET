@@ -235,6 +235,16 @@ test("bulk auction cards become cropped player profile photos when sold", () => 
   assert.match(migration, /source_type = 'bulk_upload'/);
 });
 
+test("bulk auction card OCR saves the real player phone number", () => {
+  const ocr = readFileSync(resolve(root, "lib/auction-card-ocr.ts"), "utf8");
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260803183100_capture_auction_player_phone.sql"), "utf8");
+  assert.match(ocr, /contactNumber/);
+  assert.match(ocr, /extractPhoneNumber/);
+  assert.match(dashboard, /p_contact_number/);
+  assert.match(migration, /sync_auction_player_contact/);
+});
+
 test("player cards use stored template layouts instead of renderer coordinates", () => {
   const renderer = readFileSync(resolve(root, "lib/auction-card-generator.ts"), "utf8");
   const editor = readFileSync(resolve(root, "components/player-card-layout-editor.tsx"), "utf8");
