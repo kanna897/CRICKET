@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
@@ -35,6 +34,7 @@ export default function LoginPage() {
         : searchParams.get("error") === "confirmation"
           ? "Your email address is not confirmed yet."
       : null;
+  const registrationManaged = searchParams.get("registration") === "managed";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -149,7 +149,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">New tournament organizer? <Link href={`/${params.locale}/register`} className="font-semibold text-primary hover:underline">Create an account</Link></p>
+        <p className="mt-6 rounded-lg border border-border bg-muted/40 px-3 py-2 text-center text-sm text-muted-foreground">
+          {registrationManaged ? "Public registration is closed. " : "Need organizer access? "}
+          Contact the Master Admin to create your account.
+        </p>
       </section>
     </main>
   );
