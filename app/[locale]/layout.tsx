@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
-import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import localFont from "next/font/local";
 
 import { asLocale, entityMetadata, seoCopy, siteUrl } from "@/lib/seo";
@@ -89,7 +88,6 @@ export default async function RootLayout({
         >
           <NextIntlClientProvider messages={messages}>
             {children}
-            <PwaInstallBanner />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>
