@@ -3,7 +3,6 @@
 import { FormEvent, useState } from "react";
 import { Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 import { CrickpulseLogo } from "@/components/crickpulse-logo";
-import { supabase } from "@/lib/supabase";
 
 export function MandatoryPasswordChange({ locale, email }: { locale: string; email: string }) {
   const [password, setPassword] = useState("");
@@ -26,8 +25,6 @@ export function MandatoryPasswordChange({ locale, email }: { locale: string; ema
       });
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error || "The password could not be changed.");
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) throw refreshError;
       window.location.assign(`/${locale}/admin`);
     } catch (changeError) {
       setError(changeError instanceof Error ? changeError.message : "The password could not be changed.");
