@@ -45,7 +45,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Organizer account not found." }, { status: 404 });
   }
 
-  const { error } = await admin.auth.admin.updateUserById(id, { password });
+  const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(id);
+  if (authUserError || !authUser.user) {
+    return NextResponse.json({ error: "Organizer account not found." }, { status: 404 });
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(id, {
+    password,
+    app_metadata: { ...authUser.user.app_metadata, must_change_password: true },
+  });
   if (error) {
     return NextResponse.json({ error: "The organizer password could not be updated." }, { status: 500 });
   }

@@ -60,7 +60,7 @@ export default function LoginPage() {
       }
 
       // The Server Action writes persistent auth cookies before navigation.
-      window.location.assign(redirectTo);
+      window.location.assign(signInResult.mustChangePassword ? `/${params.locale}/change-password` : redirectTo);
     } catch (signInError) {
       console.error("Unable to reach Supabase Auth", signInError);
       setError("Unable to connect to the authentication service. Check your internet connection and try again.");

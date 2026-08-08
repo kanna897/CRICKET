@@ -8,6 +8,7 @@ export type OrganizerSummary = { id: string; name: string; email: string | null;
 export function OrganizerManagement({ organizers }: { organizers: OrganizerSummary[] }) {
   const [rows, setRows] = useState(organizers);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export function OrganizerManagement({ organizers }: { organizers: OrganizerSumma
       const response = await fetch("/api/admin/organizers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, phone, email, password }),
       });
       const result = await response.json() as { organizer?: OrganizerSummary; error?: string };
       if (!response.ok || !result.organizer) {
@@ -31,9 +32,10 @@ export function OrganizerManagement({ organizers }: { organizers: OrganizerSumma
       }
       setRows((current) => [result.organizer!, ...current]);
       setName("");
+      setPhone("");
       setEmail("");
       setPassword("");
-      setMessage(`${result.organizer.email} can now sign in with the temporary password.`);
+      setMessage(`${result.organizer.email} can now sign in. They must change the temporary password on first login.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The organizer account could not be created.");
     } finally {
@@ -95,8 +97,9 @@ export function OrganizerManagement({ organizers }: { organizers: OrganizerSumma
           <h2 className="text-lg font-bold">Create organizer account</h2>
           <p className="text-sm text-muted-foreground">The account is activated immediately. Share the temporary password securely.</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <label className="space-y-2 text-sm font-medium"><span>Organizer name</span><input className="input" minLength={2} value={name} onChange={(event) => setName(event.target.value)} required /></label>
+          <label className="space-y-2 text-sm font-medium"><span>Phone No</span><input className="input" type="tel" inputMode="numeric" autoComplete="tel" pattern="[0-9]{10}" maxLength={10} value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} required /></label>
           <label className="space-y-2 text-sm font-medium"><span>Email address</span><input className="input" type="email" autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
           <label className="space-y-2 text-sm font-medium"><span>Temporary password</span><input className="input" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
         </div>

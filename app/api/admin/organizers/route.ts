@@ -6,6 +6,7 @@ import type { Database } from "@/types/database.types";
 
 type CreateOrganizerBody = {
   name?: unknown;
+  phone?: unknown;
   email?: unknown;
   password?: unknown;
 };
@@ -36,11 +37,15 @@ export async function POST(request: Request) {
   }
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
+  const phone = typeof body.phone === "string" ? body.phone.replace(/\D/g, "") : "";
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
 
   if (name.length < 2) {
     return NextResponse.json({ error: "Organizer name must contain at least 2 characters." }, { status: 400 });
+  }
+  if (!/^\d{10}$/.test(phone)) {
+    return NextResponse.json({ error: "Phone number must contain exactly 10 digits." }, { status: 400 });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
@@ -65,7 +70,9 @@ export async function POST(request: Request) {
     user_metadata: {
       organizer_name: name,
       organization_name: name,
+      phone_number: phone,
     },
+    app_metadata: { must_change_password: true },
   });
 
   if (error) {
@@ -76,5 +83,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ organizer: { id: data.user.id, name, email, phone_number: null } }, { status: 201 });
+  return NextResponse.json({ organizer: { id: data.user.id, name, email, phone_number: phone } }, { status: 201 });
 }

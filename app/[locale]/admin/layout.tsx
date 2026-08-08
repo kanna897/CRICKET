@@ -38,5 +38,10 @@ export default async function AdminLayout({ children, params }: { children: Reac
     redirect(`/${locale}/login?error=unauthorized`);
   }
 
+  const appMetadata = claims.app_metadata as { must_change_password?: boolean } | undefined;
+  if (role === "organizer" && appMetadata?.must_change_password === true) {
+    redirect(`/${locale}/change-password`);
+  }
+
   return <AdminShell userId={userId} displayName={profile?.name || profile?.display_name || userEmail || "Administrator"} role={role}>{children}</AdminShell>;
 }
