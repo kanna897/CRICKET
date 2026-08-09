@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { Download, Trophy } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import type { StandingRow } from "@/lib/tournament-standings";
-import { downloadPosterDataUrl, posterPixelRatio, posterQualityLabel, type PosterQuality } from "@/lib/poster-export";
+import { downloadPosterDataUrl, inlinePosterImages, posterPixelRatio, posterQualityLabel, type PosterQuality } from "@/lib/poster-export";
 
 type Team = { id: string; name: string; logo_url?: string | null };
 
@@ -17,11 +17,16 @@ export function PointsTablePoster({ tournamentName, tournamentLogo, rows, teams 
   const download = async (quality: PosterQuality) => {
     if (!ref.current || downloading || !rows.length) return;
     setDownloading(quality);
+    let restoreImages: (() => void) | undefined;
     try {
       await waitForPosterImages(ref.current);
-      const dataUrl = await toJpeg(ref.current, { cacheBust: false, pixelRatio: posterPixelRatio(ref.current, quality), quality: quality === "4k" ? 0.96 : 0.92, backgroundColor: "#050b26", skipFonts: true });
+      restoreImages = await inlinePosterImages(ref.current);
+      const dataUrl = await toJpeg(ref.current, { cacheBust: true, pixelRatio: posterPixelRatio(ref.current, quality), quality: quality === "4k" ? 0.96 : 0.92, backgroundColor: "#050b26", skipFonts: true });
       await downloadPosterDataUrl(dataUrl, `${tournamentName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${quality}-points-table.jpg`);
-    } finally { setDownloading(null); }
+    } finally {
+      restoreImages?.();
+      setDownloading(null);
+    }
   };
 
   if (!rows.length) return null;
