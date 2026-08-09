@@ -2578,20 +2578,20 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 
 .public-landing > main { width: 100%; margin: 0; padding: 1.8rem clamp(1rem, 2.1vw, 2.5rem) 2.5rem; }
 .landing-hero { position: relative; display: grid; min-height: 34rem; grid-template-columns: minmax(22rem, .9fr) minmax(20rem, .78fr) minmax(21rem, .72fr); align-items: center; gap: 1.5rem; overflow: hidden; border-bottom: 1px solid rgb(126 164 199 / 13%); padding: 1.4rem 0 1.6rem; }
-.landing-hero::before { position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgb(2 10 20 / 88%) 0%, rgb(2 11 21 / 18%) 43%, rgb(2 11 21 / 8%) 67%, rgb(2 11 21 / 82%) 100%), url("/landing/cricket-hero-background.webp") center/auto 100% no-repeat, url("/stadium/crickpulse-stadium-night.webp") center/cover no-repeat; content: ""; opacity: 1; }
-.landing-hero::after { position: absolute; inset: auto 0 0; z-index: 0; height: 9rem; background: linear-gradient(transparent, #03101b); content: ""; }
+.landing-hero::before { position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgb(2 10 20 / 90%) 0%, rgb(2 11 21 / 48%) 30%, rgb(2 11 21 / 18%) 56%, rgb(2 11 21 / 82%) 100%), linear-gradient(0deg, #03101b 0%, transparent 32%), url("/stadium/crickpulse-stadium-night.webp") center/cover no-repeat; content: ""; }
+.landing-hero::after { position: absolute; inset: -2% 17% 0 22%; z-index: 0; background: url("/landing/cricket-hero-background.webp") center/cover no-repeat; content: ""; opacity: .68; filter: saturate(.9) contrast(.96); -webkit-mask-image: radial-gradient(ellipse 68% 76% at 53% 48%, #000 42%, rgb(0 0 0 / 88%) 60%, transparent 100%); mask-image: radial-gradient(ellipse 68% 76% at 53% 48%, #000 42%, rgb(0 0 0 / 88%) 60%, transparent 100%); }
 .landing-stadium-glow { position: absolute; inset: 2rem 18% 0 30%; z-index: 0; border-radius: 999px; background: radial-gradient(circle, rgb(95 222 66 / 18%), transparent 65%); filter: blur(24px); }
 .landing-hero-copy,
 .landing-player-visual,
 .landing-featured-match { position: relative; z-index: 2; }
 .landing-hero-copy { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
-.landing-live-pill { display: inline-flex; width: fit-content; align-items: center; gap: .5rem; border-radius: 999px; background: rgb(64 189 56 / 12%); padding: .4rem .75rem; color: #79e95d; font-size: .66rem; font-weight: 900; letter-spacing: .035em; text-transform: uppercase; }
+.landing-live-pill { display: inline-flex; width: fit-content; align-items: center; gap: .5rem; border-radius: 999px; background: rgb(64 189 56 / 12%); padding: .45rem .8rem; color: #79e95d; font-size: .76rem; font-weight: 900; letter-spacing: .035em; text-transform: uppercase; }
 .landing-live-pill span { width: .42rem; height: .42rem; border-radius: 999px; background: #62e449; box-shadow: 0 0 10px #62e449; }
 .landing-hero-copy h1 { margin-top: 1.1rem; color: #fff; font-size: clamp(2.8rem, 4.4vw, 4.45rem); font-weight: 950; letter-spacing: -.055em; line-height: .99; }
 .landing-hero-copy h1 em { color: #71d94f; font-style: normal; }
-.landing-intro { max-width: 34rem; margin-top: 1.05rem; color: #c8d1dc; font-size: .92rem; line-height: 1.7; }
+.landing-intro { max-width: 36rem; margin-top: 1.05rem; color: #d2dae3; font-size: 1.02rem; line-height: 1.7; }
 .landing-hero-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.25rem; }
-.landing-hero-actions a { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .55rem; border-radius: .4rem; padding: .7rem 1.1rem; font-size: .73rem; font-weight: 900; }
+.landing-hero-actions a { display: inline-flex; min-height: 3.15rem; align-items: center; justify-content: center; gap: .55rem; border-radius: .4rem; padding: .75rem 1.15rem; font-size: .82rem; font-weight: 900; }
 .landing-hero-actions a svg { width: .95rem; height: .95rem; }
 .landing-primary-button { background: linear-gradient(135deg, #77dd56, #53ba3b); color: #071307; box-shadow: 0 9px 24px rgb(75 200 56 / 19%); }
 .landing-outline-button { border: 1px solid rgb(162 187 211 / 37%); background: rgb(4 14 25 / 62%); color: #f8fbff; }
@@ -2605,8 +2605,8 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 .landing-feature-row p { min-width: 0; }
 .landing-feature-row b,
 .landing-feature-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.landing-feature-row b { color: #f2f7fc; font-size: .62rem; }
-.landing-feature-row small { margin-top: .12rem; color: #8694a4; font-size: .5rem; }
+.landing-feature-row b { color: #f2f7fc; font-size: .76rem; }
+.landing-feature-row small { margin-top: .12rem; color: #9aa8b8; font-size: .68rem; }
 
 .landing-player-visual { display: grid; min-height: 25rem; place-items: center; align-content: center; }
 .landing-sangakkara-player {
@@ -2711,7 +2711,7 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 .landing-login-cta svg { width: .85rem; height: .85rem; }
 
 /* Maintain Lighthouse mobile legibility while preserving the compact score layout. */
-.public-landing :where(.landing-live-pill, .landing-feature-row b, .landing-feature-row small, .landing-featured-match small, .landing-match-context, .landing-match-score span, .landing-team-crest b, .landing-toss, .landing-mini-scorecard span, .landing-mini-scorecard b, .landing-mini-scorecard strong, .landing-match-empty p, .landing-tournament-art > span, .landing-status, .landing-tournament-card p, .landing-tournament-card small, .landing-stat-strip span, .landing-bottom-cta p, .landing-login-cta > a) { font-size: .75rem !important; }
+.public-landing :where(.landing-live-pill, .landing-feature-row b, .landing-feature-row small, .landing-featured-match small, .landing-match-context, .landing-match-score span, .landing-team-crest b, .landing-toss, .landing-mini-scorecard span, .landing-mini-scorecard b, .landing-mini-scorecard strong, .landing-match-empty p, .landing-tournament-art > span, .landing-status, .landing-tournament-card p, .landing-tournament-card small, .landing-stat-strip span, .landing-bottom-cta p, .landing-login-cta > a) { font-size: .82rem !important; }
 
 html.light .public-landing {
   background:
