@@ -58,10 +58,15 @@ export default function AdminPointsPage() {
     if (!selectedTournament) return;
     setLoading(true);
     setMessage("");
-    const [{ data: matchRows, error: matchesError }, { data: teamRows, error: teamsError }] = await Promise.all([
+    const [{ data: latestTournament, error: tournamentError }, { data: matchRows, error: matchesError }, { data: teamRows, error: teamsError }] = await Promise.all([
+      supabase.from("tournaments").select("id,name,logo_url").eq("id", selectedTournament).maybeSingle(),
       supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
       supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
     ]);
+    if (latestTournament) {
+      const refreshedTournament = latestTournament as Tournament;
+      setTournaments((current) => current.map((item) => item.id === refreshedTournament.id ? refreshedTournament : item));
+    }
     const matches = (matchRows || []) as StandingsMatch[];
     setMatches(matches);
     const matchIds = matches.map((match) => match.id);
@@ -69,7 +74,7 @@ export default function AdminPointsPage() {
     const tournamentTeams = (teamRows || []) as Team[];
     setStandings(calculateTournamentStandings(tournamentTeams, matches, (inningsResult.data || []) as StandingsInnings[], rules));
     setTeams(tournamentTeams);
-    setMessage(matchesError?.message || teamsError?.message || inningsResult.error?.message || "");
+    setMessage(tournamentError?.message || matchesError?.message || teamsError?.message || inningsResult.error?.message || "");
     setLoading(false);
   }, [selectedTournament, rules]);
 
