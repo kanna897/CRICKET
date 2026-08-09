@@ -1,0 +1,12 @@
+.git
+.next
+.next-backup*
+node_modules
+coverage
+playwright-report
+test-results
+tmp
+supabase/.temp
+*.tsbuildinfo
+crickpulse-public-home*.png
+CRICKPULSE_LIVE_AUDIT_*.md
