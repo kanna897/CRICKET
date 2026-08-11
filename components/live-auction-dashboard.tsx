@@ -310,12 +310,14 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   async function openFixedPlayer(player: AuctionPlayer) {
     setBusy(player.id); setMessage("");
+    setFixedSelected(player); setFixedTeamId(player.winning_team_id || ""); setFixedPoints(player.winning_bid === null ? "" : String(player.winning_bid));
+    setEditPlayerName(player.player_name); setEditPlayingRole(player.playing_role); setEditSerial(String(displaySerial(player)));
     try {
       const resolved = player.player_name === "Player" || player.playing_role === "Player" ? await scanPlayerCard(player) : player;
       setFixedSelected(resolved); setFixedTeamId(resolved.winning_team_id || ""); setFixedPoints(resolved.winning_bid === null ? "" : String(resolved.winning_bid));
       setEditPlayerName(resolved.player_name); setEditPlayingRole(resolved.playing_role); setEditSerial(String(displaySerial(resolved)));
       if (resolved !== player) await load();
-    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Fixed player card text scan failed."); }
+    } catch { setMessage("Automatic text scan failed. You can enter this fixed player's name and role manually below."); }
     finally { setBusy(""); }
   }
 
@@ -339,10 +341,14 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     let resolvedPlayer = player;
     setBusy(player.id);
     setMessage("");
+    setSelected(player); setEditPlayerName(player.player_name); setEditPlayingRole(player.playing_role);
+    setEditSerial(String(displaySerial(player))); setSaleTeamId(player.winning_team_id || "");
+    setWinningBid(player.winning_bid ? String(player.winning_bid) : "");
     try {
       if (admin && (player.player_name === "Player" || !player.ocr_serial_number
         || !player.contact_number || !player.batting_style || !player.bowling_style)) {
-        resolvedPlayer = await scanPlayerCard(player);
+        try { resolvedPlayer = await scanPlayerCard(player); }
+        catch { setMessage("Automatic text scan failed. You can enter this player's name and role manually below."); }
       }
       setSelected(resolvedPlayer);
       setEditPlayerName(resolvedPlayer.player_name);
@@ -354,11 +360,9 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
         const { error } = await supabase.rpc("set_auction_player_live", {
           p_auction_player_id: resolvedPlayer.id,
         });
-        if (error) throw error;
+        if (error) setMessage(error.message);
         await load();
       }
-    } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Player card text scan failed.");
     } finally {
       setBusy("");
     }
