@@ -227,6 +227,15 @@ test("live auction is modular, realtime and transaction-backed", () => {
   assert.match(nextConfig, /wasm-unsafe-eval/);
 });
 
+test("bulk auction uploads support large batches and use compact player cards", () => {
+  const mediaRoute = readFileSync(resolve(root, "app/api/media/route.ts"), "utf8");
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  assert.match(mediaRoute, /kind === "auction-player-cards" \? 550 : 30/);
+  assert.match(dashboard, /selectedFiles\.length > 500/);
+  assert.match(dashboard, /2xl:grid-cols-8/);
+  assert.match(dashboard, /xl:grid-cols-7/);
+});
+
 test("bulk auction cards become cropped player profile photos when sold", () => {
   const migration = readFileSync(resolve(root, "supabase/migrations/20260803183000_match_squad_player_card_crop.sql"), "utf8");
   assert.match(migration, /auction_profile_photo_url/);
