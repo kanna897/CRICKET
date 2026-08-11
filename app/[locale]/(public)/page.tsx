@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/no-prefetch-link";
 import {
   Activity,
   ArrowRight,
@@ -284,7 +284,7 @@ export default function PublicHome() {
             <div className="landing-auction-content">
               {auctionSession.status === "live" && currentAuctionPlayer ? (
                 <article className="landing-current-auction-player">
-                  <div className="landing-auction-photo"><Image unoptimized fill sizes="96px" src={currentAuctionPlayer.player_card_url || currentAuctionPlayer.photo_url} alt={currentAuctionPlayer.player_name} /></div>
+                  <div className="landing-auction-photo"><Image fill sizes="96px" src={currentAuctionPlayer.player_card_url || currentAuctionPlayer.photo_url} alt={currentAuctionPlayer.player_name} /></div>
                   <div><small>On the block now</small><h3>{currentAuctionPlayer.player_name}</h3><p>{currentAuctionPlayer.playing_role || "Auction player"}</p></div>
                   <span className="landing-auction-live-badge"><i /> Live</span>
                 </article>
@@ -297,7 +297,7 @@ export default function PublicHome() {
                   const winningTeam = player.winning_team_id ? team(player.winning_team_id) : undefined;
                   return <article key={player.id}>
                     <b>#{index + 1}</b>
-                    <div className="landing-pick-photo"><Image unoptimized fill sizes="48px" src={player.player_card_url || player.photo_url} alt="" /></div>
+                    <div className="landing-pick-photo"><Image fill sizes="48px" src={player.player_card_url || player.photo_url} alt="" /></div>
                     <div><strong>{player.player_name}</strong><span>{winningTeam?.name || "Sold player"}</span></div>
                     <em><Banknote />{auctionMoney(Number(player.winning_bid || 0))}</em>
                   </article>;
@@ -316,7 +316,7 @@ export default function PublicHome() {
                 <div className="landing-tournament-art">
                   {item.banner_url && <Image fill sizes="(max-width: 640px) 100vw, 33vw" src={item.banner_url} alt="" className="landing-tournament-banner" />}
                   <StatusBadge status={item.status} />
-                  {item.logo_url ? <Image unoptimized width={128} height={128} sizes="128px" src={cloudinaryLogoUrl(item.logo_url)} alt="" className="landing-tournament-logo" /> : <Trophy />}
+                  {item.logo_url ? <Image width={128} height={128} sizes="128px" src={cloudinaryLogoUrl(item.logo_url)} alt="" className="landing-tournament-logo" /> : <Trophy />}
                   <span>CRICKET LEAGUE</span>
                 </div>
                 <div><h3>{item.name}</h3><p><Users />{tournamentTeamCounts.get(item.id) ?? 0} teams <Activity />{tournamentMatchCounts.get(item.id) ?? 0} matches</p><small>{dateRange(item.start_date, item.end_date)}</small></div>

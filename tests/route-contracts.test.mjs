@@ -272,6 +272,16 @@ test("landing page excludes matches owned by hidden tournaments", () => {
   assert.match(landing, /item\.tournament_id === null/);
 });
 
+test("large navigation surfaces avoid eager route downloads", () => {
+  const link = readFileSync(resolve(root, "components/no-prefetch-link.tsx"), "utf8");
+  for (const file of ["components/public-nav.tsx", "components/public-mobile-nav.tsx", "components/admin-shell.tsx", "app/[locale]/(public)/page.tsx"]) {
+    assert.match(readFileSync(resolve(root, file), "utf8"), /no-prefetch-link/);
+  }
+  assert.match(link, /prefetch=\{props\.prefetch \?\? false\}/);
+  const landing = readFileSync(resolve(root, "app/[locale]/(public)/page.tsx"), "utf8");
+  assert.doesNotMatch(landing, /unoptimized fill sizes="(?:48|96)px"/);
+});
+
 test("organizer deletion securely falls back to an authenticated edge function", () => {
   const route = readFileSync(resolve(root, "app/api/admin/organizers/[id]/route.ts"), "utf8");
   const edgeFunction = readFileSync(resolve(root, "supabase/functions/delete-organizer-account/index.ts"), "utf8");

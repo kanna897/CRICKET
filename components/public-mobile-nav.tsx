@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/no-prefetch-link";
 import { usePathname } from "next/navigation";
 import { Home, LayoutGrid, ListOrdered, Radio, Users } from "lucide-react";
 import { cn } from "@/utils/cn";

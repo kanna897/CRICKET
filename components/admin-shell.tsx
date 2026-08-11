@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/no-prefetch-link";
 import { usePathname, useRouter } from "next/navigation";
 import { Activity, Award, BarChart3, Building2, Gavel, GitBranch, History, ListOrdered, LogOut, Medal, Menu, Moon, PlayCircle, Scale, Settings, Sun, Trophy, UserCheck, UserPlus, Users, X } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
