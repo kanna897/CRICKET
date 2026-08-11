@@ -279,6 +279,13 @@ test("landing page exposes a compact realtime auction spotlight", () => {
   assert.match(landing, /View Full Auction/);
 });
 
+test("landing auction spotlight uses a prominent showcase layout", () => {
+  const css = readFileSync(resolve(root, "app/[locale]/globals.css"), "utf8");
+  assert.match(css, /\.landing-auction-content \{[^}]*min-height: 12rem/);
+  assert.match(css, /\.landing-auction-summary \{[^}]*min-height: 9\.5rem/);
+  assert.match(css, /\.landing-top-picks article \{[^}]*min-height: 7\.5rem/);
+});
+
 test("landing page excludes matches owned by hidden tournaments", () => {
   const landing = readFileSync(resolve(root, "app/[locale]/(public)/page.tsx"), "utf8");
   assert.match(landing, /activeTournamentIds\.has\(item\.tournament_id\)/);
