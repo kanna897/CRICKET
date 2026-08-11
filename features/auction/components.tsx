@@ -78,8 +78,8 @@ export function AuctionPlayerDetailsDialog({ selected, teamName, onClose }: {
   teamName: (id: string | null) => string | undefined;
   onClose: () => void;
 }) {
-  const soldTeam = selected.status === "sold" ? teamName(selected.winning_team_id) : undefined;
-  const statusStyle = selected.status === "sold"
+  const soldTeam = selected.status === "sold" || selected.status === "fixed" ? teamName(selected.winning_team_id) : undefined;
+  const statusStyle = selected.status === "sold" || selected.status === "fixed"
     ? "bg-emerald-500/15 text-emerald-600"
     : selected.status === "unsold"
       ? "bg-red-500/15 text-red-600"
@@ -96,6 +96,7 @@ export function AuctionPlayerDetailsDialog({ selected, teamName, onClose }: {
       <div className="p-5">
         <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-sm font-black text-primary">S.NO {String(displaySerial(selected)).padStart(2, "0")}</p><h2 className="mt-1 text-2xl font-black">{selected.player_name}</h2><p className="mt-1 capitalize text-muted-foreground">{pretty(selected.playing_role)}</p></div><span className={`rounded-full px-3 py-1.5 text-xs font-black uppercase ${statusStyle}`}>{selected.status}</span></div>
         {selected.status === "sold" && <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4"><p className="text-xs font-black uppercase tracking-wider text-emerald-600">Sold to</p><p className="mt-1 text-lg font-black">{soldTeam || "Team unavailable"}</p><p className="mt-1 text-2xl font-black text-emerald-600">{money(Number(selected.winning_bid || 0))} points</p></div>}
+        {selected.status === "fixed" && <div className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4"><p className="text-xs font-black uppercase tracking-wider text-amber-600">Fixed player for</p><p className="mt-1 text-lg font-black">{soldTeam || "Team unavailable"}</p><p className="mt-1 text-2xl font-black text-amber-600">{money(Number(selected.winning_bid || 0))} points</p></div>}
         {selected.status === "unsold" && <p className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 font-black text-red-600">This player was unsold.</p>}
         {selected.status === "live" && <p className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 font-black text-amber-600">Auction is currently live for this player.</p>}
         {selected.status === "available" && <p className="mt-5 rounded-xl border border-sky-500/25 bg-sky-500/10 p-4 font-black text-sky-600">This player is available for auction.</p>}
