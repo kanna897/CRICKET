@@ -1748,6 +1748,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_fixed_auction_player: {
+        Args: { p_auction_player_id: string; p_points: number; p_team_id: string }
+        Returns: Database["public"]["Tables"]["auction_players"]["Row"]
+      }
+      create_fixed_auction_players: {
+        Args: { p_players: Json; p_tournament_id: string }
+        Returns: Database["public"]["Tables"]["auction_players"]["Row"][]
+      }
+      unassign_fixed_auction_player: {
+        Args: { p_auction_player_id: string }
+        Returns: Database["public"]["Tables"]["auction_players"]["Row"]
+      }
       delete_tournament_cascade: {
         Args: { p_tournament_id: string }
         Returns: boolean

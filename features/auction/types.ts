@@ -13,15 +13,15 @@ export type AuctionPlayer = {
   playing_role: string;
   batting_style: string;
   bowling_style: string;
-  status: "available" | "live" | "sold" | "unsold";
+  status: "available" | "live" | "sold" | "unsold" | "fixed_unassigned" | "fixed" | "excluded";
   winning_team_id: string | null;
   winning_bid: number | null;
   sold_at: string | null;
   player_card_url: string | null;
   team_player_card_url: string | null;
-  source_type: "registration" | "bulk_upload";
+  source_type: "registration" | "bulk_upload" | "fixed_upload";
 };
 export type Purse = { tournament_id: string; team_id: string; initial_purse: number; total_spent: number; purchased_count: number };
 export type Session = { tournament_id: string; status: "draft" | "live" | "paused" | "completed"; current_auction_player_id: string | null };
 export type HistoryRow = { id: number; auction_player_id: string; team_id: string | null; bid_amount: number | null; action: string; created_at: string };
-export type AuctionFilter = AuctionPlayer["status"];
+export type AuctionFilter = "available" | "live" | "sold" | "unsold";
