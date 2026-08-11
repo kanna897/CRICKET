@@ -266,6 +266,12 @@ test("landing page exposes a compact realtime auction spotlight", () => {
   assert.match(landing, /View Full Auction/);
 });
 
+test("landing page excludes matches owned by hidden tournaments", () => {
+  const landing = readFileSync(resolve(root, "app/[locale]/(public)/page.tsx"), "utf8");
+  assert.match(landing, /activeTournamentIds\.has\(item\.tournament_id\)/);
+  assert.match(landing, /item\.tournament_id === null/);
+});
+
 test("bulk auction card OCR saves batting and bowling styles", () => {
   const ocr = readFileSync(resolve(root, "lib/auction-card-ocr.ts"), "utf8");
   const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");

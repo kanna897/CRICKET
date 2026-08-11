@@ -109,11 +109,13 @@ export default function PublicHome() {
           .order("updated_at", { ascending: false })
           .limit(12),
       ]);
-      const matchRows = (matchResult.data || []) as Match[];
-      const matchIds = matchRows.map((item) => item.id);
       const tournamentIds = (tournamentResult.data || []).map((item) => item.id);
-      const sessionRows = (sessionResult.data || []) as AuctionSession[];
       const activeTournamentIds = new Set(tournamentIds);
+      const matchRows = ((matchResult.data || []) as Match[]).filter((item) =>
+        item.tournament_id === null || activeTournamentIds.has(item.tournament_id),
+      );
+      const matchIds = matchRows.map((item) => item.id);
+      const sessionRows = (sessionResult.data || []) as AuctionSession[];
       const featuredAuctionSession = sessionRows.find((item) => item.status === "live" && activeTournamentIds.has(item.tournament_id))
         || sessionRows.find((item) => item.status === "completed" && activeTournamentIds.has(item.tournament_id))
         || null;
