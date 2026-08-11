@@ -256,6 +256,19 @@ test("points poster offers HD download and embeds decoded team logos", () => {
   assert.match(poster, /cacheBust: true/);
 });
 
+test("uploaded and exported logos are trimmed to fit their frames", () => {
+  const media = readFileSync(resolve(root, "lib/media.ts"), "utf8");
+  const poster = readFileSync(resolve(root, "components/auction-top-picks-poster.tsx"), "utf8");
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260811165042_normalize_logo_delivery.sql"), "utf8");
+  assert.match(media, /kind === "tournament-logos" \|\| kind === "team-logos"/);
+  assert.match(media, /cloudinaryLogoUrl\(upload\.url\)/);
+  assert.match(poster, /exportSafeLogoUrl/);
+  assert.match(poster, /cloudinaryLogoUrl\(url\)/);
+  assert.match(migration, /update public\.tournaments/);
+  assert.match(migration, /update public\.teams/);
+  assert.match(migration, /e_trim:12,c_fit,w_512,h_512/);
+});
+
 test("landing page exposes a compact realtime auction spotlight", () => {
   const landing = readFileSync(resolve(root, "app/[locale]/(public)/page.tsx"), "utf8");
   assert.match(landing, /landing-auction-spotlight/);

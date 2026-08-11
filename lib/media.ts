@@ -67,6 +67,8 @@ export async function uploadImage(file: File, kind: MediaKind) {
   }
   const url = kind === "player-photos" || kind === "player-registrations"
     ? cloudinaryPlayerPhotoUrl(upload.url)
-    : upload.url;
+    : kind === "tournament-logos" || kind === "team-logos"
+      ? cloudinaryLogoUrl(upload.url)
+      : upload.url;
   return { url, publicId: upload.publicId };
 }

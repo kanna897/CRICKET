@@ -7,6 +7,7 @@ import { toJpeg } from "html-to-image";
 import type { AuctionPlayer, Team } from "@/features/auction/types";
 import { money } from "@/features/auction/utils";
 import { downloadPosterDataUrl } from "@/lib/poster-export";
+import { cloudinaryLogoUrl } from "@/lib/media";
 
 type Props = {
   tournamentName: string;
@@ -31,6 +32,10 @@ function exportSafeUrl(url: string) {
   } catch {
     return url;
   }
+}
+
+function exportSafeLogoUrl(url: string) {
+  return exportSafeUrl(cloudinaryLogoUrl(url));
 }
 
 function PlayerPortrait({ player, className = "" }: { player: AuctionPlayer; className?: string }) {
@@ -175,7 +180,7 @@ export function AuctionTopPicksPoster({
     roundedRect(context, 16, 16, 928, 508, 22);
     context.stroke();
 
-    const tournamentImage = tournamentLogo ? await loadCanvasImage(exportSafeUrl(tournamentLogo)).catch(() => null) : null;
+    const tournamentImage = tournamentLogo ? await loadCanvasImage(exportSafeLogoUrl(tournamentLogo)).catch(() => null) : null;
     if (tournamentImage) {
       context.save();
       context.beginPath();
@@ -234,7 +239,7 @@ export function AuctionTopPicksPoster({
       context.fillStyle = "#fff";
       context.fillRect(x, y, size, size);
       if (url) {
-        const image = await loadCanvasImage(exportSafeUrl(url)).catch(() => null);
+        const image = await loadCanvasImage(exportSafeLogoUrl(url)).catch(() => null);
         if (image) {
           const ratio = Math.min((size - 4) / image.naturalWidth, (size - 4) / image.naturalHeight);
           const width = image.naturalWidth * ratio;
@@ -346,7 +351,7 @@ export function AuctionTopPicksPoster({
             <header className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/15 pb-3">
               <div className="min-w-0 pr-5">
                 <p className="flex items-center gap-2.5 text-[11px] font-black uppercase tracking-[.22em] text-amber-200">
-                  {tournamentLogo ? <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-amber-200 bg-white"><Image unoptimized fill src={exportSafeUrl(tournamentLogo)} alt={`${tournamentName} logo`} crossOrigin="anonymous" className="object-contain p-1" /></span> : null}
+                  {tournamentLogo ? <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-amber-200 bg-white"><Image unoptimized fill src={exportSafeLogoUrl(tournamentLogo)} alt={`${tournamentName} logo`} crossOrigin="anonymous" className="object-contain p-0.5" /></span> : null}
                   <span className="truncate">{tournamentName}</span>
                 </p>
                 <h1 className="mt-1 text-[31px] font-black uppercase leading-none tracking-tight">Top Picks</h1>
@@ -363,7 +368,7 @@ export function AuctionTopPicksPoster({
                 <span className="absolute left-5 top-5 rounded-full bg-amber-300 px-3 py-1 text-xs font-black text-slate-950">#1 TOP PICK</span>
                 <div className="absolute inset-x-0 bottom-0 h-[118px] bg-gradient-to-t from-[#020711] via-[#020711]/95 to-transparent px-5 pb-4 pt-7">
                   <div className="flex items-end gap-3">
-                    {heroTeam?.logo_url ? <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white"><Image unoptimized fill src={exportSafeUrl(heroTeam.logo_url)} alt="" crossOrigin="anonymous" className="object-contain p-0.5" /></span> : null}
+                    {heroTeam?.logo_url ? <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white"><Image unoptimized fill src={exportSafeLogoUrl(heroTeam.logo_url)} alt="" crossOrigin="anonymous" className="object-contain p-0.5" /></span> : null}
                     <div className="min-w-0"><p className="truncate text-[24px] font-black uppercase leading-none">{hero.player_name}</p><p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-sky-200">{heroTeam?.name || "Winning team"}</p></div>
                   </div>
                   <p className="mt-1 flex h-9 items-center justify-center rounded-md bg-gradient-to-r from-[#c88e1a] via-[#f7d56b] to-[#c88e1a] text-center text-[18px] font-black leading-none text-[#06122d]">{money(Number(hero.winning_bid || 0))} POINTS</p>
@@ -377,7 +382,7 @@ export function AuctionTopPicksPoster({
                     <PlayerPortrait player={player} className="h-[62px] w-[62px] rounded-xl border-2 border-white" />
                     <div className="min-w-0"><p className="truncate text-[19px] font-black uppercase leading-tight">{index + 2}. {player.player_name}</p><p className="truncate text-[9px] font-bold uppercase tracking-[.13em] text-cyan-200">{winningTeam?.name || "Winning team"}</p></div>
                     <strong className="text-right text-[18px] font-black text-amber-300">{money(Number(player.winning_bid || 0))} PTS</strong>
-                    {winningTeam?.logo_url ? <span className="relative h-13 w-13 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white"><Image unoptimized fill src={exportSafeUrl(winningTeam.logo_url)} alt="" crossOrigin="anonymous" className="object-contain p-0.5" /></span> : <span className="grid h-13 w-13 place-items-center rounded-full border-2 border-white bg-slate-800 text-sm font-black">{winningTeam?.name?.slice(0, 2) || "CP"}</span>}
+                    {winningTeam?.logo_url ? <span className="relative h-13 w-13 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white"><Image unoptimized fill src={exportSafeLogoUrl(winningTeam.logo_url)} alt="" crossOrigin="anonymous" className="object-contain p-0.5" /></span> : <span className="grid h-13 w-13 place-items-center rounded-full border-2 border-white bg-slate-800 text-sm font-black">{winningTeam?.name?.slice(0, 2) || "CP"}</span>}
                   </article>;
                 })}
                 {Array.from({ length: Math.max(0, 4 - runners.length) }).map((_, index) => <div key={`empty-${index}`} className="grid min-h-[78px] place-items-center rounded-xl border border-dashed border-white/20 bg-white/5 text-xs font-bold uppercase tracking-[.2em] text-white/35">Awaiting sold player</div>)}
