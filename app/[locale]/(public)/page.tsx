@@ -7,9 +7,11 @@ import Link from "next/link";
 import {
   Activity,
   ArrowRight,
+  Banknote,
   Eye,
   FileImage,
   FileText,
+  Gavel,
   Radio,
   ShieldCheck,
   Trophy,
@@ -56,6 +58,24 @@ type Innings = {
   total_wickets: number;
   balls_bowled: number;
 };
+type AuctionSession = {
+  tournament_id: string;
+  status: "live" | "completed";
+  current_auction_player_id: string | null;
+  updated_at: string;
+};
+type AuctionPlayer = {
+  id: string;
+  tournament_id: string;
+  player_name: string;
+  photo_url: string;
+  player_card_url: string | null;
+  playing_role: string;
+  status: "live" | "sold";
+  winning_team_id: string | null;
+  winning_bid: number | null;
+  sold_at: string | null;
+};
 
 export default function PublicHome() {
   preload("/landing/cricket-hero-background.webp", { as: "image", fetchPriority: "high" });
@@ -64,11 +84,13 @@ export default function PublicHome() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [innings, setInnings] = useState<Innings[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
+  const [auctionSession, setAuctionSession] = useState<AuctionSession | null>(null);
+  const [auctionPlayers, setAuctionPlayers] = useState<AuctionPlayer[]>([]);
 
   useEffect(() => {
     let active = true;
     async function loadLanding() {
-      const [tournamentResult, matchResult, playerResult] = await Promise.all([
+      const [tournamentResult, matchResult, playerResult, sessionResult] = await Promise.all([
         supabase.from("tournaments")
           .select("id,name,logo_url,banner_url,venue,start_date,end_date,status")
           .is("deleted_at", null)
@@ -81,16 +103,26 @@ export default function PublicHome() {
         supabase.from("players")
           .select("id", { count: "exact", head: true })
           .is("deleted_at", null),
+        supabase.from("auction_sessions")
+          .select("tournament_id,status,current_auction_player_id,updated_at")
+          .in("status", ["live", "completed"])
+          .order("updated_at", { ascending: false })
+          .limit(12),
       ]);
       const matchRows = (matchResult.data || []) as Match[];
       const matchIds = matchRows.map((item) => item.id);
       const tournamentIds = (tournamentResult.data || []).map((item) => item.id);
+      const sessionRows = (sessionResult.data || []) as AuctionSession[];
+      const activeTournamentIds = new Set(tournamentIds);
+      const featuredAuctionSession = sessionRows.find((item) => item.status === "live" && activeTournamentIds.has(item.tournament_id))
+        || sessionRows.find((item) => item.status === "completed" && activeTournamentIds.has(item.tournament_id))
+        || null;
       const teamIds = [...new Set(matchRows.flatMap((item) => [item.team_a_id, item.team_b_id]))];
       const teamScopeFilters = [
         tournamentIds.length ? `tournament_id.in.(${tournamentIds.join(",")})` : "",
         teamIds.length ? `id.in.(${teamIds.join(",")})` : "",
       ].filter(Boolean).join(",");
-      const [inningsResult, teamResult] = await Promise.all([
+      const [inningsResult, teamResult, auctionPlayerResult] = await Promise.all([
         matchIds.length ? supabase.from("innings")
             .select("match_id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled")
             .in("match_id", matchIds)
@@ -101,6 +133,12 @@ export default function PublicHome() {
               .or(teamScopeFilters)
               .is("deleted_at", null)
           : Promise.resolve({ data: [] }),
+        featuredAuctionSession
+          ? supabase.from("auction_players")
+              .select("id,tournament_id,player_name,photo_url,player_card_url,playing_role,status,winning_team_id,winning_bid,sold_at")
+              .eq("tournament_id", featuredAuctionSession.tournament_id)
+              .in("status", ["live", "sold"])
+          : Promise.resolve({ data: [] }),
       ]);
       if (!active) return;
       setTournaments((tournamentResult.data || []) as Tournament[]);
@@ -108,6 +146,8 @@ export default function PublicHome() {
       setMatches(matchRows);
       setInnings((inningsResult.data || []) as Innings[]);
       setPlayerCount(playerResult.count || 0);
+      setAuctionSession(featuredAuctionSession);
+      setAuctionPlayers((auctionPlayerResult.data || []) as AuctionPlayer[]);
     }
 
     void loadLanding();
@@ -120,7 +160,9 @@ export default function PublicHome() {
       .channel("public-landing-v2")
       .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh);
+      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "auction_sessions" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "auction_players" }, scheduleRefresh);
     subscribeWithMonitoring(channel, "public-landing-v2");
     return () => {
       active = false;
@@ -157,6 +199,15 @@ export default function PublicHome() {
   const featuredTeamA = featuredMatch ? team(featuredMatch.team_a_id) : undefined;
   const featuredTeamB = featuredMatch ? team(featuredMatch.team_b_id) : undefined;
   const isFeaturedLive = featuredMatch?.status === "live";
+  const currentAuctionPlayer = auctionSession
+    ? auctionPlayers.find((item) => item.id === auctionSession.current_auction_player_id)
+      || auctionPlayers.find((item) => item.status === "live")
+    : undefined;
+  const auctionTopPicks = [...auctionPlayers]
+    .filter((item) => item.status === "sold")
+    .sort((a, b) => Number(b.winning_bid || 0) - Number(a.winning_bid || 0))
+    .slice(0, 3);
+  const auctionTournament = auctionSession ? tournament(auctionSession.tournament_id) : undefined;
 
   const visibleTournaments = useMemo(() => {
     const ordered = [...tournaments].sort((a, b) => {
@@ -219,6 +270,42 @@ export default function PublicHome() {
           </article>
         </section>
 
+        {auctionSession && (currentAuctionPlayer || auctionTopPicks.length > 0) && (
+          <section className={`landing-auction-spotlight ${auctionSession.status === "live" ? "is-live" : "is-completed"}`}>
+            <header>
+              <div className="landing-auction-title">
+                <span><Gavel /></span>
+                <div><p>{auctionSession.status === "live" ? "Live Auction" : "Auction Results"}</p><h2>{auctionTournament?.name || "CrickPulse Player Auction"}</h2></div>
+              </div>
+              <Link href="/auction">View Full Auction <ArrowRight /></Link>
+            </header>
+            <div className="landing-auction-content">
+              {auctionSession.status === "live" && currentAuctionPlayer ? (
+                <article className="landing-current-auction-player">
+                  <div className="landing-auction-photo"><Image unoptimized fill sizes="96px" src={currentAuctionPlayer.player_card_url || currentAuctionPlayer.photo_url} alt={currentAuctionPlayer.player_name} /></div>
+                  <div><small>On the block now</small><h3>{currentAuctionPlayer.player_name}</h3><p>{currentAuctionPlayer.playing_role || "Auction player"}</p></div>
+                  <span className="landing-auction-live-badge"><i /> Live</span>
+                </article>
+              ) : (
+                <div className="landing-auction-summary"><Trophy /><div><strong>{auctionTopPicks.length}</strong><span>Top auction picks</span></div></div>
+              )}
+              <div className="landing-top-picks">
+                <p>Top Picks</p>
+                <div>{auctionTopPicks.map((player, index) => {
+                  const winningTeam = player.winning_team_id ? team(player.winning_team_id) : undefined;
+                  return <article key={player.id}>
+                    <b>#{index + 1}</b>
+                    <div className="landing-pick-photo"><Image unoptimized fill sizes="48px" src={player.player_card_url || player.photo_url} alt="" /></div>
+                    <div><strong>{player.player_name}</strong><span>{winningTeam?.name || "Sold player"}</span></div>
+                    <em><Banknote />{auctionMoney(Number(player.winning_bid || 0))}</em>
+                  </article>;
+                })}</div>
+                {!auctionTopPicks.length && <span className="landing-awaiting-picks">Top picks will appear as players are sold.</span>}
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="landing-tournaments">
           <header><h2><Trophy /> Live Tournaments</h2><Link href="/tournaments">View All Tournaments <ArrowRight /></Link></header>
           <div className="landing-tournament-grid">
@@ -279,4 +366,8 @@ function formatDate(value: string | null) {
 function dateRange(start: string | null, end: string | null) {
   if (!start) return "Dates to be announced";
   return `${formatDate(start)}${end ? ` – ${formatDate(end)}` : ""}`;
+}
+
+function auctionMoney(value: number) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
 }

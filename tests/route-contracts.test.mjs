@@ -247,12 +247,23 @@ test("bulk auction card OCR saves the real player phone number", () => {
   assert.match(migration, /sync_auction_player_contact/);
 });
 
-test("points poster offers a fast HD download and waits for team logos", () => {
+test("points poster offers HD download and embeds decoded team logos", () => {
   const poster = readFileSync(resolve(root, "components/points-table-poster.tsx"), "utf8");
   assert.match(poster, /\["hd", "4k"\]/);
   assert.match(poster, /waitForPosterImages/);
   assert.match(poster, /image\.decode\(\)/);
-  assert.match(poster, /cacheBust: false/);
+  assert.match(poster, /inlinePosterImages/);
+  assert.match(poster, /cacheBust: true/);
+});
+
+test("landing page exposes a compact realtime auction spotlight", () => {
+  const landing = readFileSync(resolve(root, "app/[locale]/(public)/page.tsx"), "utf8");
+  assert.match(landing, /landing-auction-spotlight/);
+  assert.match(landing, /current_auction_player_id/);
+  assert.match(landing, /auctionTopPicks/);
+  assert.match(landing, /table: "auction_sessions"/);
+  assert.match(landing, /table: "auction_players"/);
+  assert.match(landing, /View Full Auction/);
 });
 
 test("bulk auction card OCR saves batting and bowling styles", () => {
