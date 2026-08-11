@@ -85,8 +85,31 @@ export async function DELETE(
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl) {
     return NextResponse.json({ error: "Account deletion is not configured." }, { status: 503 });
+  }
+  if (!serviceRoleKey) {
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!anonKey || !session?.access_token) {
+      return NextResponse.json({ error: "Account deletion is not configured." }, { status: 503 });
+    }
+
+    const edgeResponse = await fetch(`${supabaseUrl}/functions/v1/delete-organizer-account`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: anonKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ organizerId: id }),
+      cache: "no-store",
+    });
+    const payload = await edgeResponse.json().catch(() => null) as { error?: string; success?: boolean } | null;
+    if (!payload) {
+      return NextResponse.json({ error: "The organizer account could not be deleted." }, { status: 502 });
+    }
+    return NextResponse.json(payload, { status: edgeResponse.status });
   }
 
   const admin = createClient<Database>(supabaseUrl, serviceRoleKey, {

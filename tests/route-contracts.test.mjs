@@ -272,6 +272,18 @@ test("landing page excludes matches owned by hidden tournaments", () => {
   assert.match(landing, /item\.tournament_id === null/);
 });
 
+test("organizer deletion securely falls back to an authenticated edge function", () => {
+  const route = readFileSync(resolve(root, "app/api/admin/organizers/[id]/route.ts"), "utf8");
+  const edgeFunction = readFileSync(resolve(root, "supabase/functions/delete-organizer-account/index.ts"), "utf8");
+  assert.match(route, /delete-organizer-account/);
+  assert.match(route, /session\?\.access_token/);
+  assert.match(edgeFunction, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(edgeFunction, /auth\.getUser\(token\)/);
+  assert.match(edgeFunction, /master_admin/);
+  assert.match(edgeFunction, /auth\.admin\.deleteUser/);
+  assert.match(edgeFunction, /ownedItems/);
+});
+
 test("bulk auction card OCR saves batting and bowling styles", () => {
   const ocr = readFileSync(resolve(root, "lib/auction-card-ocr.ts"), "utf8");
   const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
