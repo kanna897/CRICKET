@@ -2667,7 +2667,7 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 .landing-auction-title h2 { overflow: hidden; margin-top: .18rem; color: #fff; font-size: 1.2rem; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
 .landing-auction-spotlight > header > a { display: inline-flex; min-height: 2.4rem; flex: 0 0 auto; align-items: center; gap: .4rem; border-radius: .45rem; background: #facc15; padding: .55rem .8rem; color: #111827; font-size: .7rem; font-weight: 950; }
 .landing-auction-spotlight > header > a svg { width: .8rem; height: .8rem; }
-.landing-auction-content { position: relative; display: grid; min-height: 12rem; grid-template-columns: minmax(19rem, .72fr) minmax(28rem, 1.28fr); gap: 1.25rem; padding: 1.25rem; }
+.landing-auction-content { position: relative; display: grid; min-height: 12rem; grid-template-columns: minmax(11rem, .32fr) minmax(36rem, 1.68fr); gap: 1.25rem; padding: 1.25rem; }
 .landing-current-auction-player { position: relative; display: grid; min-width: 0; grid-template-columns: 5.2rem minmax(0, 1fr); align-items: center; gap: .9rem; border: 1px solid rgb(250 204 21 / 22%); border-radius: .65rem; background: rgb(3 12 27 / 60%); padding: .75rem; }
 .landing-auction-photo { position: relative; width: 5.2rem; height: 5.2rem; overflow: hidden; border: 2px solid #facc15; border-radius: .65rem; background: #0b1730; }
 .landing-auction-photo img, .landing-pick-photo img { object-fit: cover; }
@@ -2684,9 +2684,9 @@ html.dark .admin-theme-shell .live-score-shell .commentary-voice-select {
 .landing-top-picks { min-width: 0; }
 .landing-top-picks > p { margin-bottom: .65rem; color: #b9c7d8; font-size: .68rem; font-weight: 950; letter-spacing: .13em; text-transform: uppercase; }
 .landing-top-picks > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; }
-.landing-top-picks article { display: grid; min-width: 0; min-height: 7.5rem; grid-template-columns: auto 4rem minmax(0, 1fr); align-items: center; gap: .65rem; border: 1px solid rgb(255 255 255 / 10%); border-radius: .7rem; background: rgb(3 12 27 / 52%); padding: .75rem; }
+.landing-top-picks article { display: grid; min-width: 0; min-height: 9rem; grid-template-columns: auto 5rem minmax(0, 1fr); align-items: center; gap: .75rem; border: 1px solid rgb(255 255 255 / 10%); border-radius: .7rem; background: rgb(3 12 27 / 52%); padding: .75rem; }
 .landing-top-picks article > b { color: #facc15; font-size: .68rem; }
-.landing-pick-photo { position: relative; width: 4rem; height: 4rem; overflow: hidden; border-radius: .6rem; background: #0b1730; }
+.landing-pick-photo { position: relative; width: 5rem; height: 7rem; overflow: hidden; border: 2px solid rgb(255 255 255 / 18%); border-radius: .65rem; background: #0b1730; }
 .landing-top-picks article > div:nth-child(3) { min-width: 0; }
 .landing-top-picks strong, .landing-top-picks article span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .landing-top-picks strong { color: #fff; font-size: .82rem; }

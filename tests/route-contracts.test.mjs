@@ -283,7 +283,18 @@ test("landing auction spotlight uses a prominent showcase layout", () => {
   const css = readFileSync(resolve(root, "app/[locale]/globals.css"), "utf8");
   assert.match(css, /\.landing-auction-content \{[^}]*min-height: 12rem/);
   assert.match(css, /\.landing-auction-summary \{[^}]*min-height: 9\.5rem/);
-  assert.match(css, /\.landing-top-picks article \{[^}]*min-height: 7\.5rem/);
+  assert.match(css, /\.landing-top-picks article \{[^}]*min-height: 9rem/);
+});
+
+test("landing auction top picks use clear portrait crops and a compact summary", () => {
+  const landing = readFileSync(resolve(root, "app/[locale]/(public)/page.tsx"), "utf8");
+  const media = readFileSync(resolve(root, "lib/media.ts"), "utf8");
+  const css = readFileSync(resolve(root, "app/[locale]/globals.css"), "utf8");
+  assert.match(landing, /auctionPortraitUrl\(player\.photo_url, player\.source_type\)/);
+  assert.match(landing, /source_type/);
+  assert.match(media, /c_crop,x_80,y_328,w_351,h_351/);
+  assert.match(css, /grid-template-columns: minmax\(11rem, \.32fr\) minmax\(36rem, 1\.68fr\)/);
+  assert.match(css, /\.landing-pick-photo \{[^}]*width: 5rem; height: 7rem/);
 });
 
 test("landing page excludes matches owned by hidden tournaments", () => {

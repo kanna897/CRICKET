@@ -23,7 +23,7 @@ import { PublicNav } from "@/components/public-nav";
 import { supabase } from "@/lib/supabase";
 import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { preload } from "react-dom";
-import { cloudinaryLogoUrl } from "@/lib/media";
+import { auctionPortraitUrl, cloudinaryLogoUrl } from "@/lib/media";
 
 type Tournament = {
   id: string;
@@ -75,6 +75,7 @@ type AuctionPlayer = {
   winning_team_id: string | null;
   winning_bid: number | null;
   sold_at: string | null;
+  source_type: "registration" | "bulk_upload";
 };
 
 export default function PublicHome() {
@@ -137,7 +138,7 @@ export default function PublicHome() {
           : Promise.resolve({ data: [] }),
         featuredAuctionSession
           ? supabase.from("auction_players")
-              .select("id,tournament_id,player_name,photo_url,player_card_url,playing_role,status,winning_team_id,winning_bid,sold_at")
+              .select("id,tournament_id,player_name,photo_url,player_card_url,playing_role,status,winning_team_id,winning_bid,sold_at,source_type")
               .eq("tournament_id", featuredAuctionSession.tournament_id)
               .in("status", ["live", "sold"])
           : Promise.resolve({ data: [] }),
@@ -284,7 +285,7 @@ export default function PublicHome() {
             <div className="landing-auction-content">
               {auctionSession.status === "live" && currentAuctionPlayer ? (
                 <article className="landing-current-auction-player">
-                  <div className="landing-auction-photo"><Image fill sizes="96px" src={currentAuctionPlayer.player_card_url || currentAuctionPlayer.photo_url} alt={currentAuctionPlayer.player_name} /></div>
+                  <div className="landing-auction-photo"><Image fill sizes="96px" src={auctionPortraitUrl(currentAuctionPlayer.photo_url, currentAuctionPlayer.source_type)} alt={currentAuctionPlayer.player_name} /></div>
                   <div><small>On the block now</small><h3>{currentAuctionPlayer.player_name}</h3><p>{currentAuctionPlayer.playing_role || "Auction player"}</p></div>
                   <span className="landing-auction-live-badge"><i /> Live</span>
                 </article>
@@ -297,7 +298,7 @@ export default function PublicHome() {
                   const winningTeam = player.winning_team_id ? team(player.winning_team_id) : undefined;
                   return <article key={player.id}>
                     <b>#{index + 1}</b>
-                    <div className="landing-pick-photo"><Image fill sizes="48px" src={player.player_card_url || player.photo_url} alt="" /></div>
+                    <div className="landing-pick-photo"><Image fill sizes="80px" src={auctionPortraitUrl(player.photo_url, player.source_type)} alt={`${player.player_name} portrait`} /></div>
                     <div><strong>{player.player_name}</strong><span>{winningTeam?.name || "Sold player"}</span></div>
                     <em><Banknote />{auctionMoney(Number(player.winning_bid || 0))}</em>
                   </article>;
