@@ -25,7 +25,7 @@ export default function TeamsPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: manageable } = await tournamentQuery;
       const ids = (manageable || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-      const { data } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase.from("teams").select("*").order("fixture_order", { ascending: true, nullsFirst: false }).order("name");
       if (data) setTeams(data.filter((team) => {
         if (team.tournament_id) return ids.includes(team.tournament_id);
         return isMasterAdmin || team.organizer_id === userId;
@@ -86,7 +86,7 @@ export default function TeamsPage() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 font-medium">Team Name</th>
+                  <th className="px-6 py-3 font-medium">No. / Team Name</th>
                   <th className="px-6 py-3 font-medium">Scope</th>
                   <th className="px-6 py-3 font-medium">Owner</th>
                   <th className="px-6 py-3 font-medium">Contact</th>
@@ -104,7 +104,7 @@ export default function TeamsPage() {
                           {team.name.charAt(0)}
                         </div>
                       )}
-                      {team.name}
+                      {team.fixture_order ? <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{team.fixture_order}</span> : null}{team.name}
                     </td>
                     <td className="px-6 py-4"><span className={`rounded-full px-2 py-1 text-xs font-bold ${team.tournament_id ? "bg-sky-100 text-sky-700" : "bg-violet-100 text-violet-700"}`}>{team.tournament_id ? "Tournament" : "Standalone"}</span></td>
                     <td className="px-6 py-4">{team.owner_name || "-"}</td>

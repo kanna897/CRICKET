@@ -69,7 +69,7 @@ export default function MatchesPage() {
       const ids = (tournamentsResult.data || [] as Tournament[]).map((item: Tournament) => item.id);
       const [matchesResult, teamsResult] = await Promise.all([
         supabase.from("matches").select("*").order("created_at", { ascending: false }),
-        supabase.from("teams").select("*").order("name"),
+        supabase.from("teams").select("*").order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
       ]);
       const manageableMatches = ((matchesResult.data || []) as Match[]).filter((match) =>
         match.tournament_id

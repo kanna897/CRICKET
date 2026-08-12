@@ -1503,6 +1503,7 @@ export type Database = {
           contact_number: string | null
           created_at: string
           deleted_at: string | null
+          fixture_order: number | null
           id: string
           logo_url: string | null
           name: string
@@ -1518,6 +1519,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           deleted_at?: string | null
+          fixture_order?: number | null
           id?: string
           logo_url?: string | null
           name: string
@@ -1533,6 +1535,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           deleted_at?: string | null
+          fixture_order?: number | null
           id?: string
           logo_url?: string | null
           name?: string

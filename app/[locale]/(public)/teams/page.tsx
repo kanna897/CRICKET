@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
 import { PublicNav } from "@/components/public-nav";
 
-type Team = { id: string; name: string; logo_url: string | null };
+type Team = { id: string; name: string; logo_url: string | null; fixture_order: number | null };
 type Player = { team_id: string | null };
 
 export default function TeamsPage() {
@@ -18,10 +18,10 @@ export default function TeamsPage() {
   useEffect(() => {
     void (async () => {
       const [{ data: teamRows }, { data: playerRows }] = await Promise.all([
-        supabase.from("teams").select("id,name,logo_url").order("name"),
+        supabase.from("teams").select("id,name,logo_url,fixture_order").order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
         supabase.from("players").select("team_id"),
       ]);
-      setTeams(teamRows || []);
+      setTeams((teamRows || []) as Team[]);
       setPlayers(playerRows || []);
     })();
   }, []);
