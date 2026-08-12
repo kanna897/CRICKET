@@ -244,6 +244,16 @@ test("bulk auction cards become cropped player profile photos when sold", () => 
   assert.match(migration, /source_type = 'bulk_upload'/);
 });
 
+test("fixed auction cards become cropped player profile photos when assigned", () => {
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260812090000_crop_fixed_player_profile_photos.sql"), "utf8");
+  const media = readFileSync(resolve(root, "lib/media.ts"), "utf8");
+  assert.match(migration, /source_type in \('bulk_upload', 'fixed_upload'\)/);
+  assert.match(migration, /new\.status in \('sold', 'fixed'\)/);
+  assert.match(migration, /auction_player\.status = 'fixed'/);
+  assert.match(migration, /c_crop,x_80,y_328,w_351,h_351/);
+  assert.match(media, /\["bulk_upload", "fixed_upload"\]/);
+});
+
 test("bulk auction card OCR saves the real player phone number", () => {
   const ocr = readFileSync(resolve(root, "lib/auction-card-ocr.ts"), "utf8");
   const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
