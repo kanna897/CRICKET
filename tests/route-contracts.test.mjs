@@ -259,6 +259,15 @@ test("generated fixtures can only be removed through the guarded cleanup RPC", (
   assert.match(matches, /Type \$\{selectedTournament\?\.name/);
 });
 
+test("scheduled generated matches expose guarded schedule editing", () => {
+  const matches = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
+  assert.match(matches, /Edit Match #/);
+  assert.match(matches, /\.eq\("status", "scheduled"\)/);
+  assert.match(matches, /match_date: editForm\.match_date/);
+  assert.match(matches, /match_time: editForm\.match_time/);
+  assert.match(matches, /overs_per_match: overs/);
+});
+
 test("fixed auction cards become cropped player profile photos when assigned", () => {
   const migration = readFileSync(resolve(root, "supabase/migrations/20260812090000_crop_fixed_player_profile_photos.sql"), "utf8");
   const media = readFileSync(resolve(root, "lib/media.ts"), "utf8");
