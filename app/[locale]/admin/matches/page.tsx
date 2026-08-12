@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { CalendarPlus, ClipboardList, Loader2, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, UnlockKeyhole } from "lucide-react";
+import { CalendarPlus, ClipboardList, Loader2, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, Trash2, UnlockKeyhole } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
@@ -31,6 +31,8 @@ type Match = {
   title: string | null;
   fixture_round: number | null;
   match_number: number | null;
+  fixture_source: string | null;
+  generation_batch_id: string | null;
 };
 
 type FixturePreviewMatch = Database["public"]["Tables"]["matches"]["Insert"] & {
@@ -54,6 +56,10 @@ export default function MatchesPage() {
   const [generating, setGenerating] = useState(false);
   const [generator, setGenerator] = useState({ tournamentId: "", startDate: "", matchTime: "09:00", ground: "", restDays: "1" });
   const [fixturePreview, setFixturePreview] = useState<FixturePreviewRound[]>([]);
+  const [cleanupOpen, setCleanupOpen] = useState(false);
+  const [cleanupTournamentId, setCleanupTournamentId] = useState("");
+  const [cleanupSelected, setCleanupSelected] = useState<string[]>([]);
+  const [removingFixtures, setRemovingFixtures] = useState(false);
 
   useEffect(() => {
     async function loadMatches() {
@@ -154,11 +160,13 @@ export default function MatchesPage() {
     if (!rows.length || !generator.tournamentId) return;
     setGenerating(true); setMessage("");
     try {
+      const generationBatchId = crypto.randomUUID();
       const { data: currentRows, error: currentError } = await supabase.from("matches").select("team_a_id,team_b_id").eq("tournament_id", generator.tournamentId);
       if (currentError) throw currentError;
       const currentPairs = new Set((currentRows || []).map((match) => [match.team_a_id, match.team_b_id].sort().join(":")));
       if (rows.some((match) => currentPairs.has([match.team_a_id, match.team_b_id].sort().join(":")))) throw new Error("Fixtures changed after preview. Generate a fresh preview before saving.");
-      const { data, error } = await supabase.from("matches").insert(rows).select("*");
+      const generatedRows = rows.map((match) => ({ ...match, fixture_source: "auto", generation_batch_id: generationBatchId }));
+      const { data, error } = await supabase.from("matches").insert(generatedRows).select("*");
       if (error) throw error;
       setMatches((current) => [...((data || []) as Match[]), ...current]);
       setFixturePreview([]);
@@ -170,16 +178,36 @@ export default function MatchesPage() {
       setGenerating(false);
     }
   };
+  const cleanupCandidates = matches.filter((match) => match.tournament_id === cleanupTournamentId && match.match_scope === "tournament" && match.status === "scheduled");
+  const removeGeneratedFixtures = async () => {
+    if (!cleanupTournamentId || !cleanupSelected.length) return setMessage("Select generated fixtures to remove.");
+    const selectedTournament = tournaments.find((item) => item.id === cleanupTournamentId);
+    const confirmation = window.prompt(`Type ${selectedTournament?.name || "the tournament name"} to remove ${cleanupSelected.length} generated fixture(s).`);
+    if (confirmation !== selectedTournament?.name) return setMessage("Removal cancelled: tournament name did not match.");
+    setRemovingFixtures(true); setMessage("");
+    try {
+      const selectedIds = [...cleanupSelected];
+      const { data, error } = await supabase.rpc("delete_unplayed_generated_fixtures", { p_tournament_id: cleanupTournamentId, p_match_ids: selectedIds });
+      if (error) throw error;
+      const removedIds = new Set(selectedIds);
+      setMatches((current) => current.filter((match) => !removedIds.has(match.id)));
+      setCleanupSelected([]);
+      setMessage(`${data || selectedIds.length} generated fixture(s) removed safely.`);
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "Generated fixtures could not be removed.");
+    } finally { setRemovingFixtures(false); }
+  };
 
   return (
     <div className="admin-themed-page space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div><h1 className="text-3xl font-bold tracking-tight">Matches & Scoring</h1><p className="text-muted-foreground mt-1">Schedule fixtures and start live scoring.</p></div>
-        <div className="flex flex-wrap gap-2"><button type="button" onClick={()=>setGeneratorOpen((value)=>!value)} className="inline-flex h-10 items-center justify-center rounded-md border border-primary/40 bg-primary/10 px-4 text-sm font-black text-primary"><Sparkles className="mr-2 h-4 w-4"/>Auto Generate</button><Link href={localePath(locale, "/admin/matches/new")} className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-10 px-4 text-sm font-medium"><CalendarPlus className="w-4 h-4 mr-2" />Schedule Match</Link></div>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={()=>setGeneratorOpen((value)=>!value)} className="inline-flex h-10 items-center justify-center rounded-md border border-primary/40 bg-primary/10 px-4 text-sm font-black text-primary"><Sparkles className="mr-2 h-4 w-4"/>Auto Generate</button><button type="button" onClick={()=>setCleanupOpen((value)=>!value)} className="inline-flex h-10 items-center justify-center rounded-md border border-red-400/40 bg-red-500/10 px-4 text-sm font-black text-red-600"><Trash2 className="mr-2 h-4 w-4"/>Remove Generated</button><Link href={localePath(locale, "/admin/matches/new")} className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-10 px-4 text-sm font-medium"><CalendarPlus className="w-4 h-4 mr-2" />Schedule Match</Link></div>
       </div>
       {message && <p role="status" className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-bold text-foreground">{message}</p>}
       {generatorOpen&&<section className="rounded-2xl border border-primary/30 bg-card p-5 shadow-lg"><div><p className="text-xs font-black uppercase tracking-widest text-primary">Automatic fixture generator</p><h2 className="mt-1 text-xl font-black">Correct round-robin schedule</h2><p className="mt-1 text-sm text-muted-foreground">Circle Method · one match per team in each round · odd team counts receive a BYE.</p></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><label className="space-y-2 text-sm font-bold lg:col-span-2">Tournament<select className="input" value={generator.tournamentId} onChange={(event)=>{setGenerator({...generator,tournamentId:event.target.value});setFixturePreview([]);}}><option value="">Select tournament</option>{tournaments.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="space-y-2 text-sm font-bold">First round date<input type="date" className="input" value={generator.startDate} onChange={(event)=>{setGenerator({...generator,startDate:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Match time<input type="time" className="input" value={generator.matchTime} onChange={(event)=>{setGenerator({...generator,matchTime:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Days between rounds<input type="number" min="1" max="30" className="input" value={generator.restDays} onChange={(event)=>{setGenerator({...generator,restDays:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold sm:col-span-2 lg:col-span-4">Ground / Venue<input className="input" placeholder="Tournament venue used if empty" value={generator.ground} onChange={(event)=>{setGenerator({...generator,ground:event.target.value});setFixturePreview([]);}}/></label><button type="button" disabled={generating} onClick={generatePreview} className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 font-black text-primary-foreground disabled:opacity-50"><Sparkles className="mr-2 h-4 w-4"/>Generate preview</button></div>{fixturePreview.length>0&&<div className="mt-6 space-y-4 border-t border-border pt-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-black">Fixture preview</h3><p className="text-sm text-muted-foreground">{fixturePreview.reduce((sum,round)=>sum+round.matches.length,0)} matches · No database changes yet</p></div><button type="button" disabled={generating} onClick={()=>void confirmFixtures()} className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-5 font-black text-white disabled:opacity-50">{generating?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<ShieldCheck className="mr-2 h-4 w-4"/>}Confirm & Save</button></div><div className="grid gap-3 lg:grid-cols-2">{fixturePreview.map((round)=><article key={round.round} className="rounded-xl border border-border bg-background/50 p-4"><div className="flex items-center justify-between"><h4 className="font-black text-primary">Round {round.round}</h4><span className="text-xs font-bold text-muted-foreground">{round.date}</span></div><div className="mt-3 space-y-2">{round.matches.map((match)=><div key={`${match.team_a_id}-${match.team_b_id}`} className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm"><span className="font-mono text-xs text-muted-foreground">#{match.match_number}</span><strong className="truncate text-right">{team(match.team_a_id)?.name}</strong><span className="text-xs font-black text-primary">VS</span><strong className="truncate">{team(match.team_b_id)?.name}</strong></div>)}{round.byeTeamId&&<p className="rounded-lg border border-dashed border-amber-400/50 px-3 py-2 text-sm font-bold text-amber-600">BYE · {team(round.byeTeamId)?.name}</p>}</div></article>)}</div></div>}</section>}
 
+      {cleanupOpen&&<GeneratedFixtureCleanup tournaments={tournaments} teams={teams} tournamentId={cleanupTournamentId} onTournamentChange={(id)=>{setCleanupTournamentId(id);setCleanupSelected([]);}} candidates={cleanupCandidates} selected={cleanupSelected} onSelectedChange={setCleanupSelected} removing={removingFixtures} onRemove={()=>void removeGeneratedFixtures()}/>}
       <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         {loading ? <div className="py-14 text-center text-muted-foreground">Loading matches…</div> : matches.length === 0 ? (
           <div className="py-16 text-center"><ClipboardList className="w-10 h-10 mx-auto text-muted-foreground mb-3" /><h2 className="font-semibold">No matches scheduled</h2><p className="text-sm text-muted-foreground mt-1">Create a fixture to begin scoring.</p></div>
@@ -202,6 +230,12 @@ export default function MatchesPage() {
 
 function ScheduleTeam({ item, reverse = false }: { item?: Team; reverse?: boolean }) {
   return <div className={`flex min-w-0 items-center gap-3 rounded-xl border border-white/15 bg-gradient-to-b from-white to-slate-200 px-3 py-2 text-slate-950 shadow-lg ${reverse ? "flex-row-reverse text-right" : ""}`}>{item?.logo_url ? <Image unoptimized width={96} height={96} src={item.logo_url} alt="" className="h-12 w-12 shrink-0 rounded-full bg-white object-contain p-1 ring-1 ring-slate-300" /> : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-slate-200 font-black">T</span>}<strong className="min-w-0 flex-1 truncate text-sm font-black uppercase">{item?.name || "Unknown team"}</strong></div>;
+}
+
+function GeneratedFixtureCleanup({ tournaments, teams, tournamentId, onTournamentChange, candidates, selected, onSelectedChange, removing, onRemove }: { tournaments: Tournament[]; teams: Team[]; tournamentId: string; onTournamentChange: (id: string) => void; candidates: Match[]; selected: string[]; onSelectedChange: (ids: string[]) => void; removing: boolean; onRemove: () => void }) {
+  const teamName = (id: string) => teams.find((team) => team.id === id)?.name || "Unknown team";
+  const toggle = (id: string) => onSelectedChange(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]);
+  return <section className="rounded-2xl border border-red-400/30 bg-card p-5 shadow-lg"><div><p className="text-xs font-black uppercase tracking-widest text-red-600">Safe fixture cleanup</p><h2 className="mt-1 text-xl font-black">Remove generated fixtures</h2><p className="mt-1 text-sm text-muted-foreground">Scheduled tournament fixtures are listed for review. Older auto-generated fixtures have no marker, so select those carefully. Database checks block matches with a team sheet, scoring data or results.</p></div><label className="mt-5 block max-w-xl space-y-2 text-sm font-bold">Tournament<select className="input" value={tournamentId} onChange={(event)=>onTournamentChange(event.target.value)}><option value="">Select tournament</option>{tournaments.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{tournamentId&&<div className="mt-5 space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-bold">{candidates.length} review candidate(s) · {selected.length} selected</p>{candidates.length>0&&<button type="button" className="rounded-lg border border-border px-3 py-2 text-xs font-black" onClick={()=>onSelectedChange(selected.length===candidates.length?[]:candidates.map((match)=>match.id))}>{selected.length===candidates.length?"Clear selection":"Select all"}</button>}</div><div className="grid gap-2 lg:grid-cols-2">{candidates.map((match)=><label key={match.id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-background/50 p-3"><input type="checkbox" className="h-4 w-4 accent-red-600" checked={selected.includes(match.id)} onChange={()=>toggle(match.id)}/><span className="min-w-0 flex-1"><strong className="block truncate">{match.fixture_round ? `Round ${match.fixture_round}` : "Legacy fixture"} · Match {match.match_number || "—"}</strong><span className="block truncate text-xs text-muted-foreground">{teamName(match.team_a_id)} vs {teamName(match.team_b_id)} · {match.match_date || "Date TBC"}</span></span>{match.generation_batch_id?<span className="rounded-full bg-emerald-100 px-2 py-1 text-[.6rem] font-black text-emerald-700">AUTO BATCH</span>:<span className="rounded-full bg-amber-100 px-2 py-1 text-[.6rem] font-black text-amber-700">REVIEW</span>}</label>)}{!candidates.length&&<p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground lg:col-span-2">No scheduled tournament fixtures are available for removal.</p>}</div><div className="flex justify-end"><button type="button" disabled={!selected.length||removing} onClick={onRemove} className="inline-flex min-h-11 items-center rounded-xl bg-red-600 px-5 font-black text-white disabled:opacity-50">{removing?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Trash2 className="mr-2 h-4 w-4"/>}Review & Remove</button></div></div>}</section>;
 }
 
 function addDays(isoDate: string, days: number) {

@@ -244,6 +244,21 @@ test("bulk auction cards become cropped player profile photos when sold", () => 
   assert.match(migration, /source_type = 'bulk_upload'/);
 });
 
+test("generated fixtures can only be removed through the guarded cleanup RPC", () => {
+  const migration = readFileSync(resolve(root, "supabase/migrations/20260812184104_add_generated_fixture_cleanup.sql"), "utf8");
+  const matches = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
+  assert.match(migration, /private\.can_manage_tournament\(p_tournament_id\)/);
+  assert.match(migration, /match\.status <> 'scheduled'/);
+  assert.doesNotMatch(migration, /match\.fixture_round is null/);
+  assert.match(migration, /exists \(select 1 from public\.innings/);
+  assert.match(migration, /join public\.innings innings on innings\.id = ball\.innings_id/);
+  assert.match(migration, /exists \(select 1 from public\.match_squads/);
+  assert.match(migration, /revoke all on function public\.delete_unplayed_generated_fixtures/);
+  assert.match(matches, /delete_unplayed_generated_fixtures/);
+  assert.match(matches, /generation_batch_id/);
+  assert.match(matches, /Type \$\{selectedTournament\?\.name/);
+});
+
 test("fixed auction cards become cropped player profile photos when assigned", () => {
   const migration = readFileSync(resolve(root, "supabase/migrations/20260812090000_crop_fixed_player_profile_photos.sql"), "utf8");
   const media = readFileSync(resolve(root, "lib/media.ts"), "utf8");

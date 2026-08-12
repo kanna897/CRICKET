@@ -892,6 +892,8 @@ export type Database = {
           competition_stage: string
           created_at: string
           fixture_round: number | null
+          fixture_source: string | null
+          generation_batch_id: string | null
           ground: string | null
           id: string
           interruption_notes: string | null
@@ -930,6 +932,8 @@ export type Database = {
           competition_stage?: string
           created_at?: string
           fixture_round?: number | null
+          fixture_source?: string | null
+          generation_batch_id?: string | null
           ground?: string | null
           id?: string
           interruption_notes?: string | null
@@ -968,6 +972,8 @@ export type Database = {
           competition_stage?: string
           created_at?: string
           fixture_round?: number | null
+          fixture_source?: string | null
+          generation_batch_id?: string | null
           ground?: string | null
           id?: string
           interruption_notes?: string | null
@@ -1751,6 +1757,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_unplayed_generated_fixtures: {
+        Args: { p_match_ids: string[]; p_tournament_id: string }
+        Returns: number
+      }
       assign_fixed_auction_player: {
         Args: { p_auction_player_id: string; p_points: number; p_team_id: string }
         Returns: Database["public"]["Tables"]["auction_players"]["Row"]
