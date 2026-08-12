@@ -891,6 +891,7 @@ export type Database = {
           bracket_slot: number | null
           competition_stage: string
           created_at: string
+          fixture_round: number | null
           ground: string | null
           id: string
           interruption_notes: string | null
@@ -928,6 +929,7 @@ export type Database = {
           bracket_slot?: number | null
           competition_stage?: string
           created_at?: string
+          fixture_round?: number | null
           ground?: string | null
           id?: string
           interruption_notes?: string | null
@@ -965,6 +967,7 @@ export type Database = {
           bracket_slot?: number | null
           competition_stage?: string
           created_at?: string
+          fixture_round?: number | null
           ground?: string | null
           id?: string
           interruption_notes?: string | null
