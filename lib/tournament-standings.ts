@@ -1,4 +1,4 @@
-export type StandingsTeam = { id: string; name: string; logo_url: string | null };
+export type StandingsTeam = { id: string; name: string; logo_url: string | null; fixture_order?: number | null };
 export type StandingsMatch = { id: string; team_a_id: string; team_b_id: string; status: string; winner_id: string | null };
 export type StandingsInnings = { match_id: string; batting_team_id: string; bowling_team_id: string; total_runs: number; total_wickets: number; balls_bowled: number };
 export type StandingRow = { team_id: string; played: number; won: number; lost: number; tied: number; points: number; nrr: number };
@@ -7,6 +7,7 @@ export const defaultPointsRules: PointsRules = { win: 2, tie: 1, loss: 0 };
 
 export function calculateTournamentStandings(teams: StandingsTeam[], matches: StandingsMatch[], innings: StandingsInnings[], rules: PointsRules = defaultPointsRules): StandingRow[] {
   const rows = new Map<string, StandingRow>();
+  const fixtureOrder = new Map(teams.map((team, index) => [team.id, team.fixture_order ?? Number.MAX_SAFE_INTEGER - teams.length + index]));
   const runData = new Map<string, { runsFor: number; ballsFor: number; runsAgainst: number; ballsAgainst: number }>();
   for (const team of teams) {
     rows.set(team.id, { team_id: team.id, played: 0, won: 0, lost: 0, tied: 0, points: 0, nrr: 0 });
@@ -49,5 +50,5 @@ export function calculateTournamentStandings(teams: StandingsTeam[], matches: St
     row.nrr = Number((forRate - againstRate).toFixed(3));
   }
 
-  return [...rows.values()].sort((a, b) => b.points - a.points || b.nrr - a.nrr || b.won - a.won);
+  return [...rows.values()].sort((a, b) => b.points - a.points || b.nrr - a.nrr || b.won - a.won || fixtureOrder.get(a.team_id)! - fixtureOrder.get(b.team_id)!);
 }

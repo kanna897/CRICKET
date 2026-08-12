@@ -97,6 +97,7 @@ export default function TeamsPage() {
                 {filteredTeams.map((team) => (
                   <tr key={team.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 font-medium flex items-center gap-3">
+                      {team.fixture_order ? <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{team.fixture_order}</span> : null}
                       {team.logo_url ? (
                         <Image unoptimized width={128} height={128} src={team.logo_url} alt="" className="w-8 h-8 rounded-full object-cover bg-muted" />
                       ) : (
@@ -104,7 +105,7 @@ export default function TeamsPage() {
                           {team.name.charAt(0)}
                         </div>
                       )}
-                      {team.fixture_order ? <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{team.fixture_order}</span> : null}{team.name}
+                      {team.name}
                     </td>
                     <td className="px-6 py-4"><span className={`rounded-full px-2 py-1 text-xs font-bold ${team.tournament_id ? "bg-sky-100 text-sky-700" : "bg-violet-100 text-violet-700"}`}>{team.tournament_id ? "Tournament" : "Standalone"}</span></td>
                     <td className="px-6 py-4">{team.owner_name || "-"}</td>

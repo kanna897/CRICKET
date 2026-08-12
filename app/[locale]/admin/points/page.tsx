@@ -11,7 +11,7 @@ import { calculateTournamentStandings, defaultPointsRules, type PointsRules, typ
 import { QualificationSimulator } from "@/components/qualification-simulator";
 
 type Tournament = { id: string; name: string; logo_url: string | null };
-type Team = { id: string; name: string; logo_url: string | null };
+type Team = { id: string; name: string; logo_url: string | null; fixture_order: number | null };
 
 export default function AdminPointsPage() {
   const { userId, isMasterAdmin } = useAdminAccess();
@@ -61,7 +61,7 @@ export default function AdminPointsPage() {
     const [{ data: latestTournament, error: tournamentError }, { data: matchRows, error: matchesError }, { data: teamRows, error: teamsError }] = await Promise.all([
       supabase.from("tournaments").select("id,name,logo_url").eq("id", selectedTournament).maybeSingle(),
       supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
-      supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
+      supabase.from("teams").select("id,name,logo_url,fixture_order").eq("tournament_id", selectedTournament).order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
     ]);
     if (latestTournament) {
       const refreshedTournament = latestTournament as Tournament;
