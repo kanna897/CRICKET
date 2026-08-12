@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
 import { localePath } from "@/lib/locale-path";
-import { generateSingleRoundRobin, validateSingleRoundRobin } from "@/lib/round-robin";
+import { generateSingleRoundRobin, scheduleRoundRobinMatches, validateSingleRoundRobin } from "@/lib/round-robin";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
@@ -41,7 +41,7 @@ type FixturePreviewMatch = Database["public"]["Tables"]["matches"]["Insert"] & {
   fixture_round: number;
   match_number: number;
 };
-type FixturePreviewRound = { round: number; date: string; byeTeamId: string | null; matches: FixturePreviewMatch[] };
+type FixturePreviewDay = { day: number; date: string; matches: FixturePreviewMatch[] };
 
 export default function MatchesPage() {
   const { locale } = useParams<{ locale: string }>();
@@ -54,8 +54,8 @@ export default function MatchesPage() {
   const [message, setMessage] = useState("");
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [generator, setGenerator] = useState({ tournamentId: "", startDate: "", matchTime: "09:00", ground: "", restDays: "1" });
-  const [fixturePreview, setFixturePreview] = useState<FixturePreviewRound[]>([]);
+  const [generator, setGenerator] = useState({ tournamentId: "", startDate: "", matchTime: "09:00", ground: "", restDays: "1", matchesPerDay: "4", matchDuration: "60", breakMinutes: "15" });
+  const [fixturePreview, setFixturePreview] = useState<FixturePreviewDay[]>([]);
   const [cleanupOpen, setCleanupOpen] = useState(false);
   const [cleanupTournamentId, setCleanupTournamentId] = useState("");
   const [cleanupSelected, setCleanupSelected] = useState<string[]>([]);
@@ -123,11 +123,14 @@ export default function MatchesPage() {
       const tournament = tournaments.find((item) => item.id === generator.tournamentId);
       const rounds = generateSingleRoundRobin(tournamentTeams.map((item) => item.id));
       validateSingleRoundRobin(tournamentTeams.map((item) => item.id), rounds);
+      const matchesPerDay = Math.max(1, Math.min(50, Number(generator.matchesPerDay) || 1));
+      const slotMinutes = Math.max(1, Number(generator.matchDuration) || 60) + Math.max(0, Number(generator.breakMinutes) || 0);
+      const unscheduledRounds = rounds.map((round) => ({ ...round, matches: round.matches.filter((pair) => !existingPairs.has([pair.teamAId, pair.teamBId].sort().join(":"))) }));
+      const scheduled = scheduleRoundRobinMatches(unscheduledRounds, matchesPerDay);
+      if (generator.matchTime && timeToMinutes(generator.matchTime) + (matchesPerDay - 1) * slotMinutes >= 1440) throw new Error("Daily match times cross midnight. Reduce matches per day, duration or break time.");
       let nextMatchNumber = Math.max(0, ...existing.map((match) => match.match_number || 0)) + 1;
-      const preview = rounds.map((round) => {
-        const date = addDays(generator.startDate, (round.round - 1) * interval);
-        const roundMatches = round.matches.flatMap((pair) => {
-          if (existingPairs.has([pair.teamAId, pair.teamBId].sort().join(":"))) return [];
+      const previewMatches = scheduled.flatMap((pair) => {
+          const date = addDays(generator.startDate, pair.dayIndex * interval);
           const match: FixturePreviewMatch = {
             tournament_id: generator.tournamentId,
             organizer_id: tournament?.organizer_id || userId,
@@ -135,10 +138,10 @@ export default function MatchesPage() {
             match_type: "tournament",
             team_a_id: pair.teamAId,
             team_b_id: pair.teamBId,
-            fixture_round: round.round,
+            fixture_round: pair.round,
             match_number: nextMatchNumber++,
             match_date: date,
-            match_time: generator.matchTime || null,
+            match_time: generator.matchTime ? addMinutes(generator.matchTime, pair.slotIndex * slotMinutes) : null,
             ground: generator.ground || tournament?.venue || null,
             overs_per_match: tournament?.overs || 20,
             status: "scheduled",
@@ -147,16 +150,15 @@ export default function MatchesPage() {
           };
           return [match];
         });
-        return { round: round.round, date, byeTeamId: round.byeTeamId, matches: roundMatches };
-      }).filter((round) => round.matches.length || round.byeTeamId);
-      if (!preview.some((round) => round.matches.length)) throw new Error("All round-robin team pairings are already scheduled.");
+      const preview = [...new Set(previewMatches.map((match) => match.match_date!))].map((date, day) => ({ day: day + 1, date, matches: previewMatches.filter((match) => match.match_date === date) }));
+      if (!previewMatches.length) throw new Error("All round-robin team pairings are already scheduled.");
       setFixturePreview(preview);
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Fixture preview failed.");
     }
   };
   const confirmFixtures = async () => {
-    const rows = fixturePreview.flatMap((round) => round.matches);
+    const rows = fixturePreview.flatMap((day) => day.matches);
     if (!rows.length || !generator.tournamentId) return;
     setGenerating(true); setMessage("");
     try {
@@ -205,7 +207,7 @@ export default function MatchesPage() {
         <div className="flex flex-wrap gap-2"><button type="button" onClick={()=>setGeneratorOpen((value)=>!value)} className="inline-flex h-10 items-center justify-center rounded-md border border-primary/40 bg-primary/10 px-4 text-sm font-black text-primary"><Sparkles className="mr-2 h-4 w-4"/>Auto Generate</button><button type="button" onClick={()=>setCleanupOpen((value)=>!value)} className="inline-flex h-10 items-center justify-center rounded-md border border-red-400/40 bg-red-500/10 px-4 text-sm font-black text-red-600"><Trash2 className="mr-2 h-4 w-4"/>Remove Generated</button><Link href={localePath(locale, "/admin/matches/new")} className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-10 px-4 text-sm font-medium"><CalendarPlus className="w-4 h-4 mr-2" />Schedule Match</Link></div>
       </div>
       {message && <p role="status" className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-bold text-foreground">{message}</p>}
-      {generatorOpen&&<section className="rounded-2xl border border-primary/30 bg-card p-5 shadow-lg"><div><p className="text-xs font-black uppercase tracking-widest text-primary">Automatic fixture generator</p><h2 className="mt-1 text-xl font-black">Correct round-robin schedule</h2><p className="mt-1 text-sm text-muted-foreground">Circle Method · one match per team in each round · odd team counts receive a BYE.</p></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><label className="space-y-2 text-sm font-bold lg:col-span-2">Tournament<select className="input" value={generator.tournamentId} onChange={(event)=>{setGenerator({...generator,tournamentId:event.target.value});setFixturePreview([]);}}><option value="">Select tournament</option>{tournaments.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="space-y-2 text-sm font-bold">First round date<input type="date" className="input" value={generator.startDate} onChange={(event)=>{setGenerator({...generator,startDate:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Match time<input type="time" className="input" value={generator.matchTime} onChange={(event)=>{setGenerator({...generator,matchTime:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Days between rounds<input type="number" min="1" max="30" className="input" value={generator.restDays} onChange={(event)=>{setGenerator({...generator,restDays:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold sm:col-span-2 lg:col-span-4">Ground / Venue<input className="input" placeholder="Tournament venue used if empty" value={generator.ground} onChange={(event)=>{setGenerator({...generator,ground:event.target.value});setFixturePreview([]);}}/></label><button type="button" disabled={generating} onClick={generatePreview} className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 font-black text-primary-foreground disabled:opacity-50"><Sparkles className="mr-2 h-4 w-4"/>Generate preview</button></div>{fixturePreview.length>0&&<div className="mt-6 space-y-4 border-t border-border pt-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-black">Fixture preview</h3><p className="text-sm text-muted-foreground">{fixturePreview.reduce((sum,round)=>sum+round.matches.length,0)} matches · No database changes yet</p></div><button type="button" disabled={generating} onClick={()=>void confirmFixtures()} className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-5 font-black text-white disabled:opacity-50">{generating?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<ShieldCheck className="mr-2 h-4 w-4"/>}Confirm & Save</button></div><div className="grid gap-3 lg:grid-cols-2">{fixturePreview.map((round)=><article key={round.round} className="rounded-xl border border-border bg-background/50 p-4"><div className="flex items-center justify-between"><h4 className="font-black text-primary">Round {round.round}</h4><span className="text-xs font-bold text-muted-foreground">{round.date}</span></div><div className="mt-3 space-y-2">{round.matches.map((match)=><div key={`${match.team_a_id}-${match.team_b_id}`} className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm"><span className="font-mono text-xs text-muted-foreground">#{match.match_number}</span><strong className="truncate text-right">{team(match.team_a_id)?.name}</strong><span className="text-xs font-black text-primary">VS</span><strong className="truncate">{team(match.team_b_id)?.name}</strong></div>)}{round.byeTeamId&&<p className="rounded-lg border border-dashed border-amber-400/50 px-3 py-2 text-sm font-bold text-amber-600">BYE · {team(round.byeTeamId)?.name}</p>}</div></article>)}</div></div>}</section>}
+      {generatorOpen&&<section className="rounded-2xl border border-primary/30 bg-card p-5 shadow-lg"><div><p className="text-xs font-black uppercase tracking-widest text-primary">Automatic fixture generator</p><h2 className="mt-1 text-xl font-black">Fair sequential round-robin schedule</h2><p className="mt-1 text-sm text-muted-foreground">Every pair plays once · one match at a time · a team is never placed in the immediately following match.</p></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><label className="space-y-2 text-sm font-bold lg:col-span-2">Tournament<select className="input" value={generator.tournamentId} onChange={(event)=>{setGenerator({...generator,tournamentId:event.target.value});setFixturePreview([]);}}><option value="">Select tournament</option>{tournaments.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="space-y-2 text-sm font-bold">First match date<input type="date" className="input" value={generator.startDate} onChange={(event)=>{setGenerator({...generator,startDate:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">First match time<input type="time" className="input" value={generator.matchTime} onChange={(event)=>{setGenerator({...generator,matchTime:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Matches per day<input type="number" min="1" max="50" className="input" value={generator.matchesPerDay} onChange={(event)=>{setGenerator({...generator,matchesPerDay:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Match duration (minutes)<input type="number" min="1" max="720" className="input" value={generator.matchDuration} onChange={(event)=>{setGenerator({...generator,matchDuration:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Break after match (minutes)<input type="number" min="0" max="240" className="input" value={generator.breakMinutes} onChange={(event)=>{setGenerator({...generator,breakMinutes:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold">Days between match days<input type="number" min="1" max="30" className="input" value={generator.restDays} onChange={(event)=>{setGenerator({...generator,restDays:event.target.value});setFixturePreview([]);}}/></label><label className="space-y-2 text-sm font-bold sm:col-span-2">Ground / Venue<input className="input" placeholder="Tournament venue used if empty" value={generator.ground} onChange={(event)=>{setGenerator({...generator,ground:event.target.value});setFixturePreview([]);}}/></label><button type="button" disabled={generating} onClick={generatePreview} className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 font-black text-primary-foreground disabled:opacity-50"><Sparkles className="mr-2 h-4 w-4"/>Generate preview</button></div>{fixturePreview.length>0&&<div className="mt-6 space-y-4 border-t border-border pt-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-black">Fixture preview</h3><p className="text-sm text-muted-foreground">{fixturePreview.reduce((sum,day)=>sum+day.matches.length,0)} matches · No database changes yet</p></div><button type="button" disabled={generating} onClick={()=>void confirmFixtures()} className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-5 font-black text-white disabled:opacity-50">{generating?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<ShieldCheck className="mr-2 h-4 w-4"/>}Confirm & Save</button></div><div className="grid gap-3 lg:grid-cols-2">{fixturePreview.map((day)=><article key={day.date} className="rounded-xl border border-border bg-background/50 p-4"><div className="flex items-center justify-between"><h4 className="font-black text-primary">Match Day {day.day}</h4><span className="text-xs font-bold text-muted-foreground">{day.date}</span></div><div className="mt-3 space-y-2">{day.matches.map((match)=><div key={`${match.team_a_id}-${match.team_b_id}`} className="grid grid-cols-[auto_1fr_auto_1fr_auto] items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm"><span className="font-mono text-xs text-muted-foreground">#{match.match_number}</span><strong className="truncate text-right">{team(match.team_a_id)?.name}</strong><span className="text-xs font-black text-primary">VS</span><strong className="truncate">{team(match.team_b_id)?.name}</strong><span className="font-mono text-xs font-bold text-primary">{match.match_time}</span></div>)}</div></article>)}</div></div>}</section>}
 
       {cleanupOpen&&<GeneratedFixtureCleanup tournaments={tournaments} teams={teams} tournamentId={cleanupTournamentId} onTournamentChange={(id)=>{setCleanupTournamentId(id);setCleanupSelected([]);}} candidates={cleanupCandidates} selected={cleanupSelected} onSelectedChange={setCleanupSelected} removing={removingFixtures} onRemove={()=>void removeGeneratedFixtures()}/>}
       <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -242,4 +244,16 @@ function addDays(isoDate: string, days: number) {
   const date = new Date(`${isoDate}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
+}
+
+function addMinutes(time: string, minutes: number) {
+  const [hours, minute] = time.split(":").map(Number);
+  const total = hours * 60 + minute + minutes;
+  const normalized = ((total % 1440) + 1440) % 1440;
+  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+}
+
+function timeToMinutes(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
 }

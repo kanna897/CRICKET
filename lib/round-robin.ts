@@ -1,5 +1,6 @@
 export type RoundRobinPairing = { teamAId: string; teamBId: string };
 export type RoundRobinRound = { round: number; matches: RoundRobinPairing[]; byeTeamId: string | null };
+export type ScheduledRoundRobinMatch = RoundRobinPairing & { round: number; dayIndex: number; slotIndex: number };
 
 export function generateSingleRoundRobin(teamIds: string[]): RoundRobinRound[] {
   const uniqueIds = [...new Set(teamIds)];
@@ -56,4 +57,25 @@ export function validateSingleRoundRobin(teamIds: string[], rounds: RoundRobinRo
   if (pairings.size !== expectedMatches) throw new Error(`Expected ${expectedMatches} matches but generated ${pairings.size}.`);
   if (teamIds.length % 2 === 1 && [...byes.values()].some((count) => count !== 1)) throw new Error("Each team must receive exactly one BYE.");
   return true;
+}
+
+export function scheduleRoundRobinMatches(rounds: RoundRobinRound[], matchesPerDay: number): ScheduledRoundRobinMatch[] {
+  const dailyLimit = Math.max(1, Math.floor(matchesPerDay));
+  const pending = rounds.flatMap((round) => round.matches.map((match) => ({ ...match, round: round.round })));
+  const scheduled: ScheduledRoundRobinMatch[] = [];
+  let dayIndex = 0;
+
+  while (pending.length) {
+    let previousTeams = new Set<string>();
+    for (let slotIndex = 0; slotIndex < dailyLimit && pending.length; slotIndex += 1) {
+      const eligibleIndex = pending.findIndex((match) => !previousTeams.has(match.teamAId) && !previousTeams.has(match.teamBId));
+      if (eligibleIndex < 0) break;
+      const [match] = pending.splice(eligibleIndex, 1);
+      scheduled.push({ ...match, dayIndex, slotIndex });
+      previousTeams = new Set([match.teamAId, match.teamBId]);
+    }
+    dayIndex += 1;
+  }
+
+  return scheduled;
 }
