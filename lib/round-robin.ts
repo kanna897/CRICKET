@@ -1,6 +1,7 @@
 export type RoundRobinPairing = { teamAId: string; teamBId: string };
 export type RoundRobinRound = { round: number; matches: RoundRobinPairing[]; byeTeamId: string | null };
 export type ScheduledRoundRobinMatch = RoundRobinPairing & { round: number; dayIndex: number; slotIndex: number };
+export type MatchDayMode = "continuous" | "weekdays" | "custom";
 
 export function generateSingleRoundRobin(teamIds: string[]): RoundRobinRound[] {
   const uniqueIds = [...new Set(teamIds)];
@@ -79,3 +80,33 @@ export function scheduleRoundRobinMatches(rounds: RoundRobinRound[], matchesPerD
 
   return scheduled;
 }
+
+export function generateMatchDayDates({ mode, startDate, dayCount, intervalDays = 1, weekdays = [], customDates = [] }: { mode: MatchDayMode; startDate: string; dayCount: number; intervalDays?: number; weekdays?: number[]; customDates?: string[] }) {
+  if (!Number.isInteger(dayCount) || dayCount < 1) return [];
+  if (!isIsoDate(startDate)) throw new Error("A valid first match date is required.");
+  if (mode === "custom") {
+    if (customDates.some((date) => !isIsoDate(date))) throw new Error("Every custom match date must be a valid YYYY-MM-DD date.");
+    const dates = [...new Set(customDates)].sort();
+    if (dates.length < dayCount) throw new Error(`Add at least ${dayCount} unique custom match dates.`);
+    return dates.slice(0, dayCount);
+  }
+  if (mode === "weekdays") {
+    const allowed = new Set(weekdays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6));
+    if (!allowed.size) throw new Error("Select at least one allowed weekday.");
+    const dates: string[] = [];
+    let cursor = parseIsoDate(startDate);
+    for (let guard = 0; dates.length < dayCount && guard < 3660; guard += 1) {
+      if (allowed.has(cursor.getUTCDay())) dates.push(toIsoDate(cursor));
+      cursor = addUtcDays(cursor, 1);
+    }
+    if (dates.length < dayCount) throw new Error("Could not create enough match days from the selected weekdays.");
+    return dates;
+  }
+  const interval = Math.max(1, Math.floor(intervalDays));
+  return Array.from({ length: dayCount }, (_, index) => toIsoDate(addUtcDays(parseIsoDate(startDate), index * interval)));
+}
+
+function parseIsoDate(value: string) { return new Date(`${value}T00:00:00Z`); }
+function addUtcDays(value: Date, days: number) { const result = new Date(value); result.setUTCDate(result.getUTCDate() + days); return result; }
+function toIsoDate(value: Date) { return value.toISOString().slice(0, 10); }
+function isIsoDate(value: string) { return /^\d{4}-\d{2}-\d{2}$/.test(value) && toIsoDate(parseIsoDate(value)) === value; }
