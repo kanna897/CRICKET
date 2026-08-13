@@ -1186,6 +1186,7 @@ html:not(.dark) .admin-theme-shell .admin-themed-page textarea {
     content: "";
     pointer-events: none;
   }
+  .mobile-portrait-scorer { display: none; }
   .live-score-shell .bg-card,
   .live-score-shell .bg-background {
     border-color: rgb(255 255 255 / 14%) !important;
@@ -2919,6 +2920,69 @@ html.light .public-landing {
   .admin-theme-shell main :is(.p-8, .sm\:p-8) {
     padding: 1rem;
   }
+
+  .live-score-shell { padding-bottom: 1rem; }
+  .mobile-portrait-scorer {
+    display: grid;
+    min-height: calc(100dvh - 7.5rem);
+    grid-template-rows: auto auto auto auto auto minmax(8.5rem, 1fr) auto auto auto;
+    gap: .42rem;
+    overflow: hidden;
+    border: 1px solid rgb(8 189 232 / 35%);
+    border-radius: 1rem;
+    background: linear-gradient(160deg, #06142f, #082654 54%, #061a32);
+    padding: .55rem;
+    color: #fff;
+    box-shadow: 0 16px 36px rgb(0 0 0 / 35%);
+  }
+  .mobile-portrait-scorer > header { display: flex; min-height: 2.6rem; align-items: center; gap: .55rem; border: 0 !important; border-radius: .65rem; background: rgb(2 12 31 / 72%) !important; padding: .35rem .45rem; }
+  .mobile-portrait-scorer > header > :is(a, button) { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border: 1px solid rgb(255 255 255 / 14%); border-radius: .55rem; }
+  .mobile-portrait-scorer > header svg { width: 1rem; height: 1rem; }
+  .mobile-portrait-scorer > header div { min-width: 0; flex: 1; }
+  .mobile-portrait-scorer > header small,
+  .mobile-portrait-scorer > header strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-portrait-scorer > header small { color: #91a9c6; font-size: .56rem; }
+  .mobile-portrait-scorer > header strong { color: #55e39a; font-size: .68rem; text-transform: uppercase; }
+  .mobile-score-strip { display: grid; grid-template-columns: 1.25fr .9fr .85fr; overflow: hidden; border: 1px solid rgb(8 189 232 / 25%); border-radius: .72rem; background: rgb(4 17 43 / 78%); }
+  .mobile-score-strip > div { min-width: 0; border-right: 1px solid rgb(255 255 255 / 12%); padding: .38rem .42rem; text-align: center; }
+  .mobile-score-strip > div:last-child { border: 0; }
+  .mobile-score-strip small,
+  .mobile-score-strip strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-score-strip small { color: #91a9c6; font-size: .5rem; text-transform: uppercase; }
+  .mobile-score-strip strong { margin-top: .08rem; color: #fff; font-size: 1rem; font-weight: 950; }
+  .mobile-free-hit { border-radius: 999px; background: #facc15; padding: .12rem .5rem; color: #172554; font-size: .56rem; font-weight: 950; text-align: center; text-transform: uppercase; }
+  .mobile-player-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid rgb(255 255 255 / 12%); border-radius: .72rem; background: rgb(5 20 48 / 72%); }
+  .mobile-player-strip > div { min-width: 0; border-right: 1px solid rgb(255 255 255 / 10%); padding: .3rem; text-align: center; }
+  .mobile-player-strip > div:last-child { border: 0; }
+  .mobile-player-strip :is(small, strong, span) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-player-strip small { color: #48d8ee; font-size: .48rem; font-weight: 900; text-transform: uppercase; }
+  .mobile-player-strip strong { margin-top: .08rem; font-size: .65rem; }
+  .mobile-player-strip span { color: #9db0ca; font-size: .52rem; }
+  .mobile-player-strip button { margin-top: .08rem; color: #55e39a; font-size: .5rem; font-weight: 900; }
+  .mobile-last-six { display: flex; min-height: 2.2rem; align-items: center; justify-content: space-between; gap: .4rem; padding-inline: .2rem; }
+  .mobile-last-six > small { flex: 0 0 auto; color: #91a9c6; font-size: .52rem; font-weight: 900; text-transform: uppercase; }
+  .mobile-last-six > div { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .25rem; }
+  .mobile-last-six span { display: grid; width: 1.65rem; height: 1.65rem; place-items: center; border: 1px solid #279bd5; border-radius: 999px; background: #071b3e; font-size: .62rem; font-weight: 950; }
+  .mobile-last-six span.boundary { background: #168d55; border-color: #55e39a; }
+  .mobile-last-six span.wicket { background: #c62828; border-color: #ff7878; }
+  .mobile-last-six span.extra { background: #a76509; border-color: #facc15; }
+  .mobile-last-six em { color: #91a9c6; font-size: .56rem; font-style: normal; }
+  .mobile-record-title { display: flex; align-items: center; justify-content: space-between; color: #fff; font-size: .62rem; font-weight: 950; letter-spacing: .08em; text-transform: uppercase; }
+  .mobile-record-title b { color: #55e39a; font-size: .48rem; }
+  .mobile-run-grid { display: grid; min-height: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(3.2rem, 1fr)); gap: .38rem; }
+  .mobile-run-grid button { border: 1px solid #18bde9; border-radius: .72rem; background: linear-gradient(145deg, #0b3673, #071d45); color: #fff; font-size: clamp(1.55rem, 8vw, 2.2rem); font-weight: 950; box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%); }
+  .mobile-event-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: .38rem; }
+  .mobile-event-grid button { min-height: 2.7rem; border: 1px solid #2dd4bf; border-radius: .68rem; background: #087f8c; color: #fff; font-size: .68rem; font-weight: 950; text-transform: uppercase; }
+  .mobile-event-grid button.wicket { border-color: #fb7185; background: #c52632; }
+  .mobile-utility-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: .38rem; }
+  .mobile-utility-grid button { display: flex; min-height: 2.55rem; align-items: center; justify-content: center; gap: .3rem; border: 1px solid rgb(8 189 232 / 45%); border-radius: .68rem; background: #071d45; color: #eaf8ff; font-size: .62rem; font-weight: 900; text-transform: uppercase; }
+  .mobile-utility-grid svg { width: .85rem; height: .85rem; }
+  .mobile-portrait-scorer button:disabled { opacity: .38; }
+  .mobile-portrait-scorer > footer { display: flex; min-height: 1.45rem; align-items: center; justify-content: center; gap: .35rem; color: #a9bad0; font-size: .5rem; font-weight: 850; text-transform: uppercase; }
+  .mobile-portrait-scorer > footer span { width: .42rem; height: .42rem; border-radius: 999px; }
+  .mobile-portrait-scorer > footer span.online { background: #39dc85; box-shadow: 0 0 8px #39dc85; }
+  .mobile-portrait-scorer > footer span.pending { background: #facc15; box-shadow: 0 0 8px #facc15; }
+  .mobile-portrait-scorer ~ nav[aria-label="Mobile quick scoring"] { display: none; }
 }
 
 @media (max-width: 520px) {
