@@ -248,8 +248,8 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
                 right={rightRow}
                 leftMetrics={leftMetrics}
                 rightMetrics={rightMetrics}
-                leftColor={colorFor(leftRow, teams, "#e11d48")}
-                rightColor={colorFor(rightRow, teams, "#1687f8")}
+                leftColor="#08bde8"
+                rightColor="#39dc85"
               />
             </div>
           </section>
@@ -302,14 +302,14 @@ const ComparisonPoster = ({ ref, mode, left, right, leftMetrics, rightMetrics, l
       } as React.CSSProperties}
     >
       <div className="comparison-poster-glow glow-left" /><div className="comparison-poster-glow glow-right" />
-      <header><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} className="poster-brand-logo" /><small>LIVE CRICKET EXPERIENCE</small></header>
-      <div className="poster-title"><p>{mode === "players" ? "PLAYER" : "TEAM"} PERFORMANCE COMPARISON</p><h2>HEAD TO HEAD</h2></div>
+      <header><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} className="poster-brand-logo" /><small>THE RHYTHM OF THE GAME</small></header>
+      <div className="comparison-poster-title"><p>{mode === "players" ? "PLAYER" : "TEAM"} PERFORMANCE COMPARISON</p><h2>HEAD TO <em>HEAD</em></h2></div>
       <div className="poster-contenders">
         <PosterSide row={left} mode={mode} metrics={leftMetrics} labels={labels} side="left" />
         <div className="poster-vs">VS</div>
         <PosterSide row={right} mode={mode} metrics={rightMetrics} labels={labels} side="right" />
       </div>
-      <footer><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} /><span>PERFORMANCE INTELLIGENCE</span><b>EVERY BALL · EVERY MOMENT · ONE PULSE</b></footer>
+      <footer><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} /><span>PERFORMANCE INTELLIGENCE</span><b>THE RHYTHM OF THE GAME</b></footer>
     </div>
   );
 };
@@ -321,14 +321,6 @@ function PosterSide({ row, mode, metrics, labels, side }: { row: Team | Player; 
 
 function imageFor(row: Team | Player) {
   return "photo_url" in row ? row.photo_url : row.logo_url;
-}
-
-function colorFor(row: Team | Player, teams: Team[], fallback: string) {
-  const team = "primary_color" in row
-    ? row
-    : teams.find((item) => item.id === row.team_id);
-  const color = team?.primary_color?.trim();
-  return color && /^#[0-9a-f]{3,8}$/i.test(color) ? color : fallback;
 }
 
 function formatMetric(value: number) {

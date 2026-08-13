@@ -3092,15 +3092,15 @@ html.light .admin-compare-page .admin-compare-identity { background: #f2f8fc; }
 .comparison-poster-section > header button svg { width: .95rem; height: .95rem; }
 .comparison-poster-downloads { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
 .comparison-poster-preview { display: flex; justify-content: center; overflow: auto; padding: clamp(1rem, 3vw, 2rem); background: linear-gradient(45deg, rgb(148 163 184 / 7%) 25%, transparent 25%), linear-gradient(-45deg, rgb(148 163 184 / 7%) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgb(148 163 184 / 7%) 75%), linear-gradient(-45deg, transparent 75%, rgb(148 163 184 / 7%) 75%); background-position: 0 0, 0 10px, 10px -10px, -10px 0; background-size: 20px 20px; }
-.comparison-poster { --poster-left: #e11d48; --poster-right: #1687f8; position: relative; width: 1080px; height: 1080px; flex: 0 0 auto; overflow: hidden; background: linear-gradient(90deg, color-mix(in srgb, var(--poster-left) 38%, #06142f), transparent 47%, color-mix(in srgb, var(--poster-right) 38%, #06142f)), radial-gradient(circle at 50% 48%, #17366f 0, #07183d 37%, #030b20 78%); padding: 44px 62px 45px; color: #fff; font-family: Arial, Helvetica, sans-serif; box-shadow: 0 22px 55px rgb(0 0 0 / 35%); transform: scale(.58); transform-origin: top center; margin-bottom: -454px; }
-.comparison-poster::before { position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 34px, rgb(255 255 255 / 1.5%) 35px 36px), radial-gradient(circle at center, transparent 0 43%, rgb(0 0 0 / 35%) 84%); content: ""; }
+.comparison-poster { --poster-left: #08bde8; --poster-right: #39dc85; position: relative; width: 1080px; height: 1080px; flex: 0 0 auto; overflow: hidden; background: linear-gradient(115deg, color-mix(in srgb, var(--poster-left) 22%, #06142f) 0%, #071a3d 43%, #061a32 63%, color-mix(in srgb, var(--poster-right) 18%, #06142f) 100%), radial-gradient(circle at 50% 48%, #124b65 0, #07183d 38%, #030b20 78%); padding: 44px 62px 45px; color: #fff; font-family: Arial, Helvetica, sans-serif; box-shadow: 0 22px 55px rgb(0 0 0 / 35%); transform: scale(.58); transform-origin: top center; margin-bottom: -454px; }
+.comparison-poster::before { position: absolute; inset: 0; background: linear-gradient(135deg, transparent 0 48%, rgb(8 189 232 / 7%) 48% 49%, transparent 49% 72%, rgb(57 220 133 / 6%) 72% 73%, transparent 73%), repeating-linear-gradient(115deg, transparent 0 34px, rgb(255 255 255 / 1.5%) 35px 36px), radial-gradient(circle at center, transparent 0 43%, rgb(0 0 0 / 35%) 84%); content: ""; }
 .comparison-poster-glow { position: absolute; top: 210px; width: 430px; height: 630px; border-radius: 50%; filter: blur(70px); opacity: .28; }
 .comparison-poster-glow.glow-left { left: -90px; background: var(--poster-left); }
 .comparison-poster-glow.glow-right { right: -90px; background: var(--poster-right); }
 .comparison-poster > header, .comparison-poster-title, .poster-contenders, .comparison-poster > footer { position: relative; z-index: 1; }
 .comparison-poster > header { display: grid; place-items: center; }
 .poster-brand-logo { width: 285px; height: 76px; border-radius: 13px; background: #fff; object-fit: contain; padding: 7px 14px; filter: drop-shadow(0 5px 15px rgb(0 0 0 / 32%)); }
-.comparison-poster > header small { margin-top: 5px; color: #9fb0d0; font-size: 12px; font-weight: 800; letter-spacing: 6px; }
+.comparison-poster > header small { margin-top: 8px; color: #8ee9cf; font-size: 12px; font-weight: 900; letter-spacing: 6px; }
 .comparison-poster-title { margin-top: 33px; text-align: center; }
 .comparison-poster-title p { color: #70e453; font-size: 17px; font-weight: 950; letter-spacing: 5px; }
 .comparison-poster-title h2 { margin: 10px auto 0; max-width: 940px; color: #fff !important; font-size: 43px; font-weight: 950; line-height: 1.04; text-transform: uppercase; }
@@ -3125,10 +3125,10 @@ html.light .admin-compare-page .admin-compare-identity { background: #f2f8fc; }
 .poster-right .poster-stats > div { border-bottom: 4px solid var(--poster-right); }
 .poster-stats strong { display: block; color: #fff; font-size: 30px; font-weight: 950; line-height: 1; }
 .poster-stats span { display: block; margin-top: 6px; color: #9eb0cf; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
-.comparison-poster > footer { position: absolute; right: 62px; bottom: 32px; left: 62px; display: flex; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid rgb(255 255 255 / 14%); padding-top: 13px; color: #b4c0d8; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
-.comparison-poster > footer img { width: 155px; height: 44px; border-radius: 7px; background: #fff; object-fit: contain; object-position: left center; padding: 4px 8px; }
+.comparison-poster > footer { position: absolute; right: 42px; bottom: 26px; left: 42px; display: flex; min-height: 62px; align-items: center; justify-content: space-between; gap: 18px; border: 1px solid rgb(8 189 232 / 28%); border-radius: 12px; background: rgb(3 14 36 / 78%); padding: 9px 14px; color: #b8cbe0; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%); }
+.comparison-poster > footer img { width: 168px; height: 44px; border-radius: 7px; background: #fff; object-fit: contain; object-position: left center; padding: 4px 8px; }
 .comparison-poster > footer span { margin-right: auto; }
-.comparison-poster > footer b { color: #72e653; }
+.comparison-poster > footer b { color: #56e49a; letter-spacing: 2px; }
 html.light .public-comparison-shell { background: radial-gradient(circle at 12% 8%, rgb(6 182 212 / 10%), transparent 26rem), radial-gradient(circle at 88% 28%, rgb(139 92 246 / 8%), transparent 28rem), #edf7fb; }
 
 @media (max-width: 760px) {

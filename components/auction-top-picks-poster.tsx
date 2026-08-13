@@ -391,7 +391,7 @@ export function AuctionTopPicksPoster({
 
             <footer className="flex h-8 shrink-0 items-center justify-between border-t border-white/15 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-sky-100/70">
               <span>Highest winning bids · Official auction results</span>
-              <span className="flex items-center gap-2 text-amber-200"><Image unoptimized width={94} height={24} src="/brand/crickpulse-logo.png" alt="CrickPulse" className="h-5 w-[84px] rounded bg-white object-contain px-1" />· The Rhythm of the Game</span>
+              <span className="flex items-center gap-2 text-emerald-300"><Image unoptimized width={94} height={24} src="/brand/crickpulse-logo.png" alt="CrickPulse" className="h-5 w-[84px] rounded bg-white object-contain px-1" />· The Rhythm of the Game</span>
             </footer>
           </div>
         </div>
