@@ -21,7 +21,9 @@ type PosterMatch = {
 };
 
 const BASE_POSTER_HEIGHT = 1350;
-const EXTRA_MATCH_HEIGHT = 172;
+const POSTER_CHROME_HEIGHT = 500;
+const MATCH_ROW_HEIGHT = 156;
+const MATCH_ROW_GAP = 16;
 
 export function TournamentSchedulePoster({ tournaments, teams, matches }: { tournaments: PosterTournament[]; teams: PosterTeam[]; matches: PosterMatch[] }) {
   const posterRef = useRef<HTMLDivElement>(null);
@@ -35,7 +37,8 @@ export function TournamentSchedulePoster({ tournaments, teams, matches }: { tour
   const availableDates = useMemo(() => [...new Set(fixtures.map((match) => match.match_date).filter((date): date is string => Boolean(date)))], [fixtures]);
   const datedFixtures = useMemo(() => fixtures.filter((match) => match.match_date === matchDate), [fixtures, matchDate]);
   const dayNumber = Math.max(1, availableDates.indexOf(matchDate) + 1);
-  const posterHeight = BASE_POSTER_HEIGHT + Math.max(0, datedFixtures.length - 6) * EXTRA_MATCH_HEIGHT;
+  const matchStackHeight = datedFixtures.length * MATCH_ROW_HEIGHT + Math.max(0, datedFixtures.length - 1) * MATCH_ROW_GAP;
+  const posterHeight = Math.max(BASE_POSTER_HEIGHT, POSTER_CHROME_HEIGHT + matchStackHeight);
   const team = (id: string) => teams.find((item) => item.id === id);
 
   const selectTournament = (id: string) => {
@@ -83,8 +86,8 @@ export function TournamentSchedulePoster({ tournaments, teams, matches }: { tour
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_5%,rgba(31,104,255,.58),transparent_33%),radial-gradient(circle_at_10%_95%,rgba(112,228,83,.24),transparent_35%),linear-gradient(145deg,#071a43_0%,#050d23_47%,#09285b_100%)]"/>
           <div className="absolute -right-40 top-44 h-[520px] w-[520px] rotate-45 border-[70px] border-white/[.035]"/><div className="absolute -left-44 bottom-28 h-[480px] w-[480px] rotate-12 border-[55px] border-[#70e453]/[.06]"/>
           <div className="relative z-10 flex h-full flex-col">
-            <header className="flex items-center justify-between border-b border-white/15 pb-7"><div className="flex items-center gap-5">{tournament?.logo_url ? <Image unoptimized width={104} height={104} src={tournament.logo_url} alt="" className="h-[92px] w-[92px] rounded-2xl border-2 border-white/70 bg-white object-contain p-2"/> : <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-white/25 bg-white/10 text-3xl font-black">CP</span>}<div><p className="text-[15px] font-black uppercase tracking-[.32em] text-[#70e453]">Official fixtures</p><h2 className="mt-2 max-w-[600px] text-[43px] font-black uppercase leading-[.96]">{tournament?.name}</h2></div></div><Image unoptimized width={220} height={64} src="/brand/crickpulse-logo.png" alt="CrickPulse" className="h-[62px] w-[220px] rounded-xl bg-white object-contain px-4 py-2"/></header>
-            <div className="py-7 text-center"><p className="text-[17px] font-black uppercase tracking-[.45em] text-sky-300">{formatDate(matchDate)}</p><h1 className="mt-2 text-[54px] font-black uppercase tracking-tight">Match Day {String(dayNumber).padStart(2, "0")} Schedule</h1><div className="mx-auto mt-4 h-1.5 w-32 rounded-full bg-gradient-to-r from-[#70e453] to-cyan-400"/></div>
+            <header className="flex items-center justify-between border-b border-white/15 pb-5"><div className="flex items-center gap-5">{tournament?.logo_url ? <Image unoptimized width={104} height={104} src={tournament.logo_url} alt="" className="h-[92px] w-[92px] rounded-2xl border-2 border-white/70 bg-white object-contain p-2"/> : <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-white/25 bg-white/10 text-3xl font-black">CP</span>}<div><p className="text-[15px] font-black uppercase tracking-[.32em] text-[#70e453]">Official fixtures</p><h2 className="mt-2 max-w-[600px] text-[43px] font-black uppercase leading-[.96]">{tournament?.name}</h2></div></div><Image unoptimized width={220} height={64} src="/brand/crickpulse-logo.png" alt="CrickPulse" className="h-[62px] w-[220px] rounded-xl bg-white object-contain px-4 py-2"/></header>
+            <div className="py-5 text-center"><p className="text-[17px] font-black uppercase tracking-[.45em] text-sky-300">{formatDate(matchDate)}</p><h1 className="mt-2 text-[54px] font-black uppercase tracking-tight">Match Day {String(dayNumber).padStart(2, "0")} Schedule</h1><div className="mx-auto mt-3 h-1.5 w-32 rounded-full bg-gradient-to-r from-[#70e453] to-cyan-400"/></div>
             <div className="flex-1 space-y-4">{datedFixtures.map((match) => <FixtureRow key={match.id} match={match} left={team(match.team_a_id)} right={team(match.team_b_id)}/>)}</div>
             <footer className="mt-7 flex items-center justify-between border-t border-white/15 pt-5 text-[13px] font-bold uppercase tracking-[.14em] text-slate-300"><span className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[#70e453]"/>{tournament?.venue || datedFixtures[0]?.ground || "Venue to be announced"}</span><span>Live score · Player stats · Every ball.</span></footer>
           </div>
