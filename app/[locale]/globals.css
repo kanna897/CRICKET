@@ -3001,6 +3001,7 @@ html.light .public-landing {
 .admin-compare-switch button.active { background: linear-gradient(135deg, #0891b2, #0f766e); color: #fff; box-shadow: 0 7px 18px rgb(8 145 178 / 20%); }
 
 .admin-compare-pickers { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 1rem; }
+.admin-compare-pickers .admin-compare-scope { grid-column: 1 / -1; }
 .admin-compare-pickers label > span { display: block; margin-bottom: .35rem; color: var(--compare-muted); font-size: .64rem; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
 .admin-compare-pickers select { width: 100%; min-height: 3rem; border: 1px solid var(--compare-line); border-radius: .7rem; background: #0b1c39; padding: .7rem .85rem; color: var(--compare-text); font-size: .78rem; font-weight: 850; }
 .admin-versus { display: grid; width: 2.65rem; height: 2.65rem; place-items: center; border: 1px solid rgb(42 211 180 / 35%); border-radius: 999px; background: rgb(20 184 166 / 12%); color: #42dbc0; font-size: .65rem; font-weight: 950; }
@@ -3014,6 +3015,7 @@ html.light .public-landing {
 .admin-compare-identity div { min-width: 0; }
 .admin-compare-identity small { color: var(--compare-muted); font-size: .6rem; font-weight: 800; text-transform: capitalize; }
 .admin-compare-identity h2 { overflow: hidden; color: var(--compare-text) !important; font-size: .9rem; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
+.admin-compare-identity div > p { overflow: hidden; margin-top: .15rem; color: #43d7bb; font-size: .62rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
 .admin-compare-identity a { display: inline-flex; align-items: center; gap: .25rem; margin-top: .25rem; color: #58d9f0; font-size: .6rem; font-weight: 850; }
 .admin-compare-identity a svg { width: .7rem; height: .7rem; }
 .admin-compare-verdict { display: grid; min-width: 9rem; place-items: center; color: var(--compare-muted); text-align: center; }
