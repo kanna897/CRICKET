@@ -341,7 +341,7 @@ const ComparisonPoster = ({ ref, mode, left, right, leftMetrics, rightMetrics, l
         <div className="poster-vs">VS</div>
         <PosterSide row={right} mode={mode} metrics={rightMetrics} labels={labels} side="right" teamName={rightTeamName} />
       </div>
-      <footer><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} /><span>PERFORMANCE INTELLIGENCE</span><b>THE RHYTHM OF THE GAME</b></footer>
+      <footer><span>PERFORMANCE INTELLIGENCE</span><div><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} /><b>THE RHYTHM OF THE GAME</b></div></footer>
     </div>
   );
 };
