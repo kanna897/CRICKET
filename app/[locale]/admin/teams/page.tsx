@@ -55,7 +55,7 @@ export default function TeamsPage() {
         </Link>
       </div>
 
-      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-4 sm:p-6">
         <div className="flex items-center mb-6">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -82,7 +82,8 @@ export default function TeamsPage() {
             <p className="text-muted-foreground mt-1">Get started by adding your first team.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
@@ -123,6 +124,26 @@ export default function TeamsPage() {
               </tbody>
             </table>
           </div>
+          <div className="grid gap-3 sm:hidden">
+            {filteredTeams.map((team) => (
+              <article key={team.id} className="min-w-0 rounded-xl border border-border bg-background/45 p-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  {team.fixture_order ? <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-black text-primary">{team.fixture_order}</span> : null}
+                  {team.logo_url ? <Image unoptimized width={128} height={128} src={team.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-full bg-muted object-cover" /> : <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 font-bold text-primary">{team.name.charAt(0)}</span>}
+                  <div className="min-w-0 flex-1">
+                    <h2 className="break-words font-black leading-tight">{team.name}</h2>
+                    <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold ${team.tournament_id ? "bg-sky-100 text-sky-700" : "bg-violet-100 text-violet-700"}`}>{team.tournament_id ? "Tournament" : "Standalone"}</span>
+                  </div>
+                </div>
+                <dl className="mt-4 grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 gap-y-2 border-t border-border pt-3 text-sm">
+                  <dt className="text-muted-foreground">Owner</dt><dd className="min-w-0 break-words font-semibold">{team.owner_name || "-"}</dd>
+                  <dt className="text-muted-foreground">Contact</dt><dd className="min-w-0 break-all font-semibold">{team.contact_number || "-"}</dd>
+                </dl>
+                <Link href={localePath(locale, `/admin/teams/${team.id}`)} className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-primary px-4 font-bold text-primary-foreground">Manage Team</Link>
+              </article>
+            ))}
+          </div>
+          </>
         )}
       </div>
     </div>

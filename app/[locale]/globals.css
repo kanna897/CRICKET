@@ -2334,6 +2334,10 @@ html.light body .admin-theme-shell main .matches-page table.min-w-\[29rem\] thea
   grid-template-columns: minmax(0, 1.7fr) minmax(18rem, .72fr);
   gap: 1.1rem;
 }
+.dashboard-main-grid > *,
+.dashboard-lower-grid > *,
+.dashboard-panel,
+.dashboard-panel > * { min-width: 0; }
 
 .dashboard-panel {
   overflow: hidden;
@@ -2480,10 +2484,18 @@ html.light .dashboard-command-center .dashboard-quick-actions .dashboard-action-
 }
 
 @media (max-width: 760px) {
+  .dashboard-command-center { width: 100%; max-width: 100%; overflow: hidden; }
   .dashboard-welcome { align-items: flex-start; flex-direction: column; }
   .dashboard-date { width: 100%; }
   .dashboard-live-grid,
   .dashboard-lower-grid { grid-template-columns: 1fr; }
+  .dashboard-panel > header { flex-wrap: wrap; }
+  .dashboard-panel > header > div { min-width: 0; flex-wrap: wrap; }
+  .dashboard-tournament-list,
+  .dashboard-activity-list { padding-inline: .6rem; }
+  .dashboard-tournament-row,
+  .dashboard-activity-row { min-width: 0; gap: .55rem; }
+  .dashboard-status { max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 /* Live scorer page chrome must stay readable in both admin themes. */
@@ -3123,6 +3135,11 @@ html.light .public-comparison-shell { background: radial-gradient(circle at 12% 
   .comparison-poster-section > header { align-items: stretch; flex-direction: column; }
   .comparison-poster-section > header button { width: 100%; }
   .comparison-poster-downloads { width: 100%; }
-  .comparison-poster { transform: scale(.3); margin-bottom: -756px; }
-  .comparison-poster-preview { justify-content: flex-start; }
+  .comparison-poster-preview { display: block; min-height: 324px; overflow: hidden; padding: 0; }
+  .comparison-poster { transform: scale(.3); transform-origin: top left; margin-right: -756px; margin-bottom: -756px; }
+}
+
+@media (max-width: 400px) {
+  .comparison-poster-preview { min-height: 270px; }
+  .comparison-poster { transform: scale(.25); margin-right: -810px; margin-bottom: -810px; }
 }

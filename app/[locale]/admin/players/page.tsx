@@ -161,7 +161,7 @@ export default function PlayersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Players</h1>
           <p className="text-muted-foreground mt-1">Manage global player directory.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -187,7 +187,7 @@ export default function PlayersPage() {
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-4 sm:p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -221,7 +221,8 @@ export default function PlayersPage() {
             <p className="text-muted-foreground mt-1">Get started by importing or adding a player.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
@@ -266,6 +267,25 @@ export default function PlayersPage() {
               </tbody>
             </table>
           </div>
+          <div className="grid gap-3 sm:hidden">
+            {filteredPlayers.map((player) => (
+              <article key={player.id} className="min-w-0 rounded-xl border border-border bg-background/45 p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  {player.photo_url ? <Image unoptimized width={128} height={128} src={player.photo_url} alt="" className="h-12 w-12 shrink-0 rounded-full bg-muted object-cover" /> : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 text-lg font-bold text-primary">{player.name.charAt(0)}</span>}
+                  <div className="min-w-0 flex-1">
+                    <h2 className="break-words font-black leading-tight">{player.name}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">ID: {player.id.substring(0, 8)}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-xs font-bold text-secondary-foreground">{player.playing_role || "Unknown"}</span>
+                </div>
+                <div className="mt-4 flex min-w-0 items-center justify-between gap-3 border-t border-border pt-3">
+                  <p className="min-w-0 break-all font-mono text-sm">{player.phone_number || "No phone"}</p>
+                  <Link href={`/admin/players/${player.id}`} className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Profile</Link>
+                </div>
+              </article>
+            ))}
+          </div>
+          </>
         )}
       </div>
     </div>
