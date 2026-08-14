@@ -86,6 +86,7 @@ export type Database = {
           contact_number: string | null
           created_at: string
           id: string
+          manual_text_updated_at: string | null
           ocr_serial_number: number | null
           photo_url: string
           player_card_url: string | null
@@ -109,6 +110,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           id?: string
+          manual_text_updated_at?: string | null
           ocr_serial_number?: number | null
           photo_url: string
           player_card_url?: string | null
@@ -132,6 +134,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           id?: string
+          manual_text_updated_at?: string | null
           ocr_serial_number?: number | null
           photo_url?: string
           player_card_url?: string | null
@@ -1998,6 +2001,7 @@ export type Database = {
           p_batting_style?: string
           p_bowling_style?: string
           p_contact_number?: string
+          p_manual?: boolean
           p_player_name: string
           p_playing_role: string
           p_registration_number?: number

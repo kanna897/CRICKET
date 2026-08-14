@@ -376,7 +376,7 @@ test("bulk auction card OCR saves batting and bowling styles", () => {
   assert.match(ocr, /bowlingStyle/);
   assert.match(ocr, /cleanPlayingStyle/);
   assert.match(ocr, /@paddleocr\/paddleocr-js/);
-  assert.match(ocr, /PP-OCRv6_tiny_det/);
+  assert.match(ocr, /PP-OCRv6_small_det/);
   assert.match(ocr, /Tesseract fallback/);
   assert.match(ocr, /usablePlayerName/);
   assert.match(dashboard, /p_batting_style/);
@@ -387,6 +387,12 @@ test("bulk auction card OCR saves batting and bowling styles", () => {
   const openFlow = dashboard.match(/async function openPlayer\(player[\s\S]*?function searchPlayerBySerial/)?.[0] || "";
   assert.doesNotMatch(saleFlow, /scanPlayerCard/);
   assert.doesNotMatch(openFlow, /scanPlayerCard/);
+  const fixedOpenFlow = dashboard.match(/async function openFixedPlayer\(player[\s\S]*?async function saveFixedPlayerText/)?.[0] || "";
+  assert.doesNotMatch(fixedOpenFlow, /scanPlayerCard/);
+  assert.match(dashboard, /p_manual: true/);
+  const manualTextMigration = readFileSync(resolve(root, "supabase/migrations/20260814201812_preserve_manual_auction_player_text.sql"), "utf8");
+  assert.match(manualTextMigration, /manual_text_updated_at/);
+  assert.match(manualTextMigration, /manual_text_updated_at is not null and not p_manual/);
 });
 
 test("public points table and fixture outcomes fit narrow mobile screens", () => {

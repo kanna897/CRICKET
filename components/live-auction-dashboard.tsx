@@ -269,7 +269,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   async function scanExistingCards() {
     const pending = auctionPlayers.filter((player) =>
-      player.player_name === "Player" || !player.ocr_serial_number || !player.contact_number
+      player.player_name === "Player" || !player.contact_number
       || !player.batting_style || !player.bowling_style
     );
     if (!pending.length) return setMessage("All uploaded cards already have scanned text.");
@@ -297,7 +297,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   }
 
   async function scanFixedCards() {
-    const pending = fixedPlayers.filter((player) => player.player_name === "Player" || !player.ocr_serial_number || player.playing_role === "Player");
+    const pending = fixedPlayers.filter((player) => player.player_name === "Player");
     if (!pending.length) return setMessage("All fixed player cards already show name, role and S.No.");
     setBusy("ocr-fixed"); setMessage(""); setScanProgress({ completed: 0, total: pending.length });
     let failed = 0; let firstFailure = "";
@@ -311,16 +311,9 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   }
 
   async function openFixedPlayer(player: AuctionPlayer) {
-    setBusy(player.id); setMessage("");
+    setMessage("");
     setFixedSelected(player); setFixedTeamId(player.winning_team_id || ""); setFixedPoints(player.winning_bid === null ? "" : String(player.winning_bid));
     setEditPlayerName(player.player_name); setEditPlayingRole(player.playing_role); setEditSerial(String(displaySerial(player)));
-    try {
-      const resolved = player.player_name === "Player" || player.playing_role === "Player" ? await scanPlayerCard(player) : player;
-      setFixedSelected(resolved); setFixedTeamId(resolved.winning_team_id || ""); setFixedPoints(resolved.winning_bid === null ? "" : String(resolved.winning_bid));
-      setEditPlayerName(resolved.player_name); setEditPlayingRole(resolved.playing_role); setEditSerial(String(displaySerial(resolved)));
-      if (resolved !== player) await load();
-    } catch { setMessage("Automatic text scan failed. You can enter this fixed player's name and role manually below."); }
-    finally { setBusy(""); }
   }
 
   async function saveFixedPlayerText() {
@@ -333,6 +326,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       p_player_name: editPlayerName.trim(),
       p_playing_role: editPlayingRole.trim() || "Player",
       p_registration_number: fixedSelected.status === "fixed" ? undefined : serial,
+      p_manual: true,
     });
     if (error) setMessage(error.message);
     else { setFixedSelected(data as AuctionPlayer); setMessage("Fixed player name and role saved."); await load(); }
@@ -382,6 +376,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       p_player_name: editPlayerName.trim(),
       p_playing_role: editPlayingRole.trim() || "Player",
       p_registration_number: Number.isInteger(serial) && serial > 0 ? serial : undefined,
+      p_manual: true,
     });
     if (error) setMessage(error.message);
     else {

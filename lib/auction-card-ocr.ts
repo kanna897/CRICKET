@@ -24,8 +24,8 @@ function getWorker() {
 function getPaddleEngine() {
   paddlePromise ??= import("@paddleocr/paddleocr-js")
     .then(({ PaddleOCR }) => PaddleOCR.create({
-      textDetectionModelName: "PP-OCRv6_tiny_det",
-      textRecognitionModelName: "PP-OCRv6_tiny_rec",
+      textDetectionModelName: "PP-OCRv6_small_det",
+      textRecognitionModelName: "PP-OCRv6_small_rec",
       worker: true,
       textRecognitionBatchSize: 5,
       ortOptions: {
