@@ -380,7 +380,9 @@ test("bulk auction card OCR saves batting and bowling styles", () => {
   assert.match(migration, /batting_style = coalesce/);
   assert.match(migration, /bowling_style = coalesce/);
   const saleFlow = dashboard.match(/async function confirmSale\(\)[\s\S]*?async function markUnsold/)?.[0] || "";
+  const openFlow = dashboard.match(/async function openPlayer\(player[\s\S]*?function searchPlayerBySerial/)?.[0] || "";
   assert.doesNotMatch(saleFlow, /scanPlayerCard/);
+  assert.doesNotMatch(openFlow, /scanPlayerCard/);
 });
 
 test("public points table and fixture outcomes fit narrow mobile screens", () => {

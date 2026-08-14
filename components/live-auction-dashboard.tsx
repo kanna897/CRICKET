@@ -340,27 +340,15 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   }
 
   async function openPlayer(player: AuctionPlayer) {
-    let resolvedPlayer = player;
     setBusy(player.id);
     setMessage("");
     setSelected(player); setEditPlayerName(player.player_name); setEditPlayingRole(player.playing_role);
     setEditSerial(String(displaySerial(player))); setSaleTeamId(player.winning_team_id || "");
     setWinningBid(player.winning_bid ? String(player.winning_bid) : "");
     try {
-      if (admin && (player.player_name === "Player" || !player.ocr_serial_number
-        || !player.contact_number || !player.batting_style || !player.bowling_style)) {
-        try { resolvedPlayer = await scanPlayerCard(player); }
-        catch { setMessage("Automatic text scan failed. You can enter this player's name and role manually below."); }
-      }
-      setSelected(resolvedPlayer);
-      setEditPlayerName(resolvedPlayer.player_name);
-      setEditPlayingRole(resolvedPlayer.playing_role);
-      setEditSerial(String(displaySerial(resolvedPlayer)));
-      setSaleTeamId(resolvedPlayer.winning_team_id || "");
-      setWinningBid(resolvedPlayer.winning_bid ? String(resolvedPlayer.winning_bid) : "");
-      if (admin && resolvedPlayer.status === "available") {
+      if (admin && player.status === "available") {
         const { error } = await supabase.rpc("set_auction_player_live", {
-          p_auction_player_id: resolvedPlayer.id,
+          p_auction_player_id: player.id,
         });
         if (error) setMessage(error.message);
         await load();
