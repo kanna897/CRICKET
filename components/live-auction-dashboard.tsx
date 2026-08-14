@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Activity, Banknote, CheckCircle2, Download, Gavel,
-  ImagePlus, Loader2, Pause, Play, RefreshCw, ShoppingBag, Trophy, UserRound,
+  ImagePlus, Loader2, Pause, Play, RefreshCw, Search, ShoppingBag, Trophy, UserRound,
   UsersRound, X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -28,6 +28,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const [filter, setFilter] = useState<Filter>("available");
+  const [serialSearch, setSerialSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
@@ -369,6 +370,21 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     }
   }
 
+  function searchPlayerBySerial() {
+    const serial = Number(serialSearch.trim());
+    if (!Number.isInteger(serial) || serial < 1) {
+      setMessage("Enter a valid S.No to find a player.");
+      return;
+    }
+    const player = auctionPlayers.find((row) => displaySerial(row) === serial);
+    if (!player) {
+      setMessage(`No auction player found with S.No ${serial}.`);
+      return;
+    }
+    setFilter(player.status as Filter);
+    void openPlayer(player);
+  }
+
   async function savePlayerText() {
     if (!selected || !editPlayerName.trim()) return setMessage("Enter the player name.");
     setBusy("save-player-text");
@@ -507,7 +523,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
         <div className="rounded-3xl border border-border bg-card p-5 text-foreground"><h2 className="text-xl font-black">Team purse & squad status</h2><div className="mt-4 space-y-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); const teamSold = sold.filter((player) => player.winning_team_id === row.id); return <article key={row.id} className="rounded-xl border border-border bg-muted/30 p-4"><div className="flex items-center gap-3">{row.logo_url ? <Image unoptimized width={128} height={128} src={row.logo_url} alt="" className="h-10 w-10 rounded-full object-contain"/> : <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-black">{row.name[0]}</span>}<div className="min-w-0 flex-1"><h3 className="truncate font-black">{row.name}</h3><p className="text-xs text-muted-foreground">{teamSold.length} purchased players</p></div><strong className="text-sm text-emerald-600">{money(Number(purse?.initial_purse || 0) - Number(purse?.total_spent || 0))} left</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${purse?.initial_purse ? Math.min(100, Number(purse.total_spent) * 100 / Number(purse.initial_purse)) : 0}%` }}/></div></article>})}</div></div>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-border bg-card p-4 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap gap-2">{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} aria-label={`View ${player.player_name} auction details`} className="overflow-hidden rounded-lg border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><Image unoptimized width={128} height={128} src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/>{busy === player.id && <span className="absolute inset-0 grid place-items-center bg-black/60 text-[.65rem] font-black text-white"><Loader2 className="mr-1 h-4 w-4 animate-spin"/>Reading text</span>}</div><div className="p-2"><div className="flex items-center justify-between gap-1"><strong className="truncate text-xs">{player.player_name}</strong><span className="shrink-0 font-mono text-[.62rem] font-black text-primary">S.NO {String(displaySerial(player)).padStart(2, "0")}</span></div><p className="mt-0.5 truncate text-[.65rem] capitalize text-muted-foreground">{pretty(player.playing_role)}</p>{player.status === "sold" && <><strong className="mt-1 block truncate text-[.65rem] text-emerald-600">{team(player.winning_team_id)?.name || "Sold"}</strong><span className="block text-[.65rem] font-black text-emerald-600">{money(Number(player.winning_bid || 0))} points</span></>}</div></button>)}</div></section>
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-4 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{pretty(filter)} players</h2><p className="text-sm text-muted-foreground">Sold and unsold players automatically move out of Available into their own section.</p></div><div className="flex flex-wrap items-center gap-2">{admin && <form className="flex overflow-hidden rounded-full border border-primary/40 bg-background focus-within:ring-2 focus-within:ring-primary/30" onSubmit={(event) => { event.preventDefault(); searchPlayerBySerial(); }}><label htmlFor="auction-serial-search" className="sr-only">Search player by S.No</label><input id="auction-serial-search" type="number" min="1" inputMode="numeric" value={serialSearch} onChange={(event) => setSerialSearch(event.target.value)} placeholder="Search S.NO" className="w-32 bg-transparent px-4 py-2 text-xs font-bold outline-none sm:w-36"/><button type="submit" disabled={Boolean(busy)} aria-label="Search player by S.No" className="grid w-10 place-items-center bg-primary text-primary-foreground disabled:opacity-50"><Search className="h-4 w-4"/></button></form>}{(["available","live","sold","unsold"] as Filter[]).map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-full px-3 py-1.5 text-xs font-black capitalize ${filter === item ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item} ({players.filter((player) => player.status === item).length})</button>)}</div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{filtered.map((player) => <button key={player.id} disabled={busy === player.id} onClick={() => void openPlayer(player)} aria-label={`View ${player.player_name} auction details`} className="overflow-hidden rounded-lg border border-border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-square overflow-hidden"><Image unoptimized width={128} height={128} src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><Status value={player.status}/>{busy === player.id && <span className="absolute inset-0 grid place-items-center bg-black/60 text-[.65rem] font-black text-white"><Loader2 className="mr-1 h-4 w-4 animate-spin"/>Reading text</span>}</div><div className="p-2"><div className="flex items-center justify-between gap-1"><strong className="truncate text-xs">{player.player_name}</strong><span className="shrink-0 font-mono text-[.62rem] font-black text-primary">S.NO {String(displaySerial(player)).padStart(2, "0")}</span></div><p className="mt-0.5 truncate text-[.65rem] capitalize text-muted-foreground">{pretty(player.playing_role)}</p>{player.status === "sold" && <><strong className="mt-1 block truncate text-[.65rem] text-emerald-600">{team(player.winning_team_id)?.name || "Sold"}</strong><span className="block text-[.65rem] font-black text-emerald-600">{money(Number(player.winning_bid || 0))} points</span></>}</div></button>)}</div></section>
 
       <section className="grid gap-5 xl:grid-cols-2"><SquadPanel teams={teams} players={[...fixedAssigned, ...sold]}/><HistoryPanel history={history} players={players} teams={teams}/></section>
 
