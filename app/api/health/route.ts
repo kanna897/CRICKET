@@ -49,8 +49,8 @@ async function sendHealthAlert(payload: Record<string, unknown>) {
 export async function GET(request: Request) {
   const startedAt = performance.now();
   const requestId = requestIdFrom(request);
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   let database: { status: CheckStatus; latencyMs: number | null; reason?: string | null } = { status: "misconfigured", latencyMs: null, reason: "Missing Supabase URL or public key" };
   let realtime: { status: CheckStatus; latencyMs: number | null; reason?: string | null } = { status: "misconfigured", latencyMs: null, reason: "Missing Supabase URL or public key" };
 
