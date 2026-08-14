@@ -375,6 +375,10 @@ test("bulk auction card OCR saves batting and bowling styles", () => {
   assert.match(ocr, /battingStyle/);
   assert.match(ocr, /bowlingStyle/);
   assert.match(ocr, /cleanPlayingStyle/);
+  assert.match(ocr, /@paddleocr\/paddleocr-js/);
+  assert.match(ocr, /PP-OCRv6_tiny_det/);
+  assert.match(ocr, /Tesseract fallback/);
+  assert.match(ocr, /usablePlayerName/);
   assert.match(dashboard, /p_batting_style/);
   assert.match(dashboard, /p_bowling_style/);
   assert.match(migration, /batting_style = coalesce/);

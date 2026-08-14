@@ -15,7 +15,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://res.cloudinary.com https://challenges.cloudflare.com https://cdn.jsdelivr.net https://vitals.vercel-insights.com https://*.ingest.sentry.io",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://res.cloudinary.com https://challenges.cloudflare.com https://cdn.jsdelivr.net https://paddle-model-ecology.bj.bcebos.com https://vitals.vercel-insights.com https://*.ingest.sentry.io",
   "frame-src https://challenges.cloudflare.com",
   "worker-src 'self' blob: https://cdn.jsdelivr.net",
   "manifest-src 'self'",
@@ -46,6 +46,11 @@ const config: NextConfig = {
   },
   turbopack: {
     root: path.resolve(__dirname),
+    resolveAlias: {
+      fs: { browser: "./lib/browser-empty.ts" },
+      path: { browser: "./lib/browser-empty.ts" },
+      "ort.bundle.min.mjs": "./node_modules/onnxruntime-web/dist/ort.bundle.min.mjs",
+    },
   },
   async headers() {
     return [
