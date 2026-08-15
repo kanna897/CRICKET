@@ -95,6 +95,17 @@ test("scoring retains offline queue and handover controls", () => {
   assert.match(scoring, /Scorer Handover/);
 });
 
+test("live auction squads stay compact and keyboard accessible for many teams", () => {
+  const squads = readFileSync(resolve(root, "features/auction/components.tsx"), "utf8");
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  assert.match(squads, /selectedTeamId/);
+  assert.match(squads, /aria-pressed=\{selected\}/);
+  assert.match(squads, /xl:grid-cols-6/);
+  assert.match(squads, /xl:grid-cols-3/);
+  assert.match(squads, /No players assigned to this team yet/);
+  assert.match(dashboard, /<section className="grid gap-5"><SquadPanel/);
+});
+
 test("match workflow keeps the active locale in admin navigation", () => {
   const matchList = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
   const newMatch = readFileSync(resolve(root, "app/[locale]/admin/matches/new/page.tsx"), "utf8");
