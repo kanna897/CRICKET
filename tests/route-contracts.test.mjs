@@ -114,6 +114,7 @@ test("live auction paginates player filters in groups of fifty without limiting 
   assert.match(dashboard, /Next 50/);
   assert.match(dashboard, /auctionPlayers\.find\(\(row\) => displaySerial\(row\) === serial\)/);
   assert.match(dashboard, /setPlayerPage\(Math\.floor\(/);
+  assert.match(dashboard, /2xl:grid-cols-10">\{paginatedPlayers\.map/);
 });
 
 test("match workflow keeps the active locale in admin navigation", () => {
