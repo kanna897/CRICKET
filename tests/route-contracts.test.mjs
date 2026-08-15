@@ -106,6 +106,16 @@ test("live auction squads stay compact and keyboard accessible for many teams", 
   assert.match(dashboard, /<section className="grid gap-5"><SquadPanel/);
 });
 
+test("live auction paginates player filters in groups of fifty without limiting S.No search", () => {
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  assert.match(dashboard, /const PLAYERS_PER_PAGE = 50/);
+  assert.match(dashboard, /filtered\.slice\(pageStart, pageStart \+ PLAYERS_PER_PAGE\)/);
+  assert.match(dashboard, /Previous 50/);
+  assert.match(dashboard, /Next 50/);
+  assert.match(dashboard, /auctionPlayers\.find\(\(row\) => displaySerial\(row\) === serial\)/);
+  assert.match(dashboard, /setPlayerPage\(Math\.floor\(/);
+});
+
 test("match workflow keeps the active locale in admin navigation", () => {
   const matchList = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
   const newMatch = readFileSync(resolve(root, "app/[locale]/admin/matches/new/page.tsx"), "utf8");
