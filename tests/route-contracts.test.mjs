@@ -254,8 +254,8 @@ test("bulk auction uploads support large batches and use compact player cards", 
   const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
   assert.match(mediaRoute, /kind === "auction-player-cards" \? 550 : 30/);
   assert.match(dashboard, /selectedFiles\.length > 500/);
-  assert.match(dashboard, /2xl:grid-cols-8/);
-  assert.match(dashboard, /xl:grid-cols-7/);
+  assert.match(dashboard, /2xl:grid-cols-10">\{paginatedPlayers\.map/);
+  assert.match(dashboard, /xl:grid-cols-8/);
 });
 
 test("fixed player cards upload without a separate single-card S.No field", () => {
@@ -263,6 +263,7 @@ test("fixed player cards upload without a separate single-card S.No field", () =
   assert.doesNotMatch(dashboard, /S\.No \(single card\)/);
   assert.doesNotMatch(dashboard, /fixedUploadSerial/);
   assert.match(dashboard, /nextAutomaticSerial/);
+  assert.match(dashboard, /2xl:grid-cols-10">\{visibleFixedPlayers\.map/);
   assert.match(dashboard, /assigned automatically/);
 });
 
