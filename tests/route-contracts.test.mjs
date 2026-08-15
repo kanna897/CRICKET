@@ -117,6 +117,15 @@ test("live auction paginates player filters in groups of fifty without limiting 
   assert.match(dashboard, /2xl:grid-cols-10">\{paginatedPlayers\.map/);
 });
 
+test("live auction current-player and purse panels avoid unnecessary tall stretching", () => {
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  assert.match(dashboard, /grid items-start gap-4 xl:grid-cols-\[1\.1fr_\.9fr\]/);
+  assert.match(dashboard, /Team purse & squad status/);
+  assert.match(dashboard, /mt-3 space-y-2/);
+  assert.match(dashboard, /h-8 w-8 rounded-full/);
+  assert.match(dashboard, /mt-2 h-1\.5/);
+});
+
 test("match workflow keeps the active locale in admin navigation", () => {
   const matchList = readFileSync(resolve(root, "app/[locale]/admin/matches/page.tsx"), "utf8");
   const newMatch = readFileSync(resolve(root, "app/[locale]/admin/matches/new/page.tsx"), "utf8");
