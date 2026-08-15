@@ -45,6 +45,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
   const [fixedSelected, setFixedSelected] = useState<AuctionPlayer | null>(null);
   const [fixedTeamId, setFixedTeamId] = useState("");
   const [fixedPoints, setFixedPoints] = useState("");
+  const [fixedUploadSerial, setFixedUploadSerial] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -216,16 +217,42 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
     if (selectedFiles.length > 500) return setMessage("Upload a maximum of 500 fixed player cards at a time.");
     const invalid = selectedFiles.find((file) => !["image/jpeg", "image/png"].includes(file.type) || file.size > 5 * 1024 * 1024);
     if (invalid) return setMessage(`${invalid.name}: upload a JPG or PNG smaller than 5 MB.`);
+    const enteredSerial = fixedUploadSerial.trim() === "" ? undefined : Number(fixedUploadSerial);
+    if (enteredSerial !== undefined && (!Number.isInteger(enteredSerial) || enteredSerial < 1)) {
+      return setMessage("Enter a valid fixed player S.No greater than zero.");
+    }
+    if (selectedFiles.length > 1 && enteredSerial !== undefined) {
+      return setMessage("The S.No field is for one-card uploads. For multiple cards, start every filename with its S.No.");
+    }
+    const playerDetails = selectedFiles.map((file) => {
+      const details = playerDetailsFromFilename(file.name);
+      return {
+        file,
+        details: selectedFiles.length === 1 && enteredSerial !== undefined
+          ? { ...details, registration_number: enteredSerial }
+          : details,
+      };
+    });
+    const missingSerial = playerDetails.find(({ details }) => !details.registration_number);
+    if (missingSerial) {
+      return setMessage(`${missingSerial.file.name}: enter its S.No, or rename the file to start with the S.No (example: 03 - Player Name.jpg).`);
+    }
+    const serials = playerDetails.map(({ details }) => details.registration_number!);
+    const duplicateSerial = serials.find((serial, index) => serials.indexOf(serial) !== index);
+    if (duplicateSerial) return setMessage(`S.No ${duplicateSerial} appears more than once in this upload.`);
+    const existingSerial = serials.find((serial) => fixedPlayers.some((player) => player.registration_number === serial));
+    if (existingSerial) return setMessage(`A fixed player card with S.No ${existingSerial} is already uploaded.`);
     setBusy("fixed-upload"); setMessage(""); setUploadProgress({ completed: 0, total: selectedFiles.length });
     try {
-      const uploaded = await mapWithConcurrency(selectedFiles, 5, async (file) => {
+      const uploaded = await mapWithConcurrency(playerDetails, 5, async ({ file, details }) => {
         const media = await uploadImage(file, "auction-player-cards");
         setUploadProgress((progress) => ({ ...progress, completed: progress.completed + 1 }));
-        return { card_url: media.url, ...playerDetailsFromFilename(file.name) };
+        return { card_url: media.url, ...details };
       });
       const { data, error } = await supabase.rpc("create_fixed_auction_players", { p_tournament_id: tournamentId, p_players: uploaded });
       if (error) throw error;
       setMessage(`${data?.length || uploaded.length} fixed player cards uploaded.`);
+      setFixedUploadSerial("");
       await load();
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Fixed player-card upload failed."); }
     finally { setBusy(""); setUploadProgress({ completed: 0, total: 0 }); }
@@ -490,7 +517,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       </section>}
 
       {(admin || fixedPlayers.length > 0) && <section className="rounded-2xl border border-amber-400/40 bg-card p-5 text-foreground shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[.18em] text-amber-500">Retained inventory</p><h2 className="mt-1 text-xl font-black">Fixed Players</h2><p className="mt-1 text-sm text-muted-foreground">{admin ? "Use the same S.No as the auction card. After assignment, the matching auction card hides automatically." : "Official retained players assigned directly to their teams."}</p></div>{admin && <div className="flex flex-wrap gap-2"><button disabled={Boolean(busy)} onClick={() => void scanFixedCards()} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-400 px-5 py-3 font-black text-amber-500 disabled:opacity-60">{busy === "ocr-fixed" ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <RefreshCw className="mr-2 h-5 w-5"/>}{busy === "ocr-fixed" ? `Scanning ${scanProgress.completed}/${scanProgress.total}` : "Scan Fixed Cards to Text"}</button><label className={`inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950 ${busy === "fixed-upload" ? "pointer-events-none opacity-60" : ""}`}>{busy === "fixed-upload" ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <ImagePlus className="mr-2 h-5 w-5"/>}{busy === "fixed-upload" ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}` : "Upload Fixed Player Cards"}<input type="file" multiple accept="image/jpeg,image/png" className="sr-only" disabled={busy === "fixed-upload"} onChange={(event) => { void uploadFixedPlayerCards(event.target.files); event.target.value = ""; }}/></label></div>}</div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[.18em] text-amber-500">Retained inventory</p><h2 className="mt-1 text-xl font-black">Fixed Players</h2><p className="mt-1 text-sm text-muted-foreground">{admin ? "Use the same S.No as the auction card. After assignment, the matching auction card hides automatically." : "Official retained players assigned directly to their teams."}</p></div>{admin && <div className="flex flex-wrap items-end gap-2"><label className="w-28 text-xs font-black text-muted-foreground">S.No (single card)<input aria-label="Fixed player S.No for single-card upload" className="input mt-1" type="number" min="1" inputMode="numeric" placeholder="e.g. 03" value={fixedUploadSerial} disabled={Boolean(busy)} onChange={(event) => setFixedUploadSerial(event.target.value)}/></label><button disabled={Boolean(busy)} onClick={() => void scanFixedCards()} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-400 px-5 py-3 font-black text-amber-500 disabled:opacity-60">{busy === "ocr-fixed" ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <RefreshCw className="mr-2 h-5 w-5"/>}{busy === "ocr-fixed" ? `Scanning ${scanProgress.completed}/${scanProgress.total}` : "Scan Fixed Cards to Text"}</button><label className={`inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950 ${busy === "fixed-upload" ? "pointer-events-none opacity-60" : ""}`}>{busy === "fixed-upload" ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <ImagePlus className="mr-2 h-5 w-5"/>}{busy === "fixed-upload" ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}` : "Upload Fixed Player Cards"}<input type="file" multiple accept="image/jpeg,image/png" className="sr-only" disabled={busy === "fixed-upload"} onChange={(event) => { void uploadFixedPlayerCards(event.target.files); event.target.value = ""; }}/></label></div>}</div>
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{visibleFixedPlayers.map((player) => <button key={player.id} disabled={admin && busy === player.id} onClick={() => admin ? void openFixedPlayer(player) : setSelected(player)} className="overflow-hidden rounded-lg border border-amber-400/30 bg-background text-left shadow-sm disabled:opacity-60"><div className="relative aspect-square"><Image unoptimized width={128} height={128} src={player.player_card_url || player.photo_url} alt={player.player_name} className="h-full w-full object-cover"/><span className="absolute right-1 top-1 rounded-full bg-emerald-500 px-2 py-1 text-[.6rem] font-black text-white">{player.status === "fixed" ? "FIXED" : "UNASSIGNED"}</span>{busy === player.id && <span className="absolute inset-0 grid place-items-center bg-black/60 text-xs font-black text-white"><Loader2 className="h-5 w-5 animate-spin"/>Reading text</span>}</div><div className="p-2"><strong className="block truncate text-xs">{player.player_name}</strong><span className="block truncate text-[.65rem] capitalize text-muted-foreground">{pretty(player.playing_role)}</span><span className="font-mono text-[.62rem] font-black text-amber-600">S.NO {String(displaySerial(player)).padStart(2, "0")}</span>{player.status === "fixed" && <><span className="block truncate text-[.65rem] font-bold text-emerald-600">{team(player.winning_team_id)?.name}</span><span className="text-[.65rem] font-black text-emerald-600">{money(Number(player.winning_bid || 0))} points</span></>}</div></button>)}</div>
         {admin && !fixedPlayers.length && <p className="mt-5 rounded-xl border border-dashed border-border p-8 text-center text-sm font-bold text-muted-foreground">No fixed player cards uploaded yet.</p>}
       </section>}
