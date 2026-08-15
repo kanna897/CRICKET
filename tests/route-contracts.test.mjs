@@ -236,6 +236,14 @@ test("bulk auction uploads support large batches and use compact player cards", 
   assert.match(dashboard, /xl:grid-cols-7/);
 });
 
+test("fixed player cards upload without a separate single-card S.No field", () => {
+  const dashboard = readFileSync(resolve(root, "components/live-auction-dashboard.tsx"), "utf8");
+  assert.doesNotMatch(dashboard, /S\.No \(single card\)/);
+  assert.doesNotMatch(dashboard, /fixedUploadSerial/);
+  assert.match(dashboard, /nextAutomaticSerial/);
+  assert.match(dashboard, /assigned automatically/);
+});
+
 test("bulk auction cards become cropped player profile photos when sold", () => {
   const migration = readFileSync(resolve(root, "supabase/migrations/20260803183000_match_squad_player_card_crop.sql"), "utf8");
   assert.match(migration, /auction_profile_photo_url/);
