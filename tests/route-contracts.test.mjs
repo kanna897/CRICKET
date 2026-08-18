@@ -305,7 +305,12 @@ test("scheduled generated matches expose guarded schedule editing", () => {
   assert.match(matches, /\.eq\("status", "scheduled"\)/);
   assert.match(matches, /match_date: editForm\.match_date/);
   assert.match(matches, /match_time: editForm\.match_time/);
+  assert.match(matches, /team_a_id: editForm\.team_a_id/);
+  assert.match(matches, /team_b_id: editForm\.team_b_id/);
   assert.match(matches, /overs_per_match: overs/);
+  assert.match(matches, /Previous match day/);
+  assert.match(matches, /Next match day/);
+  assert.match(matches, /match\.match_date === selectedMatchDate/);
 });
 
 test("fixed auction cards become cropped player profile photos when assigned", () => {
