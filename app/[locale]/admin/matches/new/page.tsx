@@ -62,9 +62,18 @@ export default function NewMatchPage() {
     loadOptions();
   }, [isMasterAdmin, userId]);
 
-  const availableTeams = form.match_scope === "tournament"
+  const uniqueTeamNames = (rows: Team[]) => {
+    const seen = new Set<string>();
+    return rows.filter((team) => {
+      const key = team.name.replace(/\s+/g, " ").trim().toLocaleLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const availableTeams = uniqueTeamNames(form.match_scope === "tournament"
     ? teams.filter((team) => team.tournament_id === form.tournament_id)
-    : [...new Map(teams.filter((team) => !(team as Team & { standalone_match_id?: string | null }).standalone_match_id).map((team) => [team.id, team])).values()];
+    : teams.filter((team) => !(team as Team & { standalone_match_id?: string | null }).standalone_match_id));
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const teamPlayers = (teamId: string) => players.filter((player) => player.team_id === teamId);
   const toggleSquadPlayer = (playerId: string, squad: string[], setSquad: (value: string[]) => void) => {

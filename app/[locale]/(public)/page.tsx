@@ -121,9 +121,9 @@ export default function PublicHome() {
       );
       const matchIds = matchRows.map((item) => item.id);
       const sessionRows = (sessionResult.data || []) as AuctionSession[];
-      const featuredAuctionSession = sessionRows.find((item) => item.status === "live" && activeTournamentIds.has(item.tournament_id))
-        || sessionRows.find((item) => item.status === "completed" && activeTournamentIds.has(item.tournament_id))
-        || null;
+      // Completed auctions must disappear from public surfaces. Their results
+      // remain available to organizers in the admin auction workspace.
+      const featuredAuctionSession = sessionRows.find((item) => item.status === "live" && activeTournamentIds.has(item.tournament_id)) || null;
       const teamIds = [...new Set(matchRows.flatMap((item) => [item.team_a_id, item.team_b_id]))];
       const teamScopeFilters = [
         tournamentIds.length ? `tournament_id.in.(${tournamentIds.join(",")})` : "",
