@@ -48,6 +48,8 @@ type Match = {
   ground: string | null;
   toss_winner_id: string | null;
   toss_decision: string | null;
+  winner_id: string | null;
+  updated_at: string;
   created_at: string;
 };
 type Innings = {
@@ -98,9 +100,9 @@ export default function PublicHome() {
           .order("created_at", { ascending: false })
           .limit(8),
         supabase.from("matches")
-          .select("id,tournament_id,team_a_id,team_b_id,status,match_date,match_time,ground,toss_winner_id,toss_decision,created_at")
+          .select("id,tournament_id,team_a_id,team_b_id,status,match_date,match_time,ground,toss_winner_id,toss_decision,winner_id,created_at,updated_at")
           .order("created_at", { ascending: false })
-          .limit(12),
+          .limit(60),
         supabase.from("players")
           .select("id", { count: "exact", head: true })
           .is("deleted_at", null),
@@ -112,7 +114,9 @@ export default function PublicHome() {
       ]);
       const tournamentIds = (tournamentResult.data || []).map((item) => item.id);
       const activeTournamentIds = new Set(tournamentIds);
-      const matchRows = ((matchResult.data || []) as Match[]).filter((item) =>
+      // The deployed schema includes matches.updated_at; older generated client
+      // types have not yet caught up with that existing column.
+      const matchRows = ((matchResult.data || []) as unknown as Match[]).filter((item) =>
         item.tournament_id === null || activeTournamentIds.has(item.tournament_id),
       );
       const matchIds = matchRows.map((item) => item.id);
@@ -211,6 +215,14 @@ export default function PublicHome() {
     .sort((a, b) => Number(b.winning_bid || 0) - Number(a.winning_bid || 0))
     .slice(0, 3);
   const auctionTournament = auctionSession ? tournament(auctionSession.tournament_id) : undefined;
+  const championMoment = useMemo(() => {
+    const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+    return matches
+      .filter((item) => item.tournament_id && item.winner_id && item.status === "completed" && new Date(item.updated_at).getTime() >= cutoff && tournament(item.tournament_id)?.status === "completed")
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
+  }, [matches, tournamentMap]);
+  const championTournament = championMoment ? tournament(championMoment.tournament_id) : undefined;
+  const championTeam = championMoment?.winner_id ? team(championMoment.winner_id) : undefined;
 
   const visibleTournaments = useMemo(() => {
     const ordered = [...tournaments].sort((a, b) => {
@@ -224,6 +236,7 @@ export default function PublicHome() {
     <div className="public-landing">
       <PublicNav />
       <main>
+        {championMoment && championTournament && championTeam && <section className="mx-auto max-w-6xl px-4 pt-5 sm:px-7" aria-label="Tournament champions"><article className="relative overflow-hidden rounded-3xl border border-amber-300/70 bg-gradient-to-br from-[#071631] via-[#123a78] to-[#087b71] p-6 text-center text-white shadow-2xl sm:p-8"><div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(251,191,36,.42),transparent_28%),radial-gradient(circle_at_82%_86%,rgba(34,211,238,.3),transparent_32%)]"/><div className="relative"><p className="text-xs font-black uppercase tracking-[.32em] text-amber-300">Tournament complete</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">{championTournament.name}</h2><div className="mx-auto mt-5 flex max-w-md items-center justify-center gap-4 rounded-2xl border border-amber-200/50 bg-slate-950/25 px-5 py-4"><Trophy className="h-10 w-10 text-amber-300"/>{championTeam.logo_url ? <Image width={72} height={72} src={championTeam.logo_url} alt="" className="h-14 w-14 rounded-full bg-white object-contain p-1"/> : <span className="grid h-14 w-14 place-items-center rounded-full bg-white/15 font-black">{championTeam.name.slice(0,2).toUpperCase()}</span>}<div className="min-w-0 text-left"><p className="text-xs font-black uppercase tracking-[.22em] text-amber-300">Champions</p><h3 className="truncate text-xl font-black">{championTeam.name}</h3></div></div></div></article></section>}
         <section className="landing-hero">
           <div className="landing-stadium-glow" />
           <div className="landing-hero-copy">
