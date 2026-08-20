@@ -166,20 +166,25 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
 
   async function setSessionStatus(status: Session["status"]) {
     setBusy(`session-${status}`); setMessage("");
-    const payload = {
-      tournament_id: tournamentId,
-      status,
-      started_at: status === "live" ? new Date().toISOString() : undefined,
-      ended_at: status === "completed" ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase.from("auction_sessions").upsert(payload, { onConflict: "tournament_id" });
-    if (error) setMessage(error.message);
-    else if (status === "completed") {
-      setMessage("Auction completed. Your 4K Top Picks JPG is being prepared.");
-      setTopPicksDownloadToken((token) => token + 1);
-    }
-    await load(); setBusy("");
+    try {
+      const payload = {
+        tournament_id: tournamentId,
+        status,
+        current_auction_player_id: status === "completed" ? null : session?.current_auction_player_id || null,
+        started_at: status === "live" ? new Date().toISOString() : undefined,
+        ended_at: status === "completed" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from("auction_sessions").upsert(payload, { onConflict: "tournament_id" });
+      if (error) throw error;
+      setSession((current) => current ? { ...current, ...payload } : null);
+      if (status === "completed") {
+        setMessage("Auction completed and hidden from the public auction list.");
+        setTopPicksDownloadToken((token) => token + 1);
+      } else setMessage(status === "live" ? "Auction is live and visible publicly." : "Auction paused.");
+      await load();
+    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Unable to update auction status."); }
+    finally { setBusy(""); }
   }
 
   async function uploadPlayerCards(files: FileList | null) {
@@ -504,7 +509,7 @@ export function LiveAuctionDashboard({ admin = false, userId, isMasterAdmin = fa
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Registered" value={stats.registered} icon={<UsersRound/>}/><Stat label="Available" value={stats.available} icon={<UserRound/>}/><Stat label="Sold" value={stats.sold} icon={<ShoppingBag/>}/><Stat label="Unsold" value={stats.unsold} icon={<X/>}/></section>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Highest bid" value={money(stats.highest)} icon={<Trophy/>}/><Stat label="Lowest bid" value={money(stats.lowest)} icon={<Banknote/>}/><Stat label="Average bid" value={money(stats.average)} icon={<Activity/>}/><Stat label="Progress" value={`${stats.registered ? Math.round((stats.sold + stats.unsold) * 100 / stats.registered) : 0}%`} icon={<CheckCircle2/>}/></section>
 
-      {admin && <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Auction controls</h2><p className="text-sm text-muted-foreground">Complete hides this tournament from the public auction list. Start / Resume makes it visible again.</p></div><div className="flex gap-2"><button className="control" onClick={() => void setSessionStatus("live")}><Play className="mr-2 h-4 w-4"/>Start / Resume</button><button className="control" onClick={() => void setSessionStatus("paused")}><Pause className="mr-2 h-4 w-4"/>Pause</button><button className="control" onClick={() => void setSessionStatus("completed")}><CheckCircle2 className="mr-2 h-4 w-4"/>Complete & Hide</button></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); return <label key={row.id} className="rounded-xl border border-border bg-muted/30 p-3 text-sm font-bold"><span className="flex items-center justify-between"><span>{row.name}</span><small className="text-muted-foreground">Spent {money(Number(purse?.total_spent || 0))}</small></span><input type="number" min={Number(purse?.total_spent || 0)} step="0.01" className="input mt-2" value={purseDrafts[row.id] || "0"} onChange={(event) => setPurseDrafts((currentDrafts) => ({ ...currentDrafts, [row.id]: event.target.value }))}/></label>})}</div><button disabled={busy === "purses"} onClick={() => void savePurses()} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground">{busy === "purses" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin"/>}Save Team Purses</button></section>}
+      {admin && <section className="space-y-4 rounded-2xl border border-border bg-card p-5 text-foreground"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Auction controls</h2><p className="text-sm text-muted-foreground">Complete hides this tournament from the public auction list. Start / Resume makes it visible again.</p></div><div className="flex gap-2"><button disabled={busy.startsWith("session-")} className="control" onClick={() => void setSessionStatus("live")}><Play className="mr-2 h-4 w-4"/>Start / Resume</button><button disabled={busy.startsWith("session-")} className="control" onClick={() => void setSessionStatus("paused")}><Pause className="mr-2 h-4 w-4"/>Pause</button><button disabled={busy.startsWith("session-")} className="control" onClick={() => void setSessionStatus("completed")}>{busy === "session-completed" && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<CheckCircle2 className="mr-2 h-4 w-4"/>Complete & Hide</button></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{teams.map((row) => { const purse = purses.find((item) => item.team_id === row.id); return <label key={row.id} className="rounded-xl border border-border bg-muted/30 p-3 text-sm font-bold"><span className="flex items-center justify-between"><span>{row.name}</span><small className="text-muted-foreground">Spent {money(Number(purse?.total_spent || 0))}</small></span><input type="number" min={Number(purse?.total_spent || 0)} step="0.01" className="input mt-2" value={purseDrafts[row.id] || "0"} onChange={(event) => setPurseDrafts((currentDrafts) => ({ ...currentDrafts, [row.id]: event.target.value }))}/></label>})}</div><button disabled={busy === "purses"} onClick={() => void savePurses()} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground">{busy === "purses" && <Loader2 className="mr-2 inline h-4 w-4 animate-spin"/>}Save Team Purses</button></section>}
 
       {admin && <section className="rounded-2xl border border-primary/30 bg-card p-5 text-foreground shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

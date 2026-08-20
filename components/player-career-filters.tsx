@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 type Ball = { innings_id: string; batsman_id: string | null; bowler_id: string | null; fielder_id: string | null; player_out_id: string | null; runs: number; extras: number; extras_type: string | null; is_legal: boolean; is_wicket: boolean; dismissal_type: string | null };
 type Innings = { id: string; match_id: string; batting_team_id: string; bowling_team_id: string };
-type Match = { id: string; tournament_id: string | null; team_a_id: string; team_b_id: string; match_date: string | null; created_at: string; overs_per_match: number; status: string };
+type Match = { id: string; tournament_id: string | null; team_a_id: string; team_b_id: string; match_date: string | null; created_at: string; overs_per_match: number; status: string; match_scope: "tournament" | "standalone" };
 type Tournament = { id: string; name: string; ball_type: string | null };
 type Team = { id: string; name: string };
 type MatchRow = { match: Match; opponent: string; runs: number; balls: number; wickets: number; conceded: number; legalBalls: number };
@@ -38,7 +38,7 @@ export function PlayerCareerFilters({ playerId }: { playerId: string }) {
       const inningsRows = (inningsResult.data || []) as Innings[];
       const matchIds = [...new Set(inningsRows.map((row) => row.match_id))];
       const matchResult = matchIds.length
-        ? await supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,match_date,created_at,overs_per_match,status").in("id", matchIds)
+        ? await supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,match_date,created_at,overs_per_match,status,match_scope").in("id", matchIds).eq("match_scope", "tournament")
         : { data: [], error: null };
       const matchRows = (matchResult.data || []) as Match[];
       const tournamentIds = [...new Set(matchRows.map((row) => row.tournament_id).filter(Boolean) as string[])];

@@ -37,7 +37,7 @@ type Mode = "players" | "teams";
 type Team = { id: string; name: string; logo_url: string | null; primary_color: string | null };
 type Player = { id: string; name: string; team_id: string | null; photo_url: string | null; playing_role: string | null };
 type Tournament = { id: string; name: string };
-type Match = { id: string; tournament_id: string | null; team_a_id: string; team_b_id: string; winner_id: string | null; status: string };
+type Match = { id: string; tournament_id: string | null; team_a_id: string; team_b_id: string; winner_id: string | null; status: string; match_scope: "tournament" | "standalone" };
 type Innings = { id: string; match_id: string; batting_team_id: string; bowling_team_id: string; total_runs: number; total_wickets: number };
 type Ball = { innings_id: string; batsman_id: string | null; bowler_id: string | null; fielder_id: string | null; runs: number; is_wicket: boolean; dismissal_type: string | null };
 type Metrics = Record<string, number>;
@@ -65,7 +65,7 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
         supabase.from("tournaments").select("id,name").is("deleted_at", null).order("name"),
         supabase.from("teams").select("id,name,logo_url,primary_color").is("deleted_at", null).order("name"),
         supabase.from("players").select("id,name,team_id,photo_url,playing_role").is("deleted_at", null).order("name"),
-        supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,winner_id,status"),
+        supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,winner_id,status,match_scope").eq("match_scope", "tournament"),
         supabase.from("innings").select("id,match_id,batting_team_id,bowling_team_id,total_runs,total_wickets"),
         supabase.from("ball_by_ball").select("innings_id,batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type"),
       ]);

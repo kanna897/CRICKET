@@ -4,7 +4,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
@@ -23,6 +23,14 @@ export default function NewMatchPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teamASquad, setTeamASquad] = useState<string[]>([]);
   const [teamBSquad, setTeamBSquad] = useState<string[]>([]);
+  const [customTeamA, setCustomTeamA] = useState(false);
+  const [customTeamB, setCustomTeamB] = useState(false);
+  const [customTeamAName, setCustomTeamAName] = useState("");
+  const [customTeamBName, setCustomTeamBName] = useState("");
+  const [customTeamAPlayers, setCustomTeamAPlayers] = useState<string[]>([]);
+  const [customTeamBPlayers, setCustomTeamBPlayers] = useState<string[]>([]);
+  const [customPlayerDraftA, setCustomPlayerDraftA] = useState("");
+  const [customPlayerDraftB, setCustomPlayerDraftB] = useState("");
   const [form, setForm] = useState({
     match_scope: "tournament", match_type: "friendly", title: "", tournament_id: "", team_a_id: "", team_b_id: "", ground: "", match_date: "", match_time: "", overs_per_match: "20",
     balls_per_over: "6", wickets_per_innings: "10", last_man_stands: false, allow_wides: true, allow_no_balls: true,
@@ -56,7 +64,7 @@ export default function NewMatchPage() {
 
   const availableTeams = form.match_scope === "tournament"
     ? teams.filter((team) => team.tournament_id === form.tournament_id)
-    : teams;
+    : [...new Map(teams.filter((team) => !(team as Team & { standalone_match_id?: string | null }).standalone_match_id).map((team) => [team.id, team])).values()];
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const teamPlayers = (teamId: string) => players.filter((player) => player.team_id === teamId);
   const toggleSquadPlayer = (playerId: string, squad: string[], setSquad: (value: string[]) => void) => {
@@ -69,11 +77,24 @@ export default function NewMatchPage() {
     setError(null);
     if (form.match_scope === "tournament" && !form.tournament_id) return setError("Select a tournament.");
     if (form.match_scope === "standalone" && !form.title.trim()) return setError("Enter a title for the standalone match.");
-    if (!form.team_a_id || !form.team_b_id || !form.match_date) return setError("Select both teams and a match date.");
-    if (form.team_a_id === form.team_b_id) return setError("Choose two different teams.");
-    if (teamASquad.length < 6 || teamASquad.length > 11 || teamBSquad.length < 6 || teamBSquad.length > 11) return setError("Select 6 to 11 players for each team.");
+    if ((!customTeamA && !form.team_a_id) || (!customTeamB && !form.team_b_id) || !form.match_date) return setError("Select or create both teams and choose a match date.");
+    if ((!customTeamA && !customTeamB && form.team_a_id === form.team_b_id) || (customTeamA && customTeamB && customTeamAName.trim().toLowerCase() === customTeamBName.trim().toLowerCase())) return setError("Choose two different teams.");
+    if ((customTeamA && (customTeamAName.trim().length < 2 || customTeamAPlayers.length < 6 || customTeamAPlayers.length > 11)) || (customTeamB && (customTeamBName.trim().length < 2 || customTeamBPlayers.length < 6 || customTeamBPlayers.length > 11)) || (!customTeamA && (teamASquad.length < 6 || teamASquad.length > 11)) || (!customTeamB && (teamBSquad.length < 6 || teamBSquad.length > 11))) return setError("Each team needs a name and 6 to 11 players.");
     setSaving(true);
     try {
+      const createCustomTeam = async (name: string, playerNames: string[]) => {
+        const { data: team, error: teamError } = await supabase.from("teams").insert({ name: name.trim(), organizer_id: userId, tournament_id: null } as never).select("id").single();
+        if (teamError) throw teamError;
+        const { data: createdPlayers, error: playerError } = await supabase.from("players").insert(playerNames.map((playerName) => ({ name: playerName.trim(), player_name: playerName.trim(), team_id: team.id, role: "player", playing_role: "player" } as never))).select("id");
+        if (playerError) throw playerError;
+        return { id: team.id, playerIds: (createdPlayers || []).map((player) => player.id) };
+      };
+      const customA = customTeamA ? await createCustomTeam(customTeamAName, customTeamAPlayers) : null;
+      const customB = customTeamB ? await createCustomTeam(customTeamBName, customTeamBPlayers) : null;
+      const teamAId = customA?.id || form.team_a_id;
+      const teamBId = customB?.id || form.team_b_id;
+      const selectedA = customA?.playerIds || teamASquad;
+      const selectedB = customB?.playerIds || teamBSquad;
       const { data: match, error: insertError } = await supabase.from("matches").insert({
         tournament_id: form.match_scope === "tournament" ? form.tournament_id : null,
         organizer_id: userId,
@@ -81,8 +102,8 @@ export default function NewMatchPage() {
         match_type: form.match_scope === "tournament" ? "tournament" : form.match_type,
         title: form.match_scope === "standalone" ? form.title.trim() : null,
         is_public: true,
-        team_a_id: form.team_a_id,
-        team_b_id: form.team_b_id,
+        team_a_id: teamAId,
+        team_b_id: teamBId,
         ground: form.ground || null,
         match_date: form.match_date,
         match_time: form.match_time || null,
@@ -100,13 +121,21 @@ export default function NewMatchPage() {
       }).select("id").single();
       if (insertError) throw insertError;
       const squadRows = [
-        ...teamASquad.map((player_id) => ({ match_id: match.id, team_id: form.team_a_id, player_id })),
-        ...teamBSquad.map((player_id) => ({ match_id: match.id, team_id: form.team_b_id, player_id })),
+        ...selectedA.map((player_id) => ({ match_id: match.id, team_id: teamAId, player_id })),
+        ...selectedB.map((player_id) => ({ match_id: match.id, team_id: teamBId, player_id })),
       ];
       const { error: squadError } = await supabase.from("match_squads").insert(squadRows);
       if (squadError) {
         await supabase.from("matches").delete().eq("id", match.id);
         throw squadError;
+      }
+      if (customA || customB) {
+        const customTeamIds = [customA?.id, customB?.id].filter(Boolean) as string[];
+        const customPlayerIds = [...(customA?.playerIds || []), ...(customB?.playerIds || [])];
+        await Promise.all([
+          supabase.from("teams").update({ standalone_match_id: match.id } as never).in("id", customTeamIds),
+          supabase.from("players").update({ standalone_match_id: match.id } as never).in("id", customPlayerIds),
+        ]);
       }
       router.push(localePath(locale, "/admin/matches"));
       router.refresh();
@@ -122,9 +151,9 @@ export default function NewMatchPage() {
       {error && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <fieldset className="space-y-3"><legend className="text-sm font-black">Match mode</legend><div className="grid gap-3 sm:grid-cols-2">{[["tournament", "Tournament match", "Part of points table and tournament fixtures."], ["standalone", "Standalone match", "Friendly, school, club or practice match."]].map(([value, label, help]) => <label key={value} className={`cursor-pointer rounded-xl border p-4 ${form.match_scope === value ? "border-primary bg-primary/10" : "border-border"}`}><input type="radio" name="match_scope" value={value} checked={form.match_scope === value} onChange={() => setForm((current) => ({ ...current, match_scope: value, tournament_id: "", team_a_id: "", team_b_id: "" }))} className="mr-2 accent-primary" /><span className="font-black">{label}</span><span className="mt-1 block text-xs text-muted-foreground">{help}</span></label>)}</div></fieldset>
       {form.match_scope === "tournament" ? <Field label="Tournament"><select required value={form.tournament_id} onChange={(event) => { update("tournament_id", event.target.value); setTeamASquad([]); setTeamBSquad([]); }} className="input"><option value="">Select tournament</option>{tournaments.map((tournament) => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select></Field> : <div className="grid gap-5 md:grid-cols-2"><Field label="Match Title"><input required value={form.title} onChange={(event) => update("title", event.target.value)} placeholder="e.g. Jaffna Schools Friendly 2026" className="input" /></Field><Field label="Match Type"><select value={form.match_type} onChange={(event) => update("match_type", event.target.value)} className="input"><option value="friendly">Friendly</option><option value="school">School</option><option value="club">Club</option><option value="exhibition">Exhibition</option><option value="practice">Practice</option></select></Field></div>}
-      <div className="grid md:grid-cols-2 gap-5"><Field label="Team A"><select required value={form.team_a_id} onChange={(event) => { const teamId = event.target.value; setForm((current) => ({ ...current, team_a_id: teamId, team_b_id: current.team_b_id === teamId ? "" : current.team_b_id })); setTeamASquad([]); if (form.team_b_id === teamId) setTeamBSquad([]); }} className="input"><option value="">Select team</option>{availableTeams.filter((team) => team.id !== form.team_b_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field><Field label="Team B"><select required value={form.team_b_id} onChange={(event) => { const teamId = event.target.value; setForm((current) => ({ ...current, team_b_id: teamId, team_a_id: current.team_a_id === teamId ? "" : current.team_a_id })); setTeamBSquad([]); if (form.team_a_id === teamId) setTeamASquad([]); }} className="input"><option value="">Select team</option>{availableTeams.filter((team) => team.id !== form.team_a_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field></div>
+      <div className="grid md:grid-cols-2 gap-5"><Field label="Team A"><select required={!customTeamA} value={customTeamA ? "__custom" : form.team_a_id} onChange={(event) => { const teamId = event.target.value; setCustomTeamA(teamId === "__custom"); setForm((current) => ({ ...current, team_a_id: teamId === "__custom" ? "" : teamId, team_b_id: current.team_b_id === teamId ? "" : current.team_b_id })); setTeamASquad([]); }} className="input"><option value="">Select team</option>{form.match_scope === "standalone" && <option value="__custom">+ Create custom team</option>}{availableTeams.filter((team) => team.id !== form.team_b_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field><Field label="Team B"><select required={!customTeamB} value={customTeamB ? "__custom" : form.team_b_id} onChange={(event) => { const teamId = event.target.value; setCustomTeamB(teamId === "__custom"); setForm((current) => ({ ...current, team_b_id: teamId === "__custom" ? "" : teamId, team_a_id: current.team_a_id === teamId ? "" : current.team_a_id })); setTeamBSquad([]); }} className="input"><option value="">Select team</option>{form.match_scope === "standalone" && <option value="__custom">+ Create custom team</option>}{availableTeams.filter((team) => team.id !== form.team_a_id).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field></div>
       {form.match_scope === "standalone" && availableTeams.length < 2 && <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">Create at least two standalone teams first from Teams → Create Team.</p>}
-      <div className="grid md:grid-cols-2 gap-5"><SquadPicker title="Team A Playing Squad" players={teamPlayers(form.team_a_id)} selected={teamASquad} onToggle={(playerId) => toggleSquadPlayer(playerId, teamASquad, setTeamASquad)} /><SquadPicker title="Team B Playing Squad" players={teamPlayers(form.team_b_id)} selected={teamBSquad} onToggle={(playerId) => toggleSquadPlayer(playerId, teamBSquad, setTeamBSquad)} /></div>
+      <div className="grid md:grid-cols-2 gap-5">{customTeamA ? <CustomSquadBuilder title="Team A" teamName={customTeamAName} onTeamNameChange={setCustomTeamAName} players={customTeamAPlayers} draft={customPlayerDraftA} onDraftChange={setCustomPlayerDraftA} onAdd={() => { const name = customPlayerDraftA.trim(); if (name && customTeamAPlayers.length < 11 && !customTeamAPlayers.some((player) => player.toLowerCase() === name.toLowerCase())) { setCustomTeamAPlayers([...customTeamAPlayers, name]); setCustomPlayerDraftA(""); } }} onRemove={(index) => setCustomTeamAPlayers(customTeamAPlayers.filter((_, playerIndex) => playerIndex !== index))} /> : <SquadPicker title="Team A Playing Squad" players={teamPlayers(form.team_a_id)} selected={teamASquad} onToggle={(playerId) => toggleSquadPlayer(playerId, teamASquad, setTeamASquad)} />}{customTeamB ? <CustomSquadBuilder title="Team B" teamName={customTeamBName} onTeamNameChange={setCustomTeamBName} players={customTeamBPlayers} draft={customPlayerDraftB} onDraftChange={setCustomPlayerDraftB} onAdd={() => { const name = customPlayerDraftB.trim(); if (name && customTeamBPlayers.length < 11 && !customTeamBPlayers.some((player) => player.toLowerCase() === name.toLowerCase())) { setCustomTeamBPlayers([...customTeamBPlayers, name]); setCustomPlayerDraftB(""); } }} onRemove={(index) => setCustomTeamBPlayers(customTeamBPlayers.filter((_, playerIndex) => playerIndex !== index))} /> : <SquadPicker title="Team B Playing Squad" players={teamPlayers(form.team_b_id)} selected={teamBSquad} onToggle={(playerId) => toggleSquadPlayer(playerId, teamBSquad, setTeamBSquad)} />}</div>
       <div className="grid md:grid-cols-3 gap-5"><Field label="Match Date"><input required type="date" value={form.match_date} onChange={(event) => update("match_date", event.target.value)} className="input" /></Field><Field label="Match Time"><input type="time" value={form.match_time} onChange={(event) => update("match_time", event.target.value)} className="input" /></Field><Field label="Overs"><input required min="1" max="100" type="number" value={form.overs_per_match} onChange={(event) => update("overs_per_match", event.target.value)} className="input" /></Field></div>
       <fieldset className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
         <legend className="px-2 text-sm font-black">Competitive match rules</legend>
@@ -153,4 +182,8 @@ function RuleToggle({ label, checked, onChange }: { label: string; checked: bool
 
 function SquadPicker({ title, players, selected, onToggle }: { title: string; players: Player[]; selected: string[]; onToggle: (playerId: string) => void }) {
   return <div className="space-y-3 rounded-lg border border-border p-4"><div className="flex justify-between"><h2 className="font-semibold">{title}</h2><span className={`text-sm font-bold ${selected.length >= 6 && selected.length <= 11 ? "text-green-600" : "text-red-600"}`}>{selected.length}/11 (min 6)</span></div>{players.length === 0 ? <p className="text-sm text-muted-foreground">No players assigned to this team. Add players from Player Profile → Edit → Team.</p> : <div className="max-h-64 space-y-2 overflow-y-auto">{players.map((player) => <label key={player.id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-background/40 p-2.5 transition hover:bg-muted/60"><input type="checkbox" checked={selected.includes(player.id)} onChange={() => onToggle(player.id)} disabled={!selected.includes(player.id) && selected.length === 11} className="h-4 w-4 shrink-0 accent-primary" />{player.photo_url ? <Image unoptimized width={128} height={128} src={player.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-primary/20" /> : <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{player.name.slice(0, 1).toUpperCase()}</span>}<span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{player.name}</span><span className="block truncate text-xs text-muted-foreground">{player.playing_role || "Player"}</span></span></label>)}</div>}</div>;
+}
+
+function CustomSquadBuilder({ title, teamName, onTeamNameChange, players, draft, onDraftChange, onAdd, onRemove }: { title: string; teamName: string; onTeamNameChange: (value: string) => void; players: string[]; draft: string; onDraftChange: (value: string) => void; onAdd: () => void; onRemove: (index: number) => void }) {
+  return <section className="space-y-3 rounded-lg border border-primary/40 bg-primary/5 p-4"><div className="flex items-center justify-between"><h2 className="font-semibold">{title} custom squad</h2><span className={`text-sm font-bold ${players.length >= 6 ? "text-green-600" : "text-red-600"}`}>{players.length}/11 (min 6)</span></div><input required minLength={2} value={teamName} onChange={(event) => onTeamNameChange(event.target.value)} className="input" placeholder={`${title} name`} /><div className="flex gap-2"><input value={draft} onChange={(event) => onDraftChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); onAdd(); } }} className="input min-w-0 flex-1" placeholder="Player name"/><button type="button" onClick={onAdd} disabled={!draft.trim() || players.length === 11} className="control shrink-0"><Plus className="mr-1 h-4 w-4"/>Add</button></div><div className="max-h-56 space-y-2 overflow-y-auto">{players.length ? players.map((player, index) => <div key={`${player}-${index}`} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm font-bold"><span className="truncate">{index + 1}. {player}</span><button type="button" aria-label={`Remove ${player}`} onClick={() => onRemove(index)} className="ml-2 text-red-600"><X className="h-4 w-4"/></button></div>) : <p className="text-sm text-muted-foreground">Add 6 to 11 players. These are match-only players and will not appear in career statistics.</p>}</div></section>;
 }

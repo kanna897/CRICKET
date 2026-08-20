@@ -55,9 +55,14 @@ export default function PlayerProfilePage() {
         const inningsIds = [...new Set(balls.map((ball) => ball.innings_id))];
         const { data: inningsRows } = inningsIds.length ? await supabase.from('innings').select('id,match_id').in('id', inningsIds) : { data: [] };
         const inningsToMatch = new Map(((inningsRows || []) as Array<{ id: string; match_id: string }>).map((row) => [row.id, row.match_id]));
+        const matchIds = [...new Set([...inningsToMatch.values()])];
+        const { data: tournamentMatches } = matchIds.length ? await supabase.from('matches').select('id').in('id', matchIds).eq('match_scope', 'tournament') : { data: [] };
+        const tournamentMatchIds = new Set((tournamentMatches || []).map((row: { id: string }) => row.id));
+        const tournamentInningsIds = new Set([...inningsToMatch.entries()].filter(([, matchId]) => tournamentMatchIds.has(matchId)).map(([inningsId]) => inningsId));
+        const tournamentBalls = balls.filter((ball) => tournamentInningsIds.has(ball.innings_id));
         const battingRuns = new Map<string, number>();
         let runs = 0, wickets = 0, dismissals = 0, catches = 0, stumpings = 0, runOuts = 0;
-        balls.forEach((ball) => {
+        tournamentBalls.forEach((ball) => {
           const dismissal = (ball.dismissal_type || "").toLowerCase().replaceAll(" ", "_");
           if (ball.batsman_id === id) { const value = Number(ball.runs || 0); runs += value; battingRuns.set(ball.innings_id, (battingRuns.get(ball.innings_id) || 0) + value); }
           if (ball.player_out_id === id && !["retired_hurt", "retired_not_out"].includes(dismissal)) dismissals += 1;
@@ -68,7 +73,7 @@ export default function PlayerProfilePage() {
         });
         const scores = [...battingRuns.values()].sort((a, b) => b - a);
         const recentScores = [...battingRuns.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6).reverse().map((entry) => entry[1]);
-        setCareer({ matches: new Set(inningsIds.map((inningsId) => inningsToMatch.get(inningsId)).filter(Boolean)).size, runs, wickets, highScore: scores[0] || 0, average: dismissals ? runs / dismissals : runs, catches, stumpings, runOuts, recentScores });
+        setCareer({ matches: tournamentMatchIds.size, runs, wickets, highScore: scores[0] || 0, average: dismissals ? runs / dismissals : runs, catches, stumpings, runOuts, recentScores });
       }
       setLoading(false);
     }
