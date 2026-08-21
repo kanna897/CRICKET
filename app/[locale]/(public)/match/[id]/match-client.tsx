@@ -18,11 +18,13 @@ type Team = { id: string; name: string; logo_url: string | null };
 type Innings = { id: string; innings_number: number; batting_team_id: string; total_runs: number; total_wickets: number; balls_bowled: number; target: number | null; striker_id: string | null; non_striker_id: string | null; current_bowler_id: string | null };
 type Ball = { id: string; over_number: number; ball_number: number; runs: number; extras: number; extras_type: string | null; is_wicket: boolean; is_legal: boolean; dismissal_type: string | null; batsman_id: string | null; bowler_id: string | null };
 type Player = { id: string; name: string; photo_url: string | null };
+type SquadRow = { team_id: string };
 
 export function PublicLiveMatchClient() {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [squadRows, setSquadRows] = useState<SquadRow[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [innings, setInnings] = useState<Innings | null>(null);
   const [balls, setBalls] = useState<Ball[]>([]);
@@ -41,11 +43,12 @@ export function PublicLiveMatchClient() {
     const load = async (notify = false) => {
       const { data: matchRow } = await supabase.from("matches").select("id,team_a_id,team_b_id,overs_per_match,status,winner_id").eq("id", id).maybeSingle();
       if (!matchRow) return;
-      const [{ data: teamRows }, { data: inningsRow }] = await Promise.all([
+      const [{ data: teamRows }, { data: inningsRow }, { data: matchSquadRows }] = await Promise.all([
         supabase.from("teams").select("id,name,logo_url").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
         supabase.from("innings").select("id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled,target,striker_id,non_striker_id,current_bowler_id").eq("match_id", id).order("innings_number", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("match_squads").select("team_id").eq("match_id", id),
       ]);
-      setMatch(matchRow); setTeams(teamRows || []); setInnings(inningsRow || null);
+      setMatch(matchRow); setTeams(teamRows || []); setSquadRows((matchSquadRows || []) as SquadRow[]); setInnings(inningsRow || null);
       if (notify && inningsRow && localStorage.getItem(`crickpulse-live-alert:${id}`) === "on" && Notification.permission === "granted") {
         const battingTeam = (teamRows || []).find((team: Team) => team.id === inningsRow.batting_team_id)?.name || "Batting team";
         const registration = await navigator.serviceWorker?.ready;
@@ -87,6 +90,13 @@ export function PublicLiveMatchClient() {
         clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => void load(true), 200);
       },
+    ).on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${id}` },
+      () => {
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => void load(), 200);
+      },
     );
     subscribeWithMonitoring(channel, `public-score:${id}`);
     return () => {
@@ -127,6 +137,19 @@ export function PublicLiveMatchClient() {
     ? match.winner_id === match.team_a_id ? 100 : match.winner_id === match.team_b_id ? 0 : 50
     : innings?.batting_team_id === match.team_a_id ? battingWinChance : 100 - battingWinChance;
   const teamBWinChance = 100 - teamAWinChance;
+  const resultSummary = (() => {
+    if (!match || match.status !== "completed") return null;
+    if (!match.winner_id) return "Match tied.";
+    if (!innings?.target || innings.innings_number !== 2) return `${teamName(match.winner_id)} won the match.`;
+    if (innings.total_runs >= innings.target) {
+      const squadSize = squadRows.filter((row) => row.team_id === innings.batting_team_id).length;
+      const wicketLimit = Math.max(1, squadSize ? squadSize - 1 : 10);
+      const margin = Math.max(wicketLimit - innings.total_wickets, 0);
+      return `${teamName(match.winner_id)} win by ${margin} wicket${margin === 1 ? "" : "s"}.`;
+    }
+    const margin = Math.max(innings.target - 1 - innings.total_runs, 0);
+    return `${teamName(match.winner_id)} win by ${margin} run${margin === 1 ? "" : "s"}.`;
+  })();
   const currentOver = balls.length ? balls[balls.length - 1].over_number : 0;
   const currentOverBalls = currentOver ? balls.filter((ball) => ball.over_number === currentOver) : [];
   const ballLabel = (ball: Ball) => ball.is_wicket ? "W" : ball.extras_type === "wide" ? "Wd" : ball.extras_type === "no_ball" ? "NB" : String(ball.runs + ball.extras);
@@ -170,6 +193,7 @@ export function PublicLiveMatchClient() {
   return <main className="mx-auto max-w-3xl space-y-4 p-3 sm:p-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/fixtures" className="inline-flex items-center gap-2 px-1 text-sm font-bold text-sky-700 hover:text-sky-900"><ArrowLeft className="h-4 w-4" />Back to matches</Link><button type="button" onClick={toggleAlerts} className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-black shadow-sm ${alertsEnabled ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-300 bg-white text-slate-800"}`}>{alertsEnabled?<Bell className="h-4 w-4"/>:<BellOff className="h-4 w-4"/>}{alertsEnabled?"Live alerts on":"Enable live alerts"}</button></div>
     {alertMessage&&<p role="status" className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-900">{alertMessage}</p>}
+    {resultSummary && <section className="flex items-center justify-center rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-white to-amber-50 px-4 py-3 text-center shadow-sm"><p className="font-black text-emerald-900">{resultSummary}</p></section>}
     <section className="overflow-hidden rounded-3xl border border-sky-400/30 bg-gradient-to-br from-[#071427] via-[#0a2140] to-[#092f4e] p-5 text-white shadow-xl sm:p-7">
       <div className="mb-5 flex items-center justify-between gap-3"><div className="min-w-0"><div className="flex min-w-0 items-center gap-2"><TeamLogo team={team(match.team_a_id)} size="sm"/><p className="truncate text-sm font-bold text-sky-200">{teamName(match.team_a_id)} <span className="text-slate-400">vs</span> {teamName(match.team_b_id)}</p><TeamLogo team={team(match.team_b_id)} size="sm"/></div><p className="mt-1 pl-10 text-xs text-slate-400">Innings {innings?.innings_number || 1}</p></div><span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ${match.status === "live" ? "bg-red-500 text-white" : "bg-white/10 text-slate-200"}`}><Radio className="h-3.5 w-3.5" />{match.status === "live" ? "LIVE" : match.status.toUpperCase()}</span></div>
       <div className="grid grid-cols-[1fr_auto] items-end gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Batting</p><div className="mt-2 flex items-center gap-3"><TeamLogo team={team(innings?.batting_team_id)} size="lg"/><h1 className="min-w-0 truncate text-xl font-black text-cyan-300 sm:text-2xl">{teamName(innings?.batting_team_id)}</h1></div></div><div className="text-right"><p className="text-5xl font-black tracking-tight sm:text-6xl">{innings ? `${innings.total_runs}/${innings.total_wickets}` : "0/0"}</p><p className="mt-1 font-bold text-emerald-300">{overs} overs</p></div></div>
