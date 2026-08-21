@@ -12,6 +12,7 @@ import { ModernPlayerProfile, type CareerSnapshot } from "@/components/modern-pl
 
 type Player = Database['public']['Tables']['players']['Row'];
 type Team = Database['public']['Tables']['teams']['Row'];
+type Tournament = Database['public']['Tables']['tournaments']['Row'];
 
 type PlayerEditValues = {
   name: string;
@@ -29,6 +30,8 @@ export default function PlayerProfilePage() {
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [selectedTournamentId, setSelectedTournamentId] = useState("");
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -81,15 +84,21 @@ export default function PlayerProfilePage() {
   }, [id]);
 
   useEffect(() => {
-    async function fetchTeams() {
-      const { data } = await supabase.from('teams').select('*').order('name');
-      if (data) setTeams(data);
+    async function fetchAssignmentOptions() {
+      const [{ data: teamRows }, { data: tournamentRows }] = await Promise.all([
+        supabase.from('teams').select('*').order('name'),
+        supabase.from('tournaments').select('*').is('deleted_at', null).order('name'),
+      ]);
+      if (teamRows) setTeams(teamRows);
+      if (tournamentRows) setTournaments(tournamentRows);
     }
-    fetchTeams();
+    fetchAssignmentOptions();
   }, []);
 
   const startEditing = () => {
     if (!player) return;
+    const assignedTeam = teams.find((team) => team.id === player.team_id);
+    setSelectedTournamentId(assignedTeam?.tournament_id || "");
     setEditValues({
       name: player.name,
       phone_number: player.phone_number || '',
@@ -104,6 +113,10 @@ export default function PlayerProfilePage() {
     });
     setIsEditing(true);
   };
+
+  const assignableTeams = selectedTournamentId
+    ? teams.filter((team) => team.tournament_id === selectedTournamentId)
+    : [];
 
   const savePlayer = async () => {
     if (!player || !editValues) return;
@@ -252,7 +265,8 @@ export default function PlayerProfilePage() {
                 <EditField label="Player Name"><input value={editValues.name} onChange={(event) => setEditValues({ ...editValues, name: event.target.value })} className="w-full px-3 py-2 bg-transparent border border-input rounded-md" /></EditField>
                 <EditField label="Phone Number"><input value={editValues.phone_number} onChange={(event) => setEditValues({ ...editValues, phone_number: event.target.value })} className="w-full px-3 py-2 bg-transparent border border-input rounded-md" /></EditField>
                 <EditField label="Playing Role"><select value={editValues.playing_role} onChange={(event) => setEditValues({ ...editValues, playing_role: event.target.value })} className="w-full px-3 py-2 bg-transparent border border-input rounded-md"><option>Batsman</option><option>Bowler</option><option>All-rounder</option><option>Wicket-keeper</option></select></EditField>
-                <EditField label="Team"><select value={editValues.team_id} onChange={(event) => setEditValues({ ...editValues, team_id: event.target.value })} className="w-full px-3 py-2 bg-transparent border border-input rounded-md"><option value="">Unassigned</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></EditField>
+                <EditField label="Tournament"><select value={selectedTournamentId} onChange={(event) => { setSelectedTournamentId(event.target.value); setEditValues({ ...editValues, team_id: "" }); }} className="w-full px-3 py-2 bg-transparent border border-input rounded-md"><option value="">Select tournament</option>{tournaments.map((tournament) => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select></EditField>
+                <EditField label="Team"><select value={editValues.team_id} onChange={(event) => setEditValues({ ...editValues, team_id: event.target.value })} disabled={!selectedTournamentId} className="w-full px-3 py-2 bg-transparent border border-input rounded-md disabled:cursor-not-allowed disabled:opacity-50"><option value="">Unassigned</option>{assignableTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></EditField>
                 <EditField label="Batting Style"><select value={editValues.batting_style} onChange={(event) => setEditValues({ ...editValues, batting_style: event.target.value })} className="w-full px-3 py-2 bg-transparent border border-input rounded-md"><option value="">Not specified</option><option>Right-hand</option><option>Left-hand</option></select></EditField>
                 <EditField label="Bowling Style"><select value={editValues.bowling_style} onChange={(event) => setEditValues({ ...editValues, bowling_style: event.target.value })} className="w-full px-3 py-2 bg-transparent border border-input rounded-md"><option value="">Not specified</option><option>Right-arm fast</option><option>Right-arm medium</option><option>Right-arm off-spin</option><option>Right-arm leg-spin</option><option>Left-arm fast</option><option>Left-arm medium</option><option>Left-arm orthodox</option><option>Left-arm wrist-spin</option></select></EditField>
               </div>
