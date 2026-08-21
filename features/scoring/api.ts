@@ -62,7 +62,7 @@ export const scoringApi = {
     monitorDatabaseOperation("scoring.get_match_innings_ids", () => supabase.from("innings").select("id").eq("match_id", matchId)),
   getPlayerOfMatchBalls: (inningsIds: string[]) =>
     monitorDatabaseOperation("scoring.get_player_of_match_balls", () => supabase.from("ball_by_ball")
-      .select("batsman_id,bowler_id,runs,is_wicket,dismissal_type")
+      .select("batsman_id,bowler_id,runs,extras,extras_type,is_legal,is_wicket,dismissal_type,fielder_id")
       .in("innings_id", inningsIds)),
   saveInningsSetup: (inningsId: string | null, payload: InningsSetup) =>
     monitorDatabaseOperation("scoring.save_innings_setup", () => inningsId

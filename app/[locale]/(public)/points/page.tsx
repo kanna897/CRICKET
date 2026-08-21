@@ -37,7 +37,7 @@ export default function PointsPage() {
     const [tournamentResult, teamResult, matchResult] = await Promise.all([
       supabase.from("tournaments").select("id,name,logo_url").eq("id", selectedTournament).maybeSingle(),
       supabase.from("teams").select("id,name,logo_url,fixture_order").eq("tournament_id", selectedTournament).order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
-      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
+      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id,overs_per_match,balls_per_over,wickets_per_innings,revised_overs").eq("tournament_id", selectedTournament),
     ]);
     if (tournamentResult.data) {
       const latestTournament = tournamentResult.data as Tournament;
