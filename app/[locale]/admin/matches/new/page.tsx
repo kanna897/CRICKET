@@ -92,7 +92,10 @@ export default function NewMatchPage() {
     setSaving(true);
     try {
       const createCustomTeam = async (name: string, playerNames: string[]) => {
-        const { data: team, error: teamError } = await supabase.from("teams").insert({ name: name.trim(), organizer_id: userId, tournament_id: null } as never).select("id").single();
+        const teamName = name.trim();
+        // The production schema retains both legacy team_name and current name
+        // as required columns, so custom standalone teams must populate both.
+        const { data: team, error: teamError } = await supabase.from("teams").insert({ name: teamName, team_name: teamName, organizer_id: userId, tournament_id: null } as never).select("id").single();
         if (teamError) throw teamError;
         const { data: createdPlayers, error: playerError } = await supabase.from("players").insert(playerNames.map((playerName) => ({ name: playerName.trim(), player_name: playerName.trim(), team_id: team.id, role: "player", playing_role: "player" } as never))).select("id");
         if (playerError) throw playerError;
