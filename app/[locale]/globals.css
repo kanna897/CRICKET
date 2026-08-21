@@ -2922,6 +2922,9 @@ html.light .public-landing {
   }
 
   .live-score-shell { padding-bottom: 1rem; }
+  /* The portrait scorer already contains the live score, so do not render the
+     desktop score hero below it on phones. */
+  .live-score-shell > .score-hero-animated { display: none; }
   .mobile-portrait-scorer {
     display: grid;
     min-height: calc(100dvh - 7.5rem);
