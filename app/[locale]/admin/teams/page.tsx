@@ -3,7 +3,7 @@
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Shield } from "lucide-react";
+import { Plus, Search, Shield, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
@@ -18,6 +18,8 @@ export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     async function fetchTeams() {
@@ -25,7 +27,7 @@ export default function TeamsPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: manageable } = await tournamentQuery;
       const ids = (manageable || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-      const { data } = await supabase.from("teams").select("*").order("fixture_order", { ascending: true, nullsFirst: false }).order("name");
+      const { data } = await supabase.from("teams").select("*").is("deleted_at", null).order("fixture_order", { ascending: true, nullsFirst: false }).order("name");
       if (data) setTeams(data.filter((team) => {
         if (team.tournament_id) return ids.includes(team.tournament_id);
         return isMasterAdmin || team.organizer_id === userId;
@@ -38,6 +40,20 @@ export default function TeamsPage() {
   const filteredTeams = teams.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  async function deleteTeam(team: Team) {
+    const confirmed = confirm(`Remove ${team.name}?\n\nThis removes the team from normal lists. Match and scorecard records are kept safely.`);
+    if (!confirmed) return;
+    setDeletingId(team.id);
+    setMessage("");
+    const { error } = await supabase.from("teams").update({ deleted_at: new Date().toISOString() }).eq("id", team.id);
+    setDeletingId(null);
+    if (error) {
+      setMessage(error.message || "Unable to remove this team.");
+      return;
+    }
+    setTeams((current) => current.filter((item) => item.id !== team.id));
+  }
 
   return (
     <div className="admin-themed-page space-y-6">
@@ -68,6 +84,7 @@ export default function TeamsPage() {
             />
           </div>
         </div>
+        {message && <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">{message}</p>}
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -112,12 +129,15 @@ export default function TeamsPage() {
                     <td className="px-6 py-4">{team.owner_name || "-"}</td>
                     <td className="px-6 py-4">{team.contact_number || "-"}</td>
                     <td className="px-6 py-4 text-right">
+                      <div className="inline-flex items-center gap-3">
                       <Link 
                         href={localePath(locale, `/admin/teams/${team.id}`)}
                         className="text-primary hover:underline font-medium"
                       >
                         Manage
                       </Link>
+                      <button type="button" onClick={() => void deleteTeam(team)} disabled={deletingId === team.id} className="inline-flex items-center font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"><Trash2 className="mr-1 h-4 w-4"/>{deletingId === team.id ? "Removing…" : "Delete"}</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -139,7 +159,7 @@ export default function TeamsPage() {
                   <dt className="text-muted-foreground">Owner</dt><dd className="min-w-0 break-words font-semibold">{team.owner_name || "-"}</dd>
                   <dt className="text-muted-foreground">Contact</dt><dd className="min-w-0 break-all font-semibold">{team.contact_number || "-"}</dd>
                 </dl>
-                <Link href={localePath(locale, `/admin/teams/${team.id}`)} className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-primary px-4 font-bold text-primary-foreground">Manage Team</Link>
+                <div className="mt-4 grid grid-cols-2 gap-2"><Link href={localePath(locale, `/admin/teams/${team.id}`)} className="inline-flex min-h-10 items-center justify-center rounded-lg bg-primary px-4 font-bold text-primary-foreground">Manage Team</Link><button type="button" onClick={() => void deleteTeam(team)} disabled={deletingId === team.id} className="inline-flex min-h-10 items-center justify-center rounded-lg border border-red-300 px-4 text-sm font-bold text-red-700 disabled:opacity-50 dark:border-red-500/40 dark:text-red-300"><Trash2 className="mr-1.5 h-4 w-4"/>{deletingId === team.id ? "Removing…" : "Delete"}</button></div>
               </article>
             ))}
           </div>
