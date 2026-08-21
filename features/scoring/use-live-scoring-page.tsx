@@ -512,6 +512,11 @@ export function useLiveScoringPage() {
     const chooseRun = (runs: number) => {
         if (!innings || saving || completed || requiresSetup)
             return;
+        // A dot ball has no scoring shot to plot, so save it immediately.
+        if (runs === 0) {
+            void record({ runs: 0 });
+            return;
+        }
         setPendingRuns(runs);
     };
     const saveRunDirection = (shotZone: "straight" | "cover" | "point" | "square_leg" | "midwicket" | "fine_leg") => {
