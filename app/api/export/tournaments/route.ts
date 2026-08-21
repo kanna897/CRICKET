@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { rowsToCsv } from '@/lib/csv';
 import { withApiMonitoring } from '@/lib/monitoring/api';
 
 export const GET = withApiMonitoring("/api/export/tournaments", async () => {
   try {
+    const supabase = await createSupabaseServerClient();
     // 1. Fetch Data
     const { data: tournaments, error: tourneyError } = await supabase
       .from('tournaments')

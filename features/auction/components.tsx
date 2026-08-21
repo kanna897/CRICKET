@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Clock3, Download, History, Loader2, RefreshCw, UsersRound, X } from "lucide-react";
 import type { AuctionPlayer, HistoryRow, Purse, Team } from "./types";
@@ -14,12 +14,52 @@ export function AuctionStatus({ value }: { value: AuctionPlayer["status"] }) {
 }
 
 export function SquadPanel({ teams, players }: { teams: Team[]; players: AuctionPlayer[] }) {
-  return <section className="rounded-2xl border border-border bg-card p-5 text-foreground"><h2 className="flex items-center gap-2 text-xl font-black"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2><div className="mt-4 space-y-4">{teams.map((team) => <article key={team.id}><h3 className="rounded-lg bg-muted px-3 py-2 font-black">{team.name}</h3><div className="grid gap-2 py-2 sm:grid-cols-2">{players.filter((player) => player.winning_team_id === team.id).map((player) => <div key={player.id} className="grid grid-cols-[4.75rem_1fr_auto] items-center gap-3 rounded-xl border border-border bg-background p-3 shadow-sm"><PlayerPhotoFromCard player={player}/><span className="min-w-0"><strong className="block truncate text-base">{player.player_name}</strong><small className="block capitalize text-muted-foreground">{pretty(player.playing_role)}</small><small className="block font-mono font-black text-primary">S.NO {String(displaySerial(player)).padStart(2, "0")}</small></span><span className="rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-sm font-black text-emerald-600">{money(Number(player.winning_bid || 0))}</span></div>)}</div></article>)}</div></section>;
+  const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.id || "");
+  const selectedTeam = teams.find((team) => team.id === selectedTeamId) || teams[0];
+  const playersByTeam = new Map<string, AuctionPlayer[]>();
+  for (const player of players) {
+    if (!player.winning_team_id) continue;
+    const teamPlayers = playersByTeam.get(player.winning_team_id);
+    if (teamPlayers) teamPlayers.push(player);
+    else playersByTeam.set(player.winning_team_id, [player]);
+  }
+  const selectedPlayers = selectedTeam ? playersByTeam.get(selectedTeam.id) || [] : [];
+  const selectedSpent = selectedPlayers.reduce((total, player) => total + Number(player.winning_bid || 0), 0);
+
+  return <section className="rounded-2xl border border-border bg-card p-4 text-foreground sm:p-5">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 className="flex items-center gap-2 text-lg font-black sm:text-xl"><UsersRound className="h-5 w-5 text-primary"/>Team Squads</h2>
+      <span className="text-xs font-bold text-muted-foreground">{teams.length} teams · {players.length} players</span>
+    </div>
+    <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      {teams.map((team) => {
+        const count = playersByTeam.get(team.id)?.length || 0;
+        const selected = team.id === selectedTeam?.id;
+        return <button key={team.id} type="button" aria-pressed={selected} onClick={() => setSelectedTeamId(team.id)} className={`flex min-w-0 items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left transition ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50 hover:bg-muted/50"}`}>
+          <strong className="truncate text-xs">{team.name}</strong>
+          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[.65rem] font-black ${selected ? "bg-primary-foreground/15" : "bg-muted text-muted-foreground"}`}>{count}</span>
+        </button>;
+      })}
+    </div>
+    {selectedTeam && <article className="mt-3">
+      <header className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2">
+        <h3 className="truncate text-sm font-black sm:text-base">{selectedTeam.name}</h3>
+        <p className="text-xs font-bold text-muted-foreground">{selectedPlayers.length} players · {money(selectedSpent)} points</p>
+      </header>
+      {selectedPlayers.length ? <div className="grid gap-1.5 pt-2 md:grid-cols-2 xl:grid-cols-3">
+        {selectedPlayers.map((player) => <div key={player.id} className="grid min-w-0 grid-cols-[3.25rem_1fr_auto] items-center gap-2 rounded-lg border border-border bg-background p-2">
+          <PlayerPhotoFromCard player={player}/>
+          <span className="min-w-0 leading-tight"><strong className="block truncate text-sm">{player.player_name}</strong><small className="mt-0.5 block truncate capitalize text-muted-foreground">{pretty(player.playing_role)} · S.NO {String(displaySerial(player)).padStart(2, "0")}</small></span>
+          <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-black text-emerald-600">{money(Number(player.winning_bid || 0))}</span>
+        </div>)}
+      </div> : <p className="py-5 text-center text-sm font-bold text-muted-foreground">No players assigned to this team yet.</p>}
+    </article>}
+  </section>;
 }
 
 function PlayerPhotoFromCard({ player }: { player: AuctionPlayer }) {
   const image = player.player_card_url || player.photo_url;
-  return <span role="img" aria-label={`${player.player_name} photo`} className="block h-[4.25rem] w-[4.25rem] shrink-0 rounded-xl border border-border bg-cover bg-no-repeat" style={{ backgroundImage: `url(${JSON.stringify(image)})`, backgroundPosition: "11% 45%", backgroundSize: "308% auto" }}/>;
+  return <span role="img" aria-label={`${player.player_name} photo`} className="block h-12 w-12 shrink-0 rounded-lg border border-border bg-cover bg-no-repeat" style={{ backgroundImage: `url(${JSON.stringify(image)})`, backgroundPosition: "11% 45%", backgroundSize: "308% auto" }}/>;
 }
 
 export function HistoryPanel({ history, players, teams }: { history: HistoryRow[]; players: AuctionPlayer[]; teams: Team[] }) {
@@ -78,8 +118,8 @@ export function AuctionPlayerDetailsDialog({ selected, teamName, onClose }: {
   teamName: (id: string | null) => string | undefined;
   onClose: () => void;
 }) {
-  const soldTeam = selected.status === "sold" ? teamName(selected.winning_team_id) : undefined;
-  const statusStyle = selected.status === "sold"
+  const soldTeam = selected.status === "sold" || selected.status === "fixed" ? teamName(selected.winning_team_id) : undefined;
+  const statusStyle = selected.status === "sold" || selected.status === "fixed"
     ? "bg-emerald-500/15 text-emerald-600"
     : selected.status === "unsold"
       ? "bg-red-500/15 text-red-600"
@@ -96,6 +136,7 @@ export function AuctionPlayerDetailsDialog({ selected, teamName, onClose }: {
       <div className="p-5">
         <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-sm font-black text-primary">S.NO {String(displaySerial(selected)).padStart(2, "0")}</p><h2 className="mt-1 text-2xl font-black">{selected.player_name}</h2><p className="mt-1 capitalize text-muted-foreground">{pretty(selected.playing_role)}</p></div><span className={`rounded-full px-3 py-1.5 text-xs font-black uppercase ${statusStyle}`}>{selected.status}</span></div>
         {selected.status === "sold" && <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4"><p className="text-xs font-black uppercase tracking-wider text-emerald-600">Sold to</p><p className="mt-1 text-lg font-black">{soldTeam || "Team unavailable"}</p><p className="mt-1 text-2xl font-black text-emerald-600">{money(Number(selected.winning_bid || 0))} points</p></div>}
+        {selected.status === "fixed" && <div className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4"><p className="text-xs font-black uppercase tracking-wider text-amber-600">Fixed player for</p><p className="mt-1 text-lg font-black">{soldTeam || "Team unavailable"}</p><p className="mt-1 text-2xl font-black text-amber-600">{money(Number(selected.winning_bid || 0))} points</p></div>}
         {selected.status === "unsold" && <p className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 font-black text-red-600">This player was unsold.</p>}
         {selected.status === "live" && <p className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 font-black text-amber-600">Auction is currently live for this player.</p>}
         {selected.status === "available" && <p className="mt-5 rounded-xl border border-sky-500/25 bg-sky-500/10 p-4 font-black text-sky-600">This player is available for auction.</p>}

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Shield } from "lucide-react";
+import { Plus, Search, Shield, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
@@ -18,6 +18,8 @@ export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     async function fetchTeams() {
@@ -25,7 +27,7 @@ export default function TeamsPage() {
       if (!isMasterAdmin) tournamentQuery = tournamentQuery.eq("organizer_id", userId);
       const { data: manageable } = await tournamentQuery;
       const ids = (manageable || [] as Array<{ id: string }>).map((item: { id: string }) => item.id);
-      const { data } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase.from("teams").select("*").is("deleted_at", null).order("fixture_order", { ascending: true, nullsFirst: false }).order("name");
       if (data) setTeams(data.filter((team) => {
         if (team.tournament_id) return ids.includes(team.tournament_id);
         return isMasterAdmin || team.organizer_id === userId;
@@ -38,6 +40,20 @@ export default function TeamsPage() {
   const filteredTeams = teams.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  async function deleteTeam(team: Team) {
+    const confirmed = confirm(`Remove ${team.name}?\n\nThis removes the team from normal lists. Match and scorecard records are kept safely.`);
+    if (!confirmed) return;
+    setDeletingId(team.id);
+    setMessage("");
+    const { error } = await supabase.from("teams").update({ deleted_at: new Date().toISOString() }).eq("id", team.id);
+    setDeletingId(null);
+    if (error) {
+      setMessage(error.message || "Unable to remove this team.");
+      return;
+    }
+    setTeams((current) => current.filter((item) => item.id !== team.id));
+  }
 
   return (
     <div className="admin-themed-page space-y-6">
@@ -55,7 +71,7 @@ export default function TeamsPage() {
         </Link>
       </div>
 
-      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-4 sm:p-6">
         <div className="flex items-center mb-6">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -68,6 +84,7 @@ export default function TeamsPage() {
             />
           </div>
         </div>
+        {message && <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">{message}</p>}
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -82,11 +99,12 @@ export default function TeamsPage() {
             <p className="text-muted-foreground mt-1">Get started by adding your first team.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 font-medium">Team Name</th>
+                  <th className="px-6 py-3 font-medium">No. / Team Name</th>
                   <th className="px-6 py-3 font-medium">Scope</th>
                   <th className="px-6 py-3 font-medium">Owner</th>
                   <th className="px-6 py-3 font-medium">Contact</th>
@@ -97,6 +115,7 @@ export default function TeamsPage() {
                 {filteredTeams.map((team) => (
                   <tr key={team.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 font-medium flex items-center gap-3">
+                      {team.fixture_order ? <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{team.fixture_order}</span> : null}
                       {team.logo_url ? (
                         <Image unoptimized width={128} height={128} src={team.logo_url} alt="" className="w-8 h-8 rounded-full object-cover bg-muted" />
                       ) : (
@@ -110,18 +129,41 @@ export default function TeamsPage() {
                     <td className="px-6 py-4">{team.owner_name || "-"}</td>
                     <td className="px-6 py-4">{team.contact_number || "-"}</td>
                     <td className="px-6 py-4 text-right">
+                      <div className="inline-flex items-center gap-3">
                       <Link 
                         href={localePath(locale, `/admin/teams/${team.id}`)}
                         className="text-primary hover:underline font-medium"
                       >
                         Manage
                       </Link>
+                      <button type="button" onClick={() => void deleteTeam(team)} disabled={deletingId === team.id} className="inline-flex items-center font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"><Trash2 className="mr-1 h-4 w-4"/>{deletingId === team.id ? "Removing…" : "Delete"}</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <div className="grid gap-3 sm:hidden">
+            {filteredTeams.map((team) => (
+              <article key={team.id} className="min-w-0 rounded-xl border border-border bg-background/45 p-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  {team.fixture_order ? <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-black text-primary">{team.fixture_order}</span> : null}
+                  {team.logo_url ? <Image unoptimized width={128} height={128} src={team.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-full bg-muted object-cover" /> : <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 font-bold text-primary">{team.name.charAt(0)}</span>}
+                  <div className="min-w-0 flex-1">
+                    <h2 className="break-words font-black leading-tight">{team.name}</h2>
+                    <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold ${team.tournament_id ? "bg-sky-100 text-sky-700" : "bg-violet-100 text-violet-700"}`}>{team.tournament_id ? "Tournament" : "Standalone"}</span>
+                  </div>
+                </div>
+                <dl className="mt-4 grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 gap-y-2 border-t border-border pt-3 text-sm">
+                  <dt className="text-muted-foreground">Owner</dt><dd className="min-w-0 break-words font-semibold">{team.owner_name || "-"}</dd>
+                  <dt className="text-muted-foreground">Contact</dt><dd className="min-w-0 break-all font-semibold">{team.contact_number || "-"}</dd>
+                </dl>
+                <div className="mt-4 grid grid-cols-2 gap-2"><Link href={localePath(locale, `/admin/teams/${team.id}`)} className="inline-flex min-h-10 items-center justify-center rounded-lg bg-primary px-4 font-bold text-primary-foreground">Manage Team</Link><button type="button" onClick={() => void deleteTeam(team)} disabled={deletingId === team.id} className="inline-flex min-h-10 items-center justify-center rounded-lg border border-red-300 px-4 text-sm font-bold text-red-700 disabled:opacity-50 dark:border-red-500/40 dark:text-red-300"><Trash2 className="mr-1.5 h-4 w-4"/>{deletingId === team.id ? "Removing…" : "Delete"}</button></div>
+              </article>
+            ))}
+          </div>
+          </>
         )}
       </div>
     </div>

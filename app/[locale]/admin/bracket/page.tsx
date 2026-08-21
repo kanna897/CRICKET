@@ -41,7 +41,7 @@ export default function KnockoutBracketPage() {
     const [{ data: teamRows }, { data: knockoutRows }, { data: leagueRows }] = await Promise.all([
       supabase.from("teams").select("id,name,logo_url,tournament_id").eq("tournament_id", active).is("deleted_at", null).order("name"),
       supabase.from("matches").select("id,team_a_id,team_b_id,winner_id,status,bracket_round,bracket_slot,match_date").eq("tournament_id", active).eq("competition_stage", "knockout").order("bracket_round").order("bracket_slot"),
-      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", active).eq("competition_stage", "league"),
+      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id,overs_per_match,balls_per_over,wickets_per_innings,revised_overs").eq("tournament_id", active).eq("competition_stage", "league"),
     ]);
     const league = (leagueRows || []) as StandingsMatch[];
     const leagueIds = league.map((match) => match.id);

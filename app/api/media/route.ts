@@ -44,7 +44,8 @@ export const POST = withApiMonitoring<NextRequest>("/api/media", async (request)
     ? createClient<Database>(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
     : supabase;
   try {
-    if (!await consumeUploadLimit(limiter, `${user.id}:${ip}`, 30)) {
+    const uploadLimit = kind === "auction-player-cards" ? 550 : 30;
+    if (!await consumeUploadLimit(limiter, `${user.id}:${ip}`, uploadLimit)) {
       await writeUploadAudit(supabase, { userId: user.id, role, action: "Upload Rate Limited", kind, ip, success: false });
       return NextResponse.json({ error: "Too many uploads. Please try again later." }, { status: 429 });
     }

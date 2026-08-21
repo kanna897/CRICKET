@@ -37,6 +37,18 @@ export function cloudinaryLogoUrl(url: string) {
   );
 }
 
+export function auctionPortraitUrl(url: string, sourceType?: string | null) {
+  if (!(["bulk_upload", "fixed_upload"].includes(sourceType || "")) || !url.includes("res.cloudinary.com/") || !url.includes("/image/upload/")) return url;
+  if (url.includes("/c_crop,x_80,y_328,w_351,h_351/")) return url;
+  const cleanUrl = url
+    .replace("/c_fill,g_auto,w_1200,h_1200,q_auto,f_auto/", "/")
+    .replace(/\/c_crop,x_80,y_328,w_351,h_351\/c_fill,w_(?:800,h_1000|1200,h_1200),q_auto,f_auto\//, "/");
+  return cleanUrl.replace(
+    "/image/upload/",
+    "/image/upload/c_crop,x_80,y_328,w_351,h_351/c_fill,w_800,h_1000,q_auto,f_auto/",
+  );
+}
+
 async function readJson<T>(response: Response): Promise<T & ErrorPayload> {
   const body = await response.text();
   if (!body) throw new Error(`Upload service returned an empty response (${response.status}).`);
@@ -67,6 +79,8 @@ export async function uploadImage(file: File, kind: MediaKind) {
   }
   const url = kind === "player-photos" || kind === "player-registrations"
     ? cloudinaryPlayerPhotoUrl(upload.url)
-    : upload.url;
+    : kind === "tournament-logos" || kind === "team-logos"
+      ? cloudinaryLogoUrl(upload.url)
+      : upload.url;
   return { url, publicId: upload.publicId };
 }

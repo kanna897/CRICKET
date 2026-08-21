@@ -34,10 +34,15 @@ export default function PointsPage() {
   const load = useCallback(async () => {
     if (!selectedTournament) return;
     setLoading(true); setMessage("");
-    const [teamResult, matchResult] = await Promise.all([
-      supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
-      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
+    const [tournamentResult, teamResult, matchResult] = await Promise.all([
+      supabase.from("tournaments").select("id,name,logo_url").eq("id", selectedTournament).maybeSingle(),
+      supabase.from("teams").select("id,name,logo_url,fixture_order").eq("tournament_id", selectedTournament).order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
+      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id,overs_per_match,balls_per_over,wickets_per_innings,revised_overs").eq("tournament_id", selectedTournament),
     ]);
+    if (tournamentResult.data) {
+      const latestTournament = tournamentResult.data as Tournament;
+      setTournaments((current) => current.map((item) => item.id === latestTournament.id ? latestTournament : item));
+    }
     const teamRows = (teamResult.data || []) as StandingsTeam[];
     const matchRows = (matchResult.data || []) as StandingsMatch[];
     setMatches(matchRows);
@@ -47,7 +52,7 @@ export default function PointsPage() {
       : { data: [], error: null };
     setTeams(teamRows);
     setRows(calculateTournamentStandings(teamRows, matchRows, (inningsResult.data || []) as StandingsInnings[]));
-    setMessage(teamResult.error?.message || matchResult.error?.message || inningsResult.error?.message || "");
+    setMessage(tournamentResult.error?.message || teamResult.error?.message || matchResult.error?.message || inningsResult.error?.message || "");
     setLoading(false);
   }, [selectedTournament]);
 

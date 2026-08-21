@@ -18,7 +18,7 @@ type StatsMatchQueryRow = StatsMatchOption & PublicMatchVisibilityRow;
 export default async function PublicStatsPage() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.from("matches")
-    .select("id,tournament_id,team_a_id,team_b_id,status,tournaments(deleted_at)")
+    .select("id,tournament_id,team_a_id,team_b_id,status,match_scope,is_public,tournaments(deleted_at)")
     .in("status", ["live", "completed"])
     .order("created_at", { ascending: false });
   const matches = ((data ?? []) as StatsMatchQueryRow[]).filter(isActivePublicMatch);

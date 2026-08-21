@@ -27,6 +27,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
   const [innings, setInnings] = useState<ScorecardInnings[]>([]);
   const [balls, setBalls] = useState<ScorecardBall[]>([]);
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [summaryMatchNumber, setSummaryMatchNumber] = useState<number | null>(null);
   const [active, setActive] = useState(1);
   const [showSummary, setShowSummary] = useState(false);
 
@@ -35,13 +36,16 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
     (async () => {
       const { data: matchRow } = await supabase.from("matches").select("*").eq("id", id).maybeSingle();
       if (!matchRow) return;
-      const [{ data: teamRows }, { data: playerRows }, { data: inningsRows }, { data: tournamentRow }] = await Promise.all([
+      const [{ data: teamRows }, { data: playerRows }, { data: inningsRows }, { data: tournamentRow }, { data: tournamentMatches }] = await Promise.all([
         supabase.from("teams").select("id,name,logo_url,primary_color").in("id", [matchRow.team_a_id, matchRow.team_b_id]),
         supabase.from("players").select("id,name,team_id,photo_url"),
         supabase.from("innings").select("*").eq("match_id", id).order("innings_number"),
         matchRow.tournament_id
           ? supabase.from("tournaments").select("name,logo_url").eq("id", matchRow.tournament_id).maybeSingle()
           : Promise.resolve({ data: null }),
+        matchRow.tournament_id
+          ? supabase.from("matches").select("id,match_number,match_date,match_time,created_at").eq("tournament_id", matchRow.tournament_id)
+          : Promise.resolve({ data: [] }),
       ]);
       const inningsIds = (inningsRows || []).map((row: { id: string }) => row.id);
       const { data: ballRows } = inningsIds.length
@@ -53,6 +57,17 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
       setInnings(inningsRows || []);
       setBalls(ballRows || []);
       setTournament(tournamentRow || null);
+      if (matchRow.match_number) {
+        setSummaryMatchNumber(matchRow.match_number);
+      } else {
+        const orderedTournamentMatches = (tournamentMatches || []).sort((left, right) => {
+          const leftKey = `${left.match_date || "9999-12-31"} ${left.match_time || "99:99"} ${String(left.match_number || 999999).padStart(6, "0")} ${left.created_at}`;
+          const rightKey = `${right.match_date || "9999-12-31"} ${right.match_time || "99:99"} ${String(right.match_number || 999999).padStart(6, "0")} ${right.created_at}`;
+          return leftKey.localeCompare(rightKey);
+        });
+        const position = orderedTournamentMatches.findIndex((item) => item.id === matchRow.id);
+        setSummaryMatchNumber(position >= 0 ? position + 1 : null);
+      }
     })();
   }, [id]);
 
@@ -122,7 +137,7 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
       innings={cards.map(({ item, summary }) => ({ ...item, summary }))}
       result={result}
       tournament={tournament}
-      matchNumber={match.match_number}
+      matchNumber={summaryMatchNumber}
       tossWinnerTeamId={match.toss_winner_id}
       winnerTeamId={match.winner_id}
       playerOfMatch={pom ? { name: pom.name, summary: match.player_of_match_summary || "", photo_url: pom.photo_url, ...pomPerformance } : null}

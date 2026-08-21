@@ -3,13 +3,15 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/no-prefetch-link";
 import {
   Activity,
   ArrowRight,
+  Banknote,
   Eye,
   FileImage,
   FileText,
+  Gavel,
   Radio,
   ShieldCheck,
   Trophy,
@@ -21,7 +23,7 @@ import { PublicNav } from "@/components/public-nav";
 import { supabase } from "@/lib/supabase";
 import { subscribeWithMonitoring } from "@/lib/monitoring/realtime";
 import { preload } from "react-dom";
-import { cloudinaryLogoUrl } from "@/lib/media";
+import { auctionPortraitUrl, cloudinaryLogoUrl } from "@/lib/media";
 
 type Tournament = {
   id: string;
@@ -46,6 +48,8 @@ type Match = {
   ground: string | null;
   toss_winner_id: string | null;
   toss_decision: string | null;
+  winner_id: string | null;
+  updated_at: string;
   created_at: string;
 };
 type Innings = {
@@ -56,6 +60,25 @@ type Innings = {
   total_wickets: number;
   balls_bowled: number;
 };
+type AuctionSession = {
+  tournament_id: string;
+  status: "live" | "completed";
+  current_auction_player_id: string | null;
+  updated_at: string;
+};
+type AuctionPlayer = {
+  id: string;
+  tournament_id: string;
+  player_name: string;
+  photo_url: string;
+  player_card_url: string | null;
+  playing_role: string;
+  status: "live" | "sold";
+  winning_team_id: string | null;
+  winning_bid: number | null;
+  sold_at: string | null;
+  source_type: "registration" | "bulk_upload";
+};
 
 export default function PublicHome() {
   preload("/landing/cricket-hero-background.webp", { as: "image", fetchPriority: "high" });
@@ -64,33 +87,50 @@ export default function PublicHome() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [innings, setInnings] = useState<Innings[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
+  const [auctionSession, setAuctionSession] = useState<AuctionSession | null>(null);
+  const [auctionPlayers, setAuctionPlayers] = useState<AuctionPlayer[]>([]);
 
   useEffect(() => {
     let active = true;
     async function loadLanding() {
-      const [tournamentResult, matchResult, playerResult] = await Promise.all([
+      const [tournamentResult, matchResult, playerResult, sessionResult] = await Promise.all([
         supabase.from("tournaments")
           .select("id,name,logo_url,banner_url,venue,start_date,end_date,status")
           .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(8),
         supabase.from("matches")
-          .select("id,tournament_id,team_a_id,team_b_id,status,match_date,match_time,ground,toss_winner_id,toss_decision,created_at")
+          .select("id,tournament_id,team_a_id,team_b_id,status,match_date,match_time,ground,toss_winner_id,toss_decision,winner_id,created_at,updated_at")
+          .eq("is_public", true)
           .order("created_at", { ascending: false })
-          .limit(12),
+          .limit(60),
         supabase.from("players")
           .select("id", { count: "exact", head: true })
           .is("deleted_at", null),
+        supabase.from("auction_sessions")
+          .select("tournament_id,status,current_auction_player_id,updated_at")
+          .in("status", ["live", "completed"])
+          .order("updated_at", { ascending: false })
+          .limit(12),
       ]);
-      const matchRows = (matchResult.data || []) as Match[];
-      const matchIds = matchRows.map((item) => item.id);
       const tournamentIds = (tournamentResult.data || []).map((item) => item.id);
+      const activeTournamentIds = new Set(tournamentIds);
+      // The deployed schema includes matches.updated_at; older generated client
+      // types have not yet caught up with that existing column.
+      const matchRows = ((matchResult.data || []) as unknown as Match[]).filter((item) =>
+        item.tournament_id === null || activeTournamentIds.has(item.tournament_id),
+      );
+      const matchIds = matchRows.map((item) => item.id);
+      const sessionRows = (sessionResult.data || []) as AuctionSession[];
+      // Completed auctions must disappear from public surfaces. Their results
+      // remain available to organizers in the admin auction workspace.
+      const featuredAuctionSession = sessionRows.find((item) => item.status === "live" && activeTournamentIds.has(item.tournament_id)) || null;
       const teamIds = [...new Set(matchRows.flatMap((item) => [item.team_a_id, item.team_b_id]))];
       const teamScopeFilters = [
         tournamentIds.length ? `tournament_id.in.(${tournamentIds.join(",")})` : "",
         teamIds.length ? `id.in.(${teamIds.join(",")})` : "",
       ].filter(Boolean).join(",");
-      const [inningsResult, teamResult] = await Promise.all([
+      const [inningsResult, teamResult, auctionPlayerResult] = await Promise.all([
         matchIds.length ? supabase.from("innings")
             .select("match_id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled")
             .in("match_id", matchIds)
@@ -101,6 +141,12 @@ export default function PublicHome() {
               .or(teamScopeFilters)
               .is("deleted_at", null)
           : Promise.resolve({ data: [] }),
+        featuredAuctionSession
+          ? supabase.from("auction_players")
+              .select("id,tournament_id,player_name,photo_url,player_card_url,playing_role,status,winning_team_id,winning_bid,sold_at,source_type")
+              .eq("tournament_id", featuredAuctionSession.tournament_id)
+              .in("status", ["live", "sold"])
+          : Promise.resolve({ data: [] }),
       ]);
       if (!active) return;
       setTournaments((tournamentResult.data || []) as Tournament[]);
@@ -108,6 +154,8 @@ export default function PublicHome() {
       setMatches(matchRows);
       setInnings((inningsResult.data || []) as Innings[]);
       setPlayerCount(playerResult.count || 0);
+      setAuctionSession(featuredAuctionSession);
+      setAuctionPlayers((auctionPlayerResult.data || []) as AuctionPlayer[]);
     }
 
     void loadLanding();
@@ -120,7 +168,9 @@ export default function PublicHome() {
       .channel("public-landing-v2")
       .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh);
+      .on("postgres_changes", { event: "*", schema: "public", table: "innings" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "auction_sessions" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "auction_players" }, scheduleRefresh);
     subscribeWithMonitoring(channel, "public-landing-v2");
     return () => {
       active = false;
@@ -157,6 +207,23 @@ export default function PublicHome() {
   const featuredTeamA = featuredMatch ? team(featuredMatch.team_a_id) : undefined;
   const featuredTeamB = featuredMatch ? team(featuredMatch.team_b_id) : undefined;
   const isFeaturedLive = featuredMatch?.status === "live";
+  const currentAuctionPlayer = auctionSession
+    ? auctionPlayers.find((item) => item.id === auctionSession.current_auction_player_id)
+      || auctionPlayers.find((item) => item.status === "live")
+    : undefined;
+  const auctionTopPicks = [...auctionPlayers]
+    .filter((item) => item.status === "sold")
+    .sort((a, b) => Number(b.winning_bid || 0) - Number(a.winning_bid || 0))
+    .slice(0, 3);
+  const auctionTournament = auctionSession ? tournament(auctionSession.tournament_id) : undefined;
+  const championMoment = useMemo(() => {
+    const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+    return matches
+      .filter((item) => item.tournament_id && item.winner_id && item.status === "completed" && new Date(item.updated_at).getTime() >= cutoff && tournament(item.tournament_id)?.status === "completed")
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
+  }, [matches, tournamentMap]);
+  const championTournament = championMoment ? tournament(championMoment.tournament_id) : undefined;
+  const championTeam = championMoment?.winner_id ? team(championMoment.winner_id) : undefined;
 
   const visibleTournaments = useMemo(() => {
     const ordered = [...tournaments].sort((a, b) => {
@@ -170,6 +237,7 @@ export default function PublicHome() {
     <div className="public-landing">
       <PublicNav />
       <main>
+        {championMoment && championTournament && championTeam && <section className="mx-auto max-w-6xl px-4 pt-5 sm:px-7" aria-label="Tournament champions"><article className="relative overflow-hidden rounded-3xl border border-amber-300/70 bg-gradient-to-br from-[#071631] via-[#123a78] to-[#087b71] p-6 text-center text-white shadow-2xl sm:p-8"><div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(251,191,36,.42),transparent_28%),radial-gradient(circle_at_82%_86%,rgba(34,211,238,.3),transparent_32%)]"/><div className="relative"><p className="text-xs font-black uppercase tracking-[.32em] text-amber-300">Tournament complete</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">{championTournament.name}</h2><div className="mx-auto mt-5 flex max-w-md items-center justify-center gap-4 rounded-2xl border border-amber-200/50 bg-slate-950/25 px-5 py-4"><Trophy className="h-10 w-10 text-amber-300"/>{championTeam.logo_url ? <Image width={72} height={72} src={championTeam.logo_url} alt="" className="h-14 w-14 rounded-full bg-white object-contain p-1"/> : <span className="grid h-14 w-14 place-items-center rounded-full bg-white/15 font-black">{championTeam.name.slice(0,2).toUpperCase()}</span>}<div className="min-w-0 text-left"><p className="text-xs font-black uppercase tracking-[.22em] text-amber-300">Champions</p><h3 className="truncate text-xl font-black">{championTeam.name}</h3></div></div></div></article></section>}
         <section className="landing-hero">
           <div className="landing-stadium-glow" />
           <div className="landing-hero-copy">
@@ -219,6 +287,42 @@ export default function PublicHome() {
           </article>
         </section>
 
+        {auctionSession && (currentAuctionPlayer || auctionTopPicks.length > 0) && (
+          <section className={`landing-auction-spotlight ${auctionSession.status === "live" ? "is-live" : "is-completed"}`}>
+            <header>
+              <div className="landing-auction-title">
+                <span><Gavel /></span>
+                <div><p>{auctionSession.status === "live" ? "Live Auction" : "Auction Results"}</p><h2>{auctionTournament?.name || "CrickPulse Player Auction"}</h2></div>
+              </div>
+              <Link href="/auction">View Full Auction <ArrowRight /></Link>
+            </header>
+            <div className="landing-auction-content">
+              {auctionSession.status === "live" && currentAuctionPlayer ? (
+                <article className="landing-current-auction-player">
+                  <div className="landing-auction-photo"><Image fill sizes="96px" src={auctionPortraitUrl(currentAuctionPlayer.photo_url, currentAuctionPlayer.source_type)} alt={currentAuctionPlayer.player_name} /></div>
+                  <div><small>On the block now</small><h3>{currentAuctionPlayer.player_name}</h3><p>{currentAuctionPlayer.playing_role || "Auction player"}</p></div>
+                  <span className="landing-auction-live-badge"><i /> Live</span>
+                </article>
+              ) : (
+                <div className="landing-auction-summary"><Trophy /><div><strong>{auctionTopPicks.length}</strong><span>Top auction picks</span></div></div>
+              )}
+              <div className="landing-top-picks">
+                <p>Top Picks</p>
+                <div>{auctionTopPicks.map((player, index) => {
+                  const winningTeam = player.winning_team_id ? team(player.winning_team_id) : undefined;
+                  return <article key={player.id}>
+                    <b>#{index + 1}</b>
+                    <div className="landing-pick-photo"><Image fill sizes="80px" src={auctionPortraitUrl(player.photo_url, player.source_type)} alt={`${player.player_name} portrait`} /></div>
+                    <div><strong>{player.player_name}</strong><span>{winningTeam?.name || "Sold player"}</span></div>
+                    <em><Banknote />{auctionMoney(Number(player.winning_bid || 0))}</em>
+                  </article>;
+                })}</div>
+                {!auctionTopPicks.length && <span className="landing-awaiting-picks">Top picks will appear as players are sold.</span>}
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="landing-tournaments">
           <header><h2><Trophy /> Live Tournaments</h2><Link href="/tournaments">View All Tournaments <ArrowRight /></Link></header>
           <div className="landing-tournament-grid">
@@ -227,7 +331,7 @@ export default function PublicHome() {
                 <div className="landing-tournament-art">
                   {item.banner_url && <Image fill sizes="(max-width: 640px) 100vw, 33vw" src={item.banner_url} alt="" className="landing-tournament-banner" />}
                   <StatusBadge status={item.status} />
-                  {item.logo_url ? <Image unoptimized width={128} height={128} sizes="128px" src={cloudinaryLogoUrl(item.logo_url)} alt="" className="landing-tournament-logo" /> : <Trophy />}
+                  {item.logo_url ? <Image width={128} height={128} sizes="128px" src={cloudinaryLogoUrl(item.logo_url)} alt="" className="landing-tournament-logo" /> : <Trophy />}
                   <span>CRICKET LEAGUE</span>
                 </div>
                 <div><h3>{item.name}</h3><p><Users />{tournamentTeamCounts.get(item.id) ?? 0} teams <Activity />{tournamentMatchCounts.get(item.id) ?? 0} matches</p><small>{dateRange(item.start_date, item.end_date)}</small></div>
@@ -279,4 +383,8 @@ function formatDate(value: string | null) {
 function dateRange(start: string | null, end: string | null) {
   if (!start) return "Dates to be announced";
   return `${formatDate(start)}${end ? ` – ${formatDate(end)}` : ""}`;
+}
+
+function auctionMoney(value: number) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
 }

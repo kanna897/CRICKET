@@ -36,13 +36,16 @@ import { downloadPosterDataUrl, posterPixelRatio, posterQualityLabel, type Poste
 type Mode = "players" | "teams";
 type Team = { id: string; name: string; logo_url: string | null; primary_color: string | null };
 type Player = { id: string; name: string; team_id: string | null; photo_url: string | null; playing_role: string | null };
-type Match = { team_a_id: string; team_b_id: string; winner_id: string | null; status: string };
-type Innings = { batting_team_id: string; bowling_team_id: string; total_runs: number; total_wickets: number };
-type Ball = { batsman_id: string | null; bowler_id: string | null; fielder_id: string | null; runs: number; is_wicket: boolean; dismissal_type: string | null };
+type Tournament = { id: string; name: string };
+type Match = { id: string; tournament_id: string | null; team_a_id: string; team_b_id: string; winner_id: string | null; status: string; match_scope: "tournament" | "standalone" };
+type Innings = { id: string; match_id: string; batting_team_id: string; bowling_team_id: string; total_runs: number; total_wickets: number };
+type Ball = { innings_id: string; batsman_id: string | null; bowler_id: string | null; fielder_id: string | null; runs: number; is_wicket: boolean; dismissal_type: string | null };
 type Metrics = Record<string, number>;
 
 export function PerformanceComparison({ audience }: { audience: "admin" | "public" }) {
   const [mode, setMode] = useState<Mode>("players");
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournamentId, setTournamentId] = useState("");
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -58,16 +61,18 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
     let active = true;
     async function load() {
       setLoading(true);
-      const [teamResult, playerResult, matchResult, inningsResult, ballResult] = await Promise.all([
+      const [tournamentResult, teamResult, playerResult, matchResult, inningsResult, ballResult] = await Promise.all([
+        supabase.from("tournaments").select("id,name").is("deleted_at", null).order("name"),
         supabase.from("teams").select("id,name,logo_url,primary_color").is("deleted_at", null).order("name"),
         supabase.from("players").select("id,name,team_id,photo_url,playing_role").is("deleted_at", null).order("name"),
-        supabase.from("matches").select("team_a_id,team_b_id,winner_id,status"),
-        supabase.from("innings").select("batting_team_id,bowling_team_id,total_runs,total_wickets"),
-        supabase.from("ball_by_ball").select("batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type"),
+        supabase.from("matches").select("id,tournament_id,team_a_id,team_b_id,winner_id,status,match_scope").eq("match_scope", "tournament"),
+        supabase.from("innings").select("id,match_id,batting_team_id,bowling_team_id,total_runs,total_wickets"),
+        supabase.from("ball_by_ball").select("innings_id,batsman_id,bowler_id,fielder_id,runs,is_wicket,dismissal_type"),
       ]);
       if (!active) return;
       const teamRows = (teamResult.data || []) as Team[];
       const playerRows = (playerResult.data || []) as Player[];
+      setTournaments((tournamentResult.data || []) as Tournament[]);
       setTeams(teamRows);
       setPlayers(playerRows);
       setMatches((matchResult.data || []) as Match[]);
@@ -81,13 +86,33 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
     return () => { active = false; };
   }, []);
 
-  const options = mode === "players" ? players : teams;
+  const scopedMatches = tournamentId ? matches.filter((match) => match.tournament_id === tournamentId) : matches;
+  const scopedMatchIds = new Set(scopedMatches.map((match) => match.id));
+  const scopedInnings = tournamentId ? innings.filter((item) => scopedMatchIds.has(item.match_id)) : innings;
+  const scopedInningsIds = new Set(scopedInnings.map((item) => item.id));
+  const scopedBalls = tournamentId ? balls.filter((ball) => scopedInningsIds.has(ball.innings_id)) : balls;
+  const scopedTeamIds = new Set(scopedMatches.flatMap((match) => [match.team_a_id, match.team_b_id]));
+  const scopedTeams = tournamentId ? teams.filter((team) => scopedTeamIds.has(team.id)) : teams;
+  const scopedPlayers = tournamentId ? players.filter((player) => !!player.team_id && scopedTeamIds.has(player.team_id)) : players;
+  const options = mode === "players" ? scopedPlayers : scopedTeams;
   const leftRow = options.find((item) => item.id === left);
   const rightRow = options.find((item) => item.id === right);
+  const selectedTournament = tournaments.find((item) => item.id === tournamentId);
+
+  function switchTournament(next: string) {
+    setTournamentId(next);
+    const nextMatches = next ? matches.filter((match) => match.tournament_id === next) : matches;
+    const nextTeamIds = new Set(nextMatches.flatMap((match) => [match.team_a_id, match.team_b_id]));
+    const rows = mode === "players"
+      ? (next ? players.filter((player) => !!player.team_id && nextTeamIds.has(player.team_id)) : players)
+      : (next ? teams.filter((team) => nextTeamIds.has(team.id)) : teams);
+    setLeft(rows[0]?.id || "");
+    setRight(rows[1]?.id || rows[0]?.id || "");
+  }
 
   function switchMode(next: Mode) {
     setMode(next);
-    const rows = next === "players" ? players : teams;
+    const rows = next === "players" ? scopedPlayers : scopedTeams;
     setLeft(rows[0]?.id || "");
     setRight(rows[1]?.id || rows[0]?.id || "");
   }
@@ -98,7 +123,7 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
     let wickets = 0;
     let catches = 0;
     let boundaries = 0;
-    balls.forEach((ball) => {
+    scopedBalls.forEach((ball) => {
       const dismissal = (ball.dismissal_type || "").toLowerCase();
       if (ball.batsman_id === id) {
         runs += Number(ball.runs || 0);
@@ -118,10 +143,10 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
   }
 
   function teamMetrics(id: string): Metrics {
-    const completed = matches.filter((match) => match.status === "completed" && (match.team_a_id === id || match.team_b_id === id));
+    const completed = scopedMatches.filter((match) => match.status === "completed" && (match.team_a_id === id || match.team_b_id === id));
     const wins = completed.filter((match) => match.winner_id === id).length;
-    const batting = innings.filter((item) => item.batting_team_id === id);
-    const bowling = innings.filter((item) => item.bowling_team_id === id);
+    const batting = scopedInnings.filter((item) => item.batting_team_id === id);
+    const bowling = scopedInnings.filter((item) => item.bowling_team_id === id);
     return {
       Played: completed.length,
       Wins: wins,
@@ -186,6 +211,7 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
       </header>
 
       <section className="admin-compare-pickers">
+        <label className="admin-compare-scope"><span>Performance scope</span><select value={tournamentId} onChange={(event) => switchTournament(event.target.value)}><option value="">Overall Performance</option>{tournaments.map((tournament) => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select></label>
         <Picker label={mode === "players" ? "Player A" : "Team A"} value={left} onChange={setLeft} options={options} />
         <span className="admin-versus">VS</span>
         <Picker label={mode === "players" ? "Player B" : "Team B"} value={right} onChange={setRight} options={options} />
@@ -194,9 +220,9 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
       {loading ? <div className="admin-compare-loading">Loading verified performance data…</div> : leftRow && rightRow ? (
         <>
           <section className="admin-compare-identities">
-            <Identity row={leftRow} mode={mode} tone="cyan" audience={audience} />
+            <Identity row={leftRow} mode={mode} tone="cyan" audience={audience} teamName={playerTeamName(leftRow, teams)} />
             <div className="admin-compare-verdict"><BarChart3 /><b>{leftWins === rightWins ? "Even contest" : leftWins > rightWins ? `${leftRow.name} leads` : `${rightRow.name} leads`}</b><span>{leftWins} metric wins · {rightWins} metric wins</span></div>
-            <Identity row={rightRow} mode={mode} tone="violet" audience={audience} />
+            <Identity row={rightRow} mode={mode} tone="violet" audience={audience} teamName={playerTeamName(rightRow, teams)} />
           </section>
 
           <div className="admin-compare-chart-grid">
@@ -248,8 +274,11 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
                 right={rightRow}
                 leftMetrics={leftMetrics}
                 rightMetrics={rightMetrics}
-                leftColor={colorFor(leftRow, teams, "#e11d48")}
-                rightColor={colorFor(rightRow, teams, "#1687f8")}
+                scopeName={selectedTournament?.name || "Overall Performance"}
+                leftTeamName={playerTeamName(leftRow, teams)}
+                rightTeamName={playerTeamName(rightRow, teams)}
+                leftColor="#08bde8"
+                rightColor="#39dc85"
               />
             </div>
           </section>
@@ -265,11 +294,11 @@ function Picker({ label, value, onChange, options }: { label: string; value: str
   return <label><span>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)}>{options.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>;
 }
 
-function Identity({ row, mode, tone, audience }: { row: Team | Player; mode: Mode; tone: "cyan" | "violet"; audience: "admin" | "public" }) {
+function Identity({ row, mode, tone, audience, teamName }: { row: Team | Player; mode: Mode; tone: "cyan" | "violet"; audience: "admin" | "public"; teamName?: string }) {
   const photo = imageFor(row);
   const detail = mode === "players" && "playing_role" in row ? row.playing_role || "Player" : "Cricket team";
   const href = audience === "admin" ? `/admin/players/${row.id}` : `/players/${row.id}`;
-  return <article className={`admin-compare-identity tone-${tone}`}><span>{photo ? <Image src={photo} alt="" width={128} height={128} sizes="128px" /> : mode === "players" ? <UserRound /> : <Users />}</span><div><small>{detail}</small><h2>{row.name}</h2>{mode === "players" && <Link href={href}>View profile <ArrowRight /></Link>}</div></article>;
+  return <article className={`admin-compare-identity tone-${tone}`}><span>{photo ? <Image src={photo} alt="" width={128} height={128} sizes="128px" /> : mode === "players" ? <UserRound /> : <Users />}</span><div><small>{detail}</small><h2>{row.name}</h2>{teamName ? <p>{teamName}</p> : null}{mode === "players" && <Link href={href}>View profile <ArrowRight /></Link>}</div></article>;
 }
 
 function ChartCard({ title, subtitle, icon: Icon, children }: { title: string; subtitle: string; icon: typeof Activity; children: React.ReactNode }) {
@@ -281,7 +310,7 @@ function MetricRow({ label, left, right }: { label: string; left: number; right:
   return <div><strong className={left > right ? "winner" : ""}>{left}</strong><span className="left-bar"><i style={{ width: `${(left / max) * 100}%` }} /></span><b>{label}</b><span className="right-bar"><i style={{ width: `${(right / max) * 100}%` }} /></span><strong className={right > left ? "winner" : ""}>{right}</strong></div>;
 }
 
-const ComparisonPoster = ({ ref, mode, left, right, leftMetrics, rightMetrics, leftColor, rightColor }: {
+const ComparisonPoster = ({ ref, mode, left, right, leftMetrics, rightMetrics, leftColor, rightColor, scopeName, leftTeamName, rightTeamName }: {
   ref: React.Ref<HTMLDivElement>;
   mode: Mode;
   left: Team | Player;
@@ -290,6 +319,9 @@ const ComparisonPoster = ({ ref, mode, left, right, leftMetrics, rightMetrics, l
   rightMetrics: Metrics;
   leftColor: string;
   rightColor: string;
+  scopeName: string;
+  leftTeamName?: string;
+  rightTeamName?: string;
 }) => {
   const labels = Object.keys(leftMetrics).slice(0, 5);
   return (
@@ -302,33 +334,30 @@ const ComparisonPoster = ({ ref, mode, left, right, leftMetrics, rightMetrics, l
       } as React.CSSProperties}
     >
       <div className="comparison-poster-glow glow-left" /><div className="comparison-poster-glow glow-right" />
-      <header><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} className="poster-brand-logo" /><small>LIVE CRICKET EXPERIENCE</small></header>
-      <div className="poster-title"><p>{mode === "players" ? "PLAYER" : "TEAM"} PERFORMANCE COMPARISON</p><h2>HEAD TO HEAD</h2></div>
+      <header><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} className="poster-brand-logo" /><small>THE RHYTHM OF THE GAME</small></header>
+      <div className="comparison-poster-title"><p>{mode === "players" ? "PLAYER" : "TEAM"} PERFORMANCE COMPARISON</p><h2>HEAD TO <em>HEAD</em></h2><span>{scopeName}</span></div>
       <div className="poster-contenders">
-        <PosterSide row={left} mode={mode} metrics={leftMetrics} labels={labels} side="left" />
+        <PosterSide row={left} mode={mode} metrics={leftMetrics} labels={labels} side="left" teamName={leftTeamName} />
         <div className="poster-vs">VS</div>
-        <PosterSide row={right} mode={mode} metrics={rightMetrics} labels={labels} side="right" />
+        <PosterSide row={right} mode={mode} metrics={rightMetrics} labels={labels} side="right" teamName={rightTeamName} />
       </div>
-      <footer><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} /><span>PERFORMANCE INTELLIGENCE</span><b>EVERY BALL · EVERY MOMENT · ONE PULSE</b></footer>
+      <footer><span>PERFORMANCE INTELLIGENCE</span><div><Image src="/brand/crickpulse-logo.png" alt="Crickpulse" width={180} height={64} /><b>THE RHYTHM OF THE GAME</b></div></footer>
     </div>
   );
 };
 
-function PosterSide({ row, mode, metrics, labels, side }: { row: Team | Player; mode: Mode; metrics: Metrics; labels: string[]; side: "left" | "right" }) {
+function PosterSide({ row, mode, metrics, labels, side, teamName }: { row: Team | Player; mode: Mode; metrics: Metrics; labels: string[]; side: "left" | "right"; teamName?: string }) {
   const photo = imageFor(row);
-  return <section className={`poster-side poster-${side} poster-${mode}`}><div className="poster-photo">{photo ? <Image src={photo} alt="" crossOrigin="anonymous" width={512} height={512} sizes="512px" /> : mode === "players" ? <UserRound /> : <Shield />}</div><h3>{row.name}</h3><small>{mode === "players" && "playing_role" in row ? row.playing_role || "PLAYER" : "CRICKET TEAM"}</small><div className="poster-stats">{labels.map((label) => <div key={label}><strong>{formatMetric(metrics[label])}</strong><span>{label}</span></div>)}</div></section>;
+  return <section className={`poster-side poster-${side} poster-${mode}`}><div className="poster-photo">{photo ? <Image src={photo} alt="" crossOrigin="anonymous" width={512} height={512} sizes="512px" /> : mode === "players" ? <UserRound /> : <Shield />}</div><h3>{row.name}</h3><small>{teamName || (mode === "players" && "playing_role" in row ? row.playing_role || "PLAYER" : "CRICKET TEAM")}</small><div className="poster-stats">{labels.map((label) => <div key={label}><strong>{formatMetric(metrics[label])}</strong><span>{label}</span></div>)}</div></section>;
+}
+
+function playerTeamName(row: Team | Player, teams: Team[]) {
+  if (!("team_id" in row) || !row.team_id) return undefined;
+  return teams.find((team) => team.id === row.team_id)?.name;
 }
 
 function imageFor(row: Team | Player) {
   return "photo_url" in row ? row.photo_url : row.logo_url;
-}
-
-function colorFor(row: Team | Player, teams: Team[], fallback: string) {
-  const team = "primary_color" in row
-    ? row
-    : teams.find((item) => item.id === row.team_id);
-  const color = team?.primary_color?.trim();
-  return color && /^#[0-9a-f]{3,8}$/i.test(color) ? color : fallback;
 }
 
 function formatMetric(value: number) {

@@ -86,6 +86,7 @@ export type Database = {
           contact_number: string | null
           created_at: string
           id: string
+          manual_text_updated_at: string | null
           ocr_serial_number: number | null
           photo_url: string
           player_card_url: string | null
@@ -109,6 +110,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           id?: string
+          manual_text_updated_at?: string | null
           ocr_serial_number?: number | null
           photo_url: string
           player_card_url?: string | null
@@ -132,6 +134,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           id?: string
+          manual_text_updated_at?: string | null
           ocr_serial_number?: number | null
           photo_url?: string
           player_card_url?: string | null
@@ -891,6 +894,9 @@ export type Database = {
           bracket_slot: number | null
           competition_stage: string
           created_at: string
+          fixture_round: number | null
+          fixture_source: string | null
+          generation_batch_id: string | null
           ground: string | null
           id: string
           interruption_notes: string | null
@@ -928,6 +934,9 @@ export type Database = {
           bracket_slot?: number | null
           competition_stage?: string
           created_at?: string
+          fixture_round?: number | null
+          fixture_source?: string | null
+          generation_batch_id?: string | null
           ground?: string | null
           id?: string
           interruption_notes?: string | null
@@ -965,6 +974,9 @@ export type Database = {
           bracket_slot?: number | null
           competition_stage?: string
           created_at?: string
+          fixture_round?: number | null
+          fixture_source?: string | null
+          generation_batch_id?: string | null
           ground?: string | null
           id?: string
           interruption_notes?: string | null
@@ -1494,6 +1506,7 @@ export type Database = {
           contact_number: string | null
           created_at: string
           deleted_at: string | null
+          fixture_order: number | null
           id: string
           logo_url: string | null
           name: string
@@ -1509,6 +1522,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           deleted_at?: string | null
+          fixture_order?: number | null
           id?: string
           logo_url?: string | null
           name: string
@@ -1524,6 +1538,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           deleted_at?: string | null
+          fixture_order?: number | null
           id?: string
           logo_url?: string | null
           name?: string
@@ -1748,6 +1763,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_unplayed_generated_fixtures: {
+        Args: { p_match_ids: string[]; p_tournament_id: string }
+        Returns: number
+      }
+      assign_fixed_auction_player: {
+        Args: { p_auction_player_id: string; p_points: number; p_team_id: string }
+        Returns: Database["public"]["Tables"]["auction_players"]["Row"]
+      }
+      create_fixed_auction_players: {
+        Args: { p_players: Json; p_tournament_id: string }
+        Returns: Database["public"]["Tables"]["auction_players"]["Row"][]
+      }
+      unassign_fixed_auction_player: {
+        Args: { p_auction_player_id: string }
+        Returns: Database["public"]["Tables"]["auction_players"]["Row"]
+      }
       delete_tournament_cascade: {
         Args: { p_tournament_id: string }
         Returns: boolean
@@ -1970,6 +2001,7 @@ export type Database = {
           p_batting_style?: string
           p_bowling_style?: string
           p_contact_number?: string
+          p_manual?: boolean
           p_player_name: string
           p_playing_role: string
           p_registration_number?: number

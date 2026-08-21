@@ -27,9 +27,18 @@ export default function PublicPlayerProfilePage() {
     const row = playerResult.data as Player | null; setPlayer(row);
     if (row?.team_id) { const result = await supabase.from("teams").select("id,name,logo_url").eq("id", row.team_id).maybeSingle(); setTeam(result.data); }
     const ballResult = await supabase.from("ball_by_ball").select("innings_id,batsman_id,bowler_id,fielder_id,player_out_id,runs,is_wicket,dismissal_type").or(`batsman_id.eq.${id},bowler_id.eq.${id},fielder_id.eq.${id},player_out_id.eq.${id}`);
-    const ballRows = (ballResult.data || []) as Ball[]; setBalls(ballRows);
+    const ballRows = (ballResult.data || []) as Ball[];
     const inningsIds = [...new Set(ballRows.map((ball) => ball.innings_id))];
-    if (inningsIds.length) { const inningsResult = await supabase.from("innings").select("match_id").in("id", inningsIds); setMatchCount(new Set((inningsResult.data || []).map((item: { match_id: string }) => item.match_id)).size); }
+    if (inningsIds.length) {
+      const inningsResult = await supabase.from("innings").select("id,match_id").in("id", inningsIds);
+      const inningsRows = (inningsResult.data || []) as { id: string; match_id: string }[];
+      const matchIds = [...new Set(inningsRows.map((item) => item.match_id))];
+      const matchResult = matchIds.length ? await supabase.from("matches").select("id,match_scope").in("id", matchIds).eq("match_scope", "tournament") : { data: [] };
+      const tournamentMatchIds = new Set((matchResult.data || []).map((item: { id: string }) => item.id));
+      const tournamentInningsIds = new Set(inningsRows.filter((item) => tournamentMatchIds.has(item.match_id)).map((item) => item.id));
+      setBalls(ballRows.filter((ball) => tournamentInningsIds.has(ball.innings_id)));
+      setMatchCount(tournamentMatchIds.size);
+    } else setBalls([]);
     setLoading(false);
   })(); }, [id]);
   const stats = useMemo(() => {

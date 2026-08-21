@@ -11,7 +11,7 @@ import { calculateTournamentStandings, defaultPointsRules, type PointsRules, typ
 import { QualificationSimulator } from "@/components/qualification-simulator";
 
 type Tournament = { id: string; name: string; logo_url: string | null };
-type Team = { id: string; name: string; logo_url: string | null };
+type Team = { id: string; name: string; logo_url: string | null; fixture_order: number | null };
 
 export default function AdminPointsPage() {
   const { userId, isMasterAdmin } = useAdminAccess();
@@ -58,10 +58,15 @@ export default function AdminPointsPage() {
     if (!selectedTournament) return;
     setLoading(true);
     setMessage("");
-    const [{ data: matchRows, error: matchesError }, { data: teamRows, error: teamsError }] = await Promise.all([
-      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id").eq("tournament_id", selectedTournament),
-      supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament).order("name"),
+    const [{ data: latestTournament, error: tournamentError }, { data: matchRows, error: matchesError }, { data: teamRows, error: teamsError }] = await Promise.all([
+      supabase.from("tournaments").select("id,name,logo_url").eq("id", selectedTournament).maybeSingle(),
+      supabase.from("matches").select("id,team_a_id,team_b_id,status,winner_id,overs_per_match,balls_per_over,wickets_per_innings,revised_overs").eq("tournament_id", selectedTournament),
+      supabase.from("teams").select("id,name,logo_url,fixture_order").eq("tournament_id", selectedTournament).order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
     ]);
+    if (latestTournament) {
+      const refreshedTournament = latestTournament as Tournament;
+      setTournaments((current) => current.map((item) => item.id === refreshedTournament.id ? refreshedTournament : item));
+    }
     const matches = (matchRows || []) as StandingsMatch[];
     setMatches(matches);
     const matchIds = matches.map((match) => match.id);
@@ -69,7 +74,7 @@ export default function AdminPointsPage() {
     const tournamentTeams = (teamRows || []) as Team[];
     setStandings(calculateTournamentStandings(tournamentTeams, matches, (inningsResult.data || []) as StandingsInnings[], rules));
     setTeams(tournamentTeams);
-    setMessage(matchesError?.message || teamsError?.message || inningsResult.error?.message || "");
+    setMessage(tournamentError?.message || matchesError?.message || teamsError?.message || inningsResult.error?.message || "");
     setLoading(false);
   }, [selectedTournament, rules]);
 
