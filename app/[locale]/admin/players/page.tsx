@@ -11,12 +11,14 @@ import { useAdminAccess } from "@/components/admin-shell";
 import { rowsToCsv } from "@/lib/csv";
 
 type Player = Database['public']['Tables']['players']['Row'];
+const PLAYERS_PER_PAGE = 20;
 
 export default function PlayersPage() {
   const { isMasterAdmin, userId } = useAdminAccess();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,6 +155,10 @@ export default function PlayersPage() {
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     p.phone_number?.includes(search)
   );
+  const totalPages = Math.max(1, Math.ceil(filteredPlayers.length / PLAYERS_PER_PAGE));
+  const activePage = Math.min(currentPage, totalPages);
+  const firstPlayerIndex = (activePage - 1) * PLAYERS_PER_PAGE;
+  const visiblePlayers = filteredPlayers.slice(firstPlayerIndex, firstPlayerIndex + PLAYERS_PER_PAGE);
 
   return (
     <div className="admin-themed-page space-y-6">
@@ -195,7 +201,10 @@ export default function PlayersPage() {
               type="text" 
               placeholder="Search by name or phone..." 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-9 pr-4 py-2 bg-transparent border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -233,7 +242,7 @@ export default function PlayersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPlayers.map((player) => (
+                {visiblePlayers.map((player) => (
                   <tr key={player.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 font-medium flex items-center gap-3">
                       {player.photo_url ? (
@@ -268,7 +277,7 @@ export default function PlayersPage() {
             </table>
           </div>
           <div className="grid gap-3 sm:hidden">
-            {filteredPlayers.map((player) => (
+            {visiblePlayers.map((player) => (
               <article key={player.id} className="min-w-0 rounded-xl border border-border bg-background/45 p-4">
                 <div className="flex min-w-0 items-center gap-3">
                   {player.photo_url ? <Image unoptimized width={128} height={128} src={player.photo_url} alt="" className="h-12 w-12 shrink-0 rounded-full bg-muted object-cover" /> : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 text-lg font-bold text-primary">{player.name.charAt(0)}</span>}
@@ -285,6 +294,32 @@ export default function PlayersPage() {
               </article>
             ))}
           </div>
+          <nav className="mt-5 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Player directory pagination">
+            <p className="text-sm text-muted-foreground">
+              Showing {firstPlayerIndex + 1}-{Math.min(firstPlayerIndex + PLAYERS_PER_PAGE, filteredPlayers.length)} of {filteredPlayers.length} players
+            </p>
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={activePage === 1}
+                className="rounded-md border border-input px-3 py-2 text-sm font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm font-medium tabular-nums" aria-current="page">
+                Page {activePage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={activePage === totalPages}
+                className="rounded-md border border-input px-3 py-2 text-sm font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </nav>
           </>
         )}
       </div>
