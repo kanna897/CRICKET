@@ -8,7 +8,7 @@ export const getActivePublicMatchById = cache(async (matchId: string) => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("matches")
-    .select("id,tournament_id,tournaments(deleted_at)")
+    .select("id,tournament_id,match_scope,is_public,tournaments(deleted_at)")
     .eq("id", matchId)
     .maybeSingle();
 

@@ -101,6 +101,7 @@ export default function PublicHome() {
           .limit(8),
         supabase.from("matches")
           .select("id,tournament_id,team_a_id,team_b_id,status,match_date,match_time,ground,toss_winner_id,toss_decision,winner_id,created_at,updated_at")
+          .eq("is_public", true)
           .order("created_at", { ascending: false })
           .limit(60),
         supabase.from("players")

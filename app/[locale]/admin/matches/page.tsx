@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, ClipboardList, Loader2, LockKeyhole, Pencil, PlayCircle, ShieldCheck, Sparkles, Trash2, UnlockKeyhole, X } from "lucide-react";
+import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, ClipboardList, Eye, EyeOff, Loader2, LockKeyhole, Pencil, PlayCircle, ShieldCheck, Sparkles, Trash2, UnlockKeyhole, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { useAdminAccess } from "@/components/admin-shell";
@@ -34,6 +34,7 @@ type Match = {
   match_number: number | null;
   fixture_source: string | null;
   generation_batch_id: string | null;
+  is_public: boolean;
 };
 
 type FixturePreviewMatch = Database["public"]["Tables"]["matches"]["Insert"] & {
@@ -54,6 +55,7 @@ export default function MatchesPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingAssignment, setSavingAssignment] = useState("");
+  const [savingVisibility, setSavingVisibility] = useState("");
   const [message, setMessage] = useState("");
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -121,6 +123,15 @@ export default function MatchesPage() {
     if (error) setMessage(error.message);
     else setMatches((rows) => rows.map((row) => row.id === match.id ? { ...row, scoring_locked: nextLocked, assigned_scorer_id: nextLocked ? (row.assigned_scorer_id || ownerId) : row.assigned_scorer_id } : row));
     setSavingAssignment("");
+  };
+  const toggleStandaloneVisibility = async (match: Match) => {
+    if (match.match_scope !== "standalone" || match.status !== "completed") return;
+    setSavingVisibility(match.id); setMessage("");
+    const isPublic = !match.is_public;
+    const { error } = await supabase.from("matches").update({ is_public: isPublic }).eq("id", match.id).eq("match_scope", "standalone").eq("status", "completed");
+    if (error) setMessage(error.message || "Unable to update public visibility.");
+    else setMatches((rows) => rows.map((row) => row.id === match.id ? { ...row, is_public: isPublic } : row));
+    setSavingVisibility("");
   };
   const openMatchEditor = (match: Match) => {
     setMessage("");
@@ -274,6 +285,7 @@ export default function MatchesPage() {
               {match.status === "scheduled"&&<button type="button" onClick={()=>openMatchEditor(match)} className="inline-flex h-9 items-center rounded-md border border-primary/40 bg-primary/10 px-3 text-xs font-black text-primary"><Pencil className="mr-1 h-4 w-4"/>Edit</button>}
               <label className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-2 text-xs font-bold"><ShieldCheck className="h-4 w-4 text-primary" /><select aria-label="Assigned scorer" value={match.assigned_scorer_id ? "owner" : "none"} onChange={(event) => void updateScorer(match, event.target.value === "owner")} disabled={savingAssignment === match.id || match.scoring_locked} className="bg-transparent text-foreground outline-none"><option value="owner">Match Organizer</option><option value="none">Not assigned</option></select></label>
               <button type="button" onClick={() => void toggleLock(match)} disabled={savingAssignment === match.id || (!match.assigned_scorer_id && !matchOwner(match))} className={`inline-flex h-9 items-center rounded-md border px-3 text-xs font-black ${match.scoring_locked ? "border-amber-400 bg-amber-500/15 text-amber-600" : "border-input bg-background text-foreground"}`}>{match.scoring_locked ? <LockKeyhole className="mr-1 h-4 w-4" /> : <UnlockKeyhole className="mr-1 h-4 w-4" />}{match.scoring_locked ? "Scorer locked" : "Lock scorer"}</button>
+              {match.match_scope === "standalone" && match.status === "completed" && <button type="button" onClick={() => void toggleStandaloneVisibility(match)} disabled={savingVisibility === match.id} className={`inline-flex h-9 items-center rounded-md border px-3 text-xs font-black disabled:opacity-50 ${match.is_public ? "border-amber-400 bg-amber-500/15 text-amber-700" : "border-emerald-400 bg-emerald-500/15 text-emerald-700"}`}>{savingVisibility === match.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin"/> : match.is_public ? <EyeOff className="mr-1 h-4 w-4"/> : <Eye className="mr-1 h-4 w-4"/>}{match.is_public ? "Hide public" : "Unhide public"}</button>}
               {(!match.scoring_locked || isMasterAdmin || match.assigned_scorer_id === userId) ? <Link href={localePath(locale, `/admin/matches/score/${match.id}`)} className="inline-flex items-center rounded-md bg-primary text-primary-foreground h-9 px-3 text-sm font-medium"><PlayCircle className="w-4 h-4 mr-1" />Score</Link> : <span className="inline-flex h-9 items-center rounded-md border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800">Assigned scorer only</span>}
               <Link href={localePath(locale, `/admin/matches/teamsheet/${match.id}`)} className="inline-flex items-center rounded-md border border-input h-9 px-3 text-sm font-medium">Team Sheet</Link>
             </div>

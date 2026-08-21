@@ -83,7 +83,7 @@ test("all public match routes are protected by an active-parent server guard", (
     ["teamsheet", "page.tsx"],
   ];
 
-  assert.match(helper, /select\("id,tournament_id,tournaments\(deleted_at\)"\)/);
+  assert.match(helper, /select\("id,tournament_id,match_scope,is_public,tournaments\(deleted_at\)"\)/);
   assert.match(helper, /if \(error \|\| !isActivePublicMatch/);
   assert.match(layout, /await getActivePublicMatchById\(id\)/);
   assert.match(layout, /notFound\(\)/);
@@ -97,6 +97,7 @@ test("all public match routes are protected by an active-parent server guard", (
 test("active and standalone matches remain public", () => {
   assert.equal(isActivePublicMatch({ id: "active", tournament_id: "tournament-a", tournaments: { deleted_at: null } }), true);
   assert.equal(isActivePublicMatch({ id: "standalone", tournament_id: null, tournaments: null }), true);
+  assert.equal(isActivePublicMatch({ id: "hidden-standalone", tournament_id: null, match_scope: "standalone", is_public: false, tournaments: null }), false);
 });
 
 test("hidden parent visibility denies authenticated owners and missing parents", () => {
