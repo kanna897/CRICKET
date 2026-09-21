@@ -3,7 +3,8 @@ import Image from "next/image";
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRightLeft, BarChart3, CheckCircle2, ChevronDown, FileText, Loader2, LockKeyhole, Mic, MicOff, RotateCcw, RotateCw, Settings2, Share2, SlidersHorizontal, UserPlus, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, BarChart3, CheckCircle2, ChevronDown, FileText, Loader2, LockKeyhole, Mic, MicOff, Moon, RotateCcw, RotateCw, Settings2, Share2, SlidersHorizontal, Sun, UserPlus, Volume2, VolumeX } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 import { scoringApi } from "@/features/scoring/api";
 import { generateCommentary } from "@/lib/commentary";
 import { getWicketLimit, isBowlerCreditedWicket, isHatTrick, runsChargedToBowler, shouldActivateLastMan } from "@/lib/cricket-rules";
@@ -23,6 +24,7 @@ import { supabase } from "@/lib/supabase";
 
 export function useLiveScoringPage() {
     const { userId, isMasterAdmin } = useAdminAccess();
+    const { resolvedTheme, setTheme } = useTheme();
     const { id, locale } = useParams<{
         id: string;
         locale: string;
@@ -274,13 +276,29 @@ export function useLiveScoringPage() {
     }, [hatTrickPop, setHatTrickPop]);
     const batterStats = (playerId: string | null) => {
         if (!playerId)
-            return { runs: 0, balls: 0 };
-        return balls.reduce((stats, ball) => ball.batsman_id === playerId
-            ? { runs: stats.runs + ball.runs, balls: stats.balls + (ball.is_legal ? 1 : 0) }
-            : stats, { runs: 0, balls: 0 });
+            return { runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: "0.0" };
+        const batterBalls = balls.filter((ball) => ball.batsman_id === playerId);
+        const runs = batterBalls.reduce((total, ball) => total + ball.runs, 0);
+        const faced = batterBalls.filter((ball) => ball.is_legal).length;
+        const fours = batterBalls.filter((ball) => ball.runs === 4).length;
+        const sixes = batterBalls.filter((ball) => ball.runs === 6).length;
+        const strikeRate = faced > 0 ? ((runs / faced) * 100).toFixed(1) : "0.0";
+        return { runs, balls: faced, fours, sixes, strikeRate };
     };
     const strikerStats = batterStats(innings?.striker_id || null);
     const nonStrikerStats = batterStats(innings?.non_striker_id || null);
+    const bowlerFigures = (bowlerId: string | null) => {
+        if (!bowlerId)
+            return { overs: "0.0", maidens: 0, runs: 0, wickets: 0, economy: "0.0" };
+        const bowlerBalls = balls.filter((b) => b.bowler_id === bowlerId);
+        const legalBalls = bowlerBalls.filter((b) => b.is_legal).length;
+        const overs = `${Math.floor(legalBalls / ballsPerOver)}.${legalBalls % ballsPerOver}`;
+        const runs = bowlerBalls.reduce((total, ball) => total + runsChargedToBowler(ball), 0);
+        const wickets = bowlerBalls.filter(isBowlerCreditedWicket).length;
+        const economy = legalBalls > 0 ? ((runs / legalBalls) * 6).toFixed(1) : "0.0";
+        return { overs, maidens: 0, runs, wickets, economy };
+    };
+    const currentBowlerFigures = bowlerFigures(innings?.current_bowler_id || null);
     const currentOverNumber = balls.length ? balls[balls.length - 1].over_number : 0;
     const currentOverBalls = currentOverNumber ? balls.filter((ball) => ball.over_number === currentOverNumber) : [];
     const currentOverRuns = currentOverBalls.reduce((total, ball) => total + ball.runs + ball.extras, 0);
@@ -803,24 +821,167 @@ export function useLiveScoringPage() {
         return <div className="p-8 text-center text-red-600">Match not found.</div>;
     return <div className="live-score-shell max-w-5xl mx-auto space-y-4 pb-12">
     <section className="mobile-portrait-scorer" aria-label="Portrait quick scoring">
-      <header><Link href={localePath(locale, "/admin/matches")} aria-label="Back to matches"><ArrowLeft /></Link><div><small>{teamName(match.team_a_id)} vs {teamName(match.team_b_id)}</small><strong>{saving ? "Saving ball…" : completed ? "Match complete" : "Live scoring"}</strong></div><button type="button" onClick={() => setSetupOpen(true)} aria-label="Scoring setup"><Settings2 /></button></header>
-      <div className="mobile-score-strip">
-        <div className="mobile-team-logo" aria-label={teamA?.name || teamName(match.team_a_id)}>{teamA?.logo_url ? <Image unoptimized width={96} height={96} src={teamA.logo_url} alt=""/> : <span>{teamName(match.team_a_id).slice(0, 1)}</span>}</div>
-        <div className="mobile-score-primary"><small>{innings ? `${teamName(innings.batting_team_id)} batting` : "Innings"}</small><strong>{score}</strong><div className="mobile-score-meta"><span><small>Overs</small><b>{overs}/{effectiveOvers}</b></span><span><small>CRR</small><b>{currentRunRate.toFixed(2)}</b></span></div>{innings?.innings_number === 2 && innings.target ? <p className="mobile-chase-meta">Target {innings.target} · Need {runsNeeded} off {ballsRemaining}</p> : null}</div>
-        <div className="mobile-team-logo" aria-label={teamB?.name || teamName(match.team_b_id)}>{teamB?.logo_url ? <Image unoptimized width={96} height={96} src={teamB.logo_url} alt=""/> : <span>{teamName(match.team_b_id).slice(0, 1)}</span>}</div>
+      <header className="mobile-stumps-header">
+        <Link href={localePath(locale, "/admin/matches")} aria-label="Back to matches" className="mobile-header-icon-btn">
+          <ArrowLeft className="w-4 h-4" />
+        </Link>
+        <div className="mobile-header-title">
+          <strong>{teamName(match.team_a_id)} vs {teamName(match.team_b_id)}</strong>
+          <span className="mobile-live-badge">{saving ? "Saving…" : completed ? "Completed" : "Live"}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            aria-label="Toggle theme"
+            className="mobile-header-icon-btn"
+            title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {resolvedTheme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+          </button>
+          <button type="button" onClick={() => setSetupOpen(true)} aria-label="Scoring setup" className="mobile-header-icon-btn">
+            <Settings2 className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      <nav className="mobile-stumps-nav" aria-label="Mobile match tabs">
+        <button type="button" className="active">🔴 Scoring</button>
+        <Link href={localePath(locale, `/admin/matches/scorecard/${id}`)}>📄 Scorecard</Link>
+        <Link href={localePath(locale, `/admin/matches/teamsheet/${id}`)}>👥 Playing XI</Link>
+        <Link href={localePath(locale, `/admin/matches/analytics/${id}`)}>📊 Info</Link>
+      </nav>
+
+      <div className="mobile-score-hero">
+        <div className="mobile-team-heading">
+          <h3>{innings ? teamName(innings.batting_team_id) : "Innings"}</h3>
+          <small>{innings ? `${innings.innings_number === 1 ? "1st" : "2nd"} Innings` : "Not Started"}</small>
+        </div>
+        <div className="mobile-score-display">
+          <strong>{score}</strong>
+        </div>
+        <div className="mobile-score-meta-bar">
+          <span>Ex - {innings?.extras || 0}</span>
+          <span>Ov - {overs} / {effectiveOvers}</span>
+          <span>CRR - {currentRunRate.toFixed(2)}</span>
+        </div>
+        {innings?.innings_number === 2 && innings.target ? (
+          <div className="mobile-chase-box">
+            <p><strong>Target {innings.target}</strong> · Req. RR - {runsNeeded === 0 ? "0.0" : ballsRemaining ? requiredRunRate.toFixed(1) : "—"}</p>
+            <small>Need {runsNeeded} Runs off {ballsRemaining} balls</small>
+          </div>
+        ) : null}
+        {freeHitActive ? <div className="mobile-free-hit-pill">⚡ Free Hit</div> : null}
       </div>
-      {freeHitActive ? <p className="mobile-free-hit">Free Hit</p> : null}
-      <div className="mobile-player-strip">
-        <div className="mobile-player-card">{playerPhoto(innings?.striker_id || null) ? <Image unoptimized width={64} height={64} src={playerPhoto(innings?.striker_id || null)!} alt="" className="mobile-player-avatar"/> : <span className="mobile-player-avatar mobile-player-avatar-fallback">S</span>}<div className="mobile-player-copy"><small>Striker</small><strong>{playerName(innings?.striker_id || null)}</strong><span>{strikerStats.runs} ({strikerStats.balls}) *</span><button type="button" onClick={swapStrike} disabled={!innings || saving || completed} title="Swap Strike">Swap ⇄</button></div></div>
-        <div className="mobile-player-card">{playerPhoto(innings?.non_striker_id || null) ? <Image unoptimized width={64} height={64} src={playerPhoto(innings?.non_striker_id || null)!} alt="" className="mobile-player-avatar"/> : <span className="mobile-player-avatar mobile-player-avatar-fallback">NS</span>}<div className="mobile-player-copy"><small>Non-striker</small><strong>{playerName(innings?.non_striker_id || null)}</strong><span>{nonStrikerStats.runs} ({nonStrikerStats.balls})</span><button type="button" onClick={swapStrike} disabled={!innings || saving || completed} title="Swap Strike">Swap ⇄</button></div></div>
-        <div className="mobile-player-card">{playerPhoto(innings?.current_bowler_id || null) ? <Image unoptimized width={64} height={64} src={playerPhoto(innings?.current_bowler_id || null)!} alt="" className="mobile-player-avatar"/> : <span className="mobile-player-avatar mobile-player-avatar-fallback">B</span>}<div className="mobile-player-copy"><small>Bowler</small><strong>{playerName(innings?.current_bowler_id || null)}</strong><button type="button" onClick={() => { setNewBowler(""); setNextBowlerOpen(true); }} disabled={!innings || saving || completed}>Change</button></div></div>
+
+      <div className="mobile-stats-table-card">
+        <div className="mobile-table-header-row batsman-header">
+          <span className="col-player">✏️ Batsman</span>
+          <span className="col-stat">R</span>
+          <span className="col-stat">B</span>
+          <span className="col-stat">4s</span>
+          <span className="col-stat">6s</span>
+          <span className="col-stat">SR</span>
+        </div>
+        <div className="mobile-table-data-row striker-row">
+          <div className="col-player flex items-center gap-1.5 min-w-0">
+            <span className="striker-pill truncate">
+              {playerName(innings?.striker_id || null)} *
+            </span>
+            <button type="button" onClick={swapStrike} disabled={!innings || saving || completed} className="swap-strike-mini" title="Swap Strike">
+              ⇄
+            </button>
+          </div>
+          <span className="col-stat font-black">{strikerStats.runs}</span>
+          <span className="col-stat">{strikerStats.balls}</span>
+          <span className="col-stat">{strikerStats.fours}</span>
+          <span className="col-stat">{strikerStats.sixes}</span>
+          <span className="col-stat text-[0.62rem]">{strikerStats.strikeRate}</span>
+        </div>
+        {!lastManActive && (
+          <div className="mobile-table-data-row non-striker-row">
+            <div className="col-player flex items-center gap-1.5 min-w-0">
+              <span className="player-name-text truncate">
+                {playerName(innings?.non_striker_id || null)}
+              </span>
+            </div>
+            <span className="col-stat font-black">{nonStrikerStats.runs}</span>
+            <span className="col-stat">{nonStrikerStats.balls}</span>
+            <span className="col-stat">{nonStrikerStats.fours}</span>
+            <span className="col-stat">{nonStrikerStats.sixes}</span>
+            <span className="col-stat text-[0.62rem]">{nonStrikerStats.strikeRate}</span>
+          </div>
+        )}
       </div>
-      <div className="mobile-last-six"><small>Last 6 balls</small><div>{balls.slice(-6).map((ball) => <span key={ball.id} className={ball.is_wicket ? "wicket" : ball.extras_type ? "extra" : ball.runs === 4 || ball.runs === 6 ? "boundary" : ""}>{deliveryBadgeLabel(ball)}</span>)}{!balls.length ? <em>No balls yet</em> : null}</div></div>
-      <div className="mobile-record-title"><span>Record this ball</span>{offlinePending ? <b>{offlinePending} pending</b> : <b>Synced</b>}</div>
-      <div className="mobile-run-grid">{[0, 1, 2, 3, 4, 6].map((run) => <button key={run} type="button" onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup}>{run}</button>)}</div>
-      <div className="mobile-event-grid"><button type="button" className="wicket" onClick={() => openWicket(freeHitActive ? "run_out" : "bowled", true)} disabled={saving || completed || requiresSetup}>Wicket</button><button type="button" onClick={() => openAdvancedDelivery("wide")} disabled={saving || completed || requiresSetup || !match.allow_wides}>Wide</button><button type="button" onClick={() => openAdvancedDelivery("no_ball")} disabled={saving || completed || requiresSetup || !match.allow_no_balls}>No Ball</button></div>
-      <div className="mobile-utility-grid"><button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup}><SlidersHorizontal />More Extras</button><button type="button" onClick={undoLastBall} disabled={!balls.length || saving || completed}><RotateCcw />Undo</button>{redoSnapshot ? <button type="button" onClick={redoLastBall} disabled={saving || completed}><RotateCw />Redo</button> : null}</div>
-      <footer><span className={offlinePending ? "pending" : "online"} />{offlinePending ? `${offlinePending} ball${offlinePending === 1 ? "" : "s"} waiting to sync` : "Online · all balls synced"}</footer>
+
+      <div className="mobile-stats-table-card mt-1">
+        <div className="mobile-table-header-row bowler-header">
+          <span className="col-player">✏️ Bowler</span>
+          <span className="col-stat">O</span>
+          <span className="col-stat">M</span>
+          <span className="col-stat">R</span>
+          <span className="col-stat">W</span>
+          <span className="col-stat">Eco</span>
+        </div>
+        <div className="mobile-table-data-row bowler-row">
+          <div className="col-player flex items-center gap-1.5 min-w-0">
+            <span className="player-name-text truncate">
+              {playerName(innings?.current_bowler_id || null)}
+            </span>
+            <button type="button" onClick={() => { setNewBowler(""); setNextBowlerOpen(true); }} disabled={!innings || saving || completed} className="change-bowler-mini">
+              Change
+            </button>
+          </div>
+          <span className="col-stat font-black">{currentBowlerFigures.overs}</span>
+          <span className="col-stat">{currentBowlerFigures.maidens}</span>
+          <span className="col-stat">{currentBowlerFigures.runs}</span>
+          <span className="col-stat font-black text-red-500">{currentBowlerFigures.wickets}</span>
+          <span className="col-stat text-[0.62rem]">{currentBowlerFigures.economy}</span>
+        </div>
+      </div>
+
+      <div className="mobile-over-ribbon">
+        <div className="mobile-over-balls-track">
+          {currentOverBalls.length ? currentOverBalls.map((ball) => (
+            <span key={ball.id} className={`mobile-over-ball ${ball.is_wicket ? "ball-wicket" : ball.extras_type ? "ball-extra" : ball.runs === 4 || ball.runs === 6 ? "ball-boundary" : ""}`}>
+              {deliveryBadgeLabel(ball)}
+            </span>
+          )) : <em className="text-[0.65rem] opacity-60">No deliveries in this over yet</em>}
+        </div>
+      </div>
+
+      <div className="mobile-stumps-keypad">
+        <div className="keypad-row">
+          <button type="button" className="btn-run" onClick={() => chooseRun(1)} disabled={saving || completed || requiresSetup}>1</button>
+          <button type="button" className="btn-run" onClick={() => chooseRun(2)} disabled={saving || completed || requiresSetup}>2</button>
+          <button type="button" className="btn-run" onClick={() => chooseRun(3)} disabled={saving || completed || requiresSetup}>3</button>
+          <button type="button" className="btn-run btn-four" onClick={() => chooseRun(4)} disabled={saving || completed || requiresSetup}>4</button>
+          <button type="button" className="btn-run btn-six" onClick={() => chooseRun(6)} disabled={saving || completed || requiresSetup}>6</button>
+        </div>
+        <div className="keypad-row">
+          <button type="button" className="btn-extra" onClick={() => openAdvancedDelivery("leg_bye")} disabled={saving || completed || requiresSetup}>LB</button>
+          <button type="button" className="btn-extra" onClick={() => openAdvancedDelivery("bye")} disabled={saving || completed || requiresSetup}>Bye</button>
+          <button type="button" className="btn-extra" onClick={() => openAdvancedDelivery("wide")} disabled={saving || completed || requiresSetup || !match.allow_wides}>Wide</button>
+          <button type="button" className="btn-extra" onClick={() => openAdvancedDelivery("no_ball")} disabled={saving || completed || requiresSetup || !match.allow_no_balls}>NB</button>
+          <button type="button" className="btn-run btn-dot" onClick={() => chooseRun(0)} disabled={saving || completed || requiresSetup}>0</button>
+        </div>
+        <div className="keypad-row">
+          <button type="button" className="btn-action" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup}>More</button>
+          <button type="button" className="btn-action btn-swap" onClick={swapStrike} disabled={!innings || saving || completed} title="Swap Strike">Swap ⇄</button>
+          <button type="button" className="btn-action btn-undo" onClick={undoLastBall} disabled={!balls.length || saving || completed}><RotateCcw className="w-3.5 h-3.5 inline mr-0.5" />Undo</button>
+          {redoSnapshot ? (
+            <button type="button" className="btn-action btn-redo" onClick={redoLastBall} disabled={saving || completed}><RotateCw className="w-3.5 h-3.5 inline mr-0.5" />Redo</button>
+          ) : (
+            <button type="button" className="btn-action btn-voice" onClick={startVoiceScoring} disabled={voiceListening || saving || completed || requiresSetup}><Mic className="w-3.5 h-3.5 inline mr-0.5" />Voice</button>
+          )}
+          <button type="button" className="btn-action btn-wicket" onClick={() => openWicket(freeHitActive ? "run_out" : "bowled", true)} disabled={saving || completed || requiresSetup}>Out</button>
+        </div>
+      </div>
+
+      <footer className="mobile-scorer-footer">
+        <span className={offlinePending ? "pending" : "online"} />
+        {offlinePending ? `${offlinePending} ball${offlinePending === 1 ? "" : "s"} waiting to sync` : "Online · all balls synced"}
+      </footer>
     </section>
     {offlinePending > 0 && <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-black text-amber-900">Offline safety queue: {offlinePending} ball{offlinePending === 1 ? "" : "s"} waiting to sync. Keep this device open; sync runs automatically when the connection returns.</div>}
     <header className="bg-card border border-border rounded-xl p-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><Link href={localePath(locale, "/admin/matches")} className="p-2 rounded-full hover:bg-muted"><ArrowLeft className="w-5 h-5"/></Link><div><h1 className="font-bold text-xl">{teamName(match.team_a_id)} vs {teamName(match.team_b_id)}</h1><p className="text-sm text-muted-foreground">{completed ? "Match completed" : saving ? "Saving ball…" : "Live scoring"}</p></div></div><div className="flex flex-wrap items-center justify-end gap-2"><button onClick={() => setTossOpen(true)} disabled={completed || saving} className="control">Toss</button><button onClick={() => setSetupOpen(true)} className="control"><Settings2 className="w-4 h-4 mr-1"/>Setup</button><button onClick={finish} disabled={completed || saving} className="control bg-primary text-primary-foreground"><CheckCircle2 className="w-4 h-4 mr-1"/>Finish</button>{completed && innings?.innings_number === 2 && innings.target ? <p className="w-full text-right text-xs font-bold uppercase tracking-wide text-foreground">{innings.total_runs >= innings.target ? `${teamName(innings.batting_team_id)} win by ${Math.max(candidates(innings.batting_team_id).length - 1 - innings.total_wickets, 0)} wicket${Math.max(candidates(innings.batting_team_id).length - 1 - innings.total_wickets, 0) === 1 ? "" : "s"}.` : innings.total_runs === innings.target - 1 ? "Match tied." : `${teamName(innings.bowling_team_id)} win by ${innings.target - 1 - innings.total_runs} run${innings.target - 1 - innings.total_runs === 1 ? "" : "s"}.`}</p> : match.toss_winner_id && match.toss_decision && <p className="w-full text-right text-xs uppercase tracking-wide text-muted-foreground"><strong className="text-foreground">{teamName(match.toss_winner_id)}</strong> have won the toss and have opted to <strong className="text-foreground">{match.toss_decision === "bat" ? "bat" : "bowl"}</strong>.</p>}</div></header>
