@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, Trash2, X } from "lucide-react";
 import { useAdminAccess } from "@/components/admin-shell";
+import { DeleteTournamentModal } from "@/components/delete-tournament-modal";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/types/database.types";
 
@@ -15,6 +16,8 @@ export default function HiddenTournamentsPage() {
   const [rows, setRows] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [deletingTournament, setDeletingTournament] = useState<Tournament | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [audits, setAudits] = useState<Map<string, HideAudit>>(new Map());
 
   const load = useCallback(async () => {
@@ -37,6 +40,12 @@ export default function HiddenTournamentsPage() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = window.setTimeout(() => setToastMessage(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
   async function unhide(tournament: Tournament) {
     if (!confirm("Unhide this tournament?\n\nThe tournament and all related preserved data will become visible again.")) return;
     setWorkingId(tournament.id);
@@ -48,9 +57,29 @@ export default function HiddenTournamentsPage() {
   }
 
   return <div className="admin-themed-page space-y-6">
+    {toastMessage && (
+      <div role="status" className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-3">
+        <CheckCircle2 className="h-5 w-5 shrink-0" />
+        <span>{toastMessage}</span>
+        <button type="button" onClick={() => setToastMessage(null)} aria-label="Close notification" className="ml-2 rounded-lg p-1 hover:bg-emerald-700/80">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    )}
+
     <div><Link href="/admin/tournaments" className="inline-flex items-center font-semibold text-primary"><ArrowLeft className="mr-2 h-4 w-4"/>Active Tournaments</Link><h1 className="mt-4 text-3xl font-bold">Hidden Tournaments</h1><p className="mt-1 text-muted-foreground">Hidden tournaments retain every team, player relationship, match, score and registration.</p></div>
     <section className="rounded-xl border border-border bg-card p-6">
-      {loading ? <p>Loading hidden tournaments…</p> : rows.length===0 ? <div className="py-12 text-center"><EyeOff className="mx-auto h-10 w-10 text-muted-foreground"/><h2 className="mt-3 text-lg font-bold">No hidden tournaments</h2></div> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-border"><th className="p-3">Tournament</th><th className="p-3">Hidden date</th><th className="p-3">Hidden by</th><th className="p-3 text-right">Action</th></tr></thead><tbody>{rows.map((tournament)=>{const audit=audits.get(tournament.id);return <tr key={tournament.id} className="border-b border-border"><td className="p-3 font-bold">{tournament.name}</td><td className="p-3">{tournament.deleted_at?new Intl.DateTimeFormat("en",{dateStyle:"medium",timeStyle:"short"}).format(new Date(tournament.deleted_at)):"-"}</td><td className="p-3 font-mono text-xs">{audit?.user_id?audit.user_id.slice(0,8):"Not available"}</td><td className="p-3 text-right"><button type="button" disabled={workingId===tournament.id} onClick={()=>void unhide(tournament)} className="inline-flex items-center font-semibold text-emerald-600 disabled:opacity-50"><Eye className="mr-2 h-4 w-4"/>{workingId===tournament.id?"Unhiding…":"Unhide Tournament"}</button></td></tr>})}</tbody></table></div>}
+      {loading ? <p>Loading hidden tournaments…</p> : rows.length===0 ? <div className="py-12 text-center"><EyeOff className="mx-auto h-10 w-10 text-muted-foreground"/><h2 className="mt-3 text-lg font-bold">No hidden tournaments</h2></div> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-border"><th className="p-3">Tournament</th><th className="p-3">Hidden date</th><th className="p-3">Hidden by</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{rows.map((tournament)=>{const audit=audits.get(tournament.id);return <tr key={tournament.id} className="border-b border-border"><td className="p-3 font-bold">{tournament.name}</td><td className="p-3">{tournament.deleted_at?new Intl.DateTimeFormat("en",{dateStyle:"medium",timeStyle:"short"}).format(new Date(tournament.deleted_at)):"-"}</td><td className="p-3 font-mono text-xs">{audit?.user_id?audit.user_id.slice(0,8):"Not available"}</td><td className="p-3 text-right"><div className="flex justify-end gap-3"><button type="button" disabled={workingId===tournament.id} onClick={()=>void unhide(tournament)} className="inline-flex items-center font-semibold text-emerald-600 disabled:opacity-50"><Eye className="mr-1.5 h-4 w-4"/>{workingId===tournament.id?"Unhiding…":"Unhide Tournament"}</button><button type="button" disabled={workingId===tournament.id} onClick={()=>setDeletingTournament(tournament)} className="inline-flex items-center font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 dark:text-red-400"><Trash2 className="mr-1.5 h-4 w-4"/>Delete</button></div></td></tr>})}</tbody></table></div>}
     </section>
+
+    <DeleteTournamentModal
+      isOpen={deletingTournament !== null}
+      tournament={deletingTournament}
+      onClose={() => setDeletingTournament(null)}
+      onDeleted={() => {
+        setToastMessage("Tournament permanently deleted.");
+        void load();
+      }}
+    />
   </div>;
 }

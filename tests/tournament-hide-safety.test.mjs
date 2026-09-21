@@ -48,11 +48,13 @@ test("production broad public read policies are replaced by active-parent polici
   assert.match(migration, /create policy "Public Read Active Tournament Deliveries"[\s\S]*t\.deleted_at is null/);
 });
 
-test("admin tournament UI exposes only Hide and Unhide terminology", () => {
+test("admin tournament UI preserves Hide and Unhide controls alongside permanent delete", () => {
   assert.match(activePage, /Hide Tournament/);
   assert.match(hiddenPage, /Hidden Tournaments/);
   assert.match(hiddenPage, /Unhide Tournament/);
-  assert.doesNotMatch(activePage + hiddenPage + editor, /Delete tournament|View Trash|Move .* Trash/i);
+  assert.match(activePage, /Delete/);
+  assert.match(hiddenPage, /Delete/);
+  assert.doesNotMatch(activePage + hiddenPage + editor, /View Trash|Move .* Trash/i);
   assert.doesNotMatch(activePage + hiddenPage + editor, /delete_tournament_cascade/);
 });
 
