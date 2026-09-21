@@ -2987,7 +2987,7 @@ html.light .public-landing {
   .mobile-event-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: .38rem; }
   .mobile-event-grid button { min-height: 2.7rem; border: 1px solid #2dd4bf; border-radius: .68rem; background: #087f8c; color: #fff; font-size: .68rem; font-weight: 950; text-transform: uppercase; }
   .mobile-event-grid button.wicket { border-color: #fb7185; background: #c52632; }
-  .mobile-utility-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: .38rem; }
+  .mobile-utility-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: .38rem; }
   .mobile-utility-grid button { display: flex; min-height: 2.55rem; align-items: center; justify-content: center; gap: .3rem; border: 1px solid rgb(8 189 232 / 45%); border-radius: .68rem; background: #071d45; color: #eaf8ff; font-size: .62rem; font-weight: 900; text-transform: uppercase; }
   .mobile-utility-grid svg { width: .85rem; height: .85rem; }
   .mobile-portrait-scorer button:disabled { opacity: .38; }
