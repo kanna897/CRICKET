@@ -28,7 +28,14 @@ export function HallOfFameDashboard({ admin = false, organizerId, isMasterAdmin 
   })(); }, [admin, isMasterAdmin, organizerId]);
 
   const load = useCallback(async () => {
-    if (!selectedTournament) return;
+    const activeTournamentIds = new Set(tournaments.map((item) => item.id));
+    if (!selectedTournament || (tournaments.length > 0 && !activeTournamentIds.has(selectedTournament))) {
+      setStats([]);
+      setMvpStats([]);
+      setAllMatchesCompleted(false);
+      setLoading(false);
+      return;
+    }
     setLoading(true); setMessage("");
     const [teamResult, matchResult] = await Promise.all([
       supabase.from("teams").select("id,name,logo_url").eq("tournament_id", selectedTournament),

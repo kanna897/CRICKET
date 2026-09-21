@@ -23,9 +23,22 @@ export default function PublicTeamPage() {
     if (!id) return;
     void (async () => {
       const [{ data: teamRow }, { data: playerRows }] = await Promise.all([
-        supabase.from("teams").select("id,name,logo_url").eq("id", id).maybeSingle(),
+        supabase.from("teams").select("id,name,logo_url,tournament_id").eq("id", id).is("deleted_at", null).maybeSingle(),
         supabase.from("players").select("id,name,photo_url,playing_role,batting_style,bowling_style").eq("team_id", id).order("name"),
       ]);
+      if (!teamRow) {
+        setTeam(null);
+        setPlayers([]);
+        return;
+      }
+      if (teamRow.tournament_id) {
+        const { data: parentTournament } = await supabase.from("tournaments").select("id").eq("id", teamRow.tournament_id).is("deleted_at", null).maybeSingle();
+        if (!parentTournament) {
+          setTeam(null);
+          setPlayers([]);
+          return;
+        }
+      }
       setTeam(teamRow);
       setPlayers(playerRows || []);
     })();

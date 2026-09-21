@@ -43,8 +43,13 @@ export function TournamentStatisticsDashboard({ admin = false, organizerId, isMa
         })();
     }, [admin, isMasterAdmin, organizerId]);
     const load = useCallback(async () => {
-        if (!selectedTournament)
+        const activeTournamentIds = new Set(tournaments.map((item) => item.id));
+        if (!selectedTournament || (tournaments.length > 0 && !activeTournamentIds.has(selectedTournament))) {
+            setStats([]);
+            setMvpStats([]);
+            setLoading(false);
             return;
+        }
         setLoading(true);
         setMessage("");
         const [teamResult, matchResult] = await Promise.all([

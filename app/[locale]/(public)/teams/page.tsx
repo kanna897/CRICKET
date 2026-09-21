@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
 import { PublicNav } from "@/components/public-nav";
 
-type Team = { id: string; name: string; logo_url: string | null; fixture_order: number | null };
+type Team = { id: string; tournament_id?: string | null; name: string; logo_url: string | null; fixture_order: number | null };
 type Player = { team_id: string | null };
 
 export default function TeamsPage() {
@@ -17,11 +17,16 @@ export default function TeamsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   useEffect(() => {
     void (async () => {
-      const [{ data: teamRows }, { data: playerRows }] = await Promise.all([
-        supabase.from("teams").select("id,name,logo_url,fixture_order").order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
+      const [{ data: teamRows }, { data: playerRows }, { data: activeTournaments }] = await Promise.all([
+        supabase.from("teams").select("id,tournament_id,name,logo_url,fixture_order").is("deleted_at", null).order("fixture_order", { ascending: true, nullsFirst: false }).order("name"),
         supabase.from("players").select("team_id"),
+        supabase.from("tournaments").select("id").is("deleted_at", null),
       ]);
-      setTeams((teamRows || []) as Team[]);
+      const activeTournamentIds = new Set((activeTournaments || []).map((t) => t.id));
+      const visibleTeams = ((teamRows || []) as Team[]).filter(
+        (team) => !team.tournament_id || activeTournamentIds.has(team.tournament_id),
+      );
+      setTeams(visibleTeams);
       setPlayers(playerRows || []);
     })();
   }, []);

@@ -93,7 +93,7 @@ export default function PublicHome() {
   useEffect(() => {
     let active = true;
     async function loadLanding() {
-      const [tournamentResult, matchResult, playerResult, sessionResult] = await Promise.all([
+      const [tournamentResult, matchResult, playerResult, sessionResult, allActiveTournamentsResult] = await Promise.all([
         supabase.from("tournaments")
           .select("id,name,logo_url,banner_url,venue,start_date,end_date,status")
           .is("deleted_at", null)
@@ -112,9 +112,12 @@ export default function PublicHome() {
           .in("status", ["live", "completed"])
           .order("updated_at", { ascending: false })
           .limit(12),
+        supabase.from("tournaments")
+          .select("id")
+          .is("deleted_at", null),
       ]);
-      const tournamentIds = (tournamentResult.data || []).map((item) => item.id);
-      const activeTournamentIds = new Set(tournamentIds);
+      const featuredTournamentIds = (tournamentResult.data || []).map((item) => item.id);
+      const activeTournamentIds = new Set((allActiveTournamentsResult.data || []).map((item) => item.id));
       // The deployed schema includes matches.updated_at; older generated client
       // types have not yet caught up with that existing column.
       const matchRows = ((matchResult.data || []) as unknown as Match[]).filter((item) =>
@@ -127,7 +130,7 @@ export default function PublicHome() {
       const featuredAuctionSession = sessionRows.find((item) => item.status === "live" && activeTournamentIds.has(item.tournament_id)) || null;
       const teamIds = [...new Set(matchRows.flatMap((item) => [item.team_a_id, item.team_b_id]))];
       const teamScopeFilters = [
-        tournamentIds.length ? `tournament_id.in.(${tournamentIds.join(",")})` : "",
+        featuredTournamentIds.length ? `tournament_id.in.(${featuredTournamentIds.join(",")})` : "",
         teamIds.length ? `id.in.(${teamIds.join(",")})` : "",
       ].filter(Boolean).join(",");
       const [inningsResult, teamResult, auctionPlayerResult] = await Promise.all([
@@ -135,7 +138,7 @@ export default function PublicHome() {
             .select("match_id,innings_number,batting_team_id,total_runs,total_wickets,balls_bowled")
             .in("match_id", matchIds)
           : Promise.resolve({ data: [] }),
-        tournamentIds.length || teamIds.length
+        featuredTournamentIds.length || teamIds.length
           ? supabase.from("teams")
               .select("id,tournament_id,name,logo_url")
               .or(teamScopeFilters)

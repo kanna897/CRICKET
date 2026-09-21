@@ -33,8 +33,15 @@ export default function PublicPlayerProfilePage() {
       const inningsResult = await supabase.from("innings").select("id,match_id").in("id", inningsIds);
       const inningsRows = (inningsResult.data || []) as { id: string; match_id: string }[];
       const matchIds = [...new Set(inningsRows.map((item) => item.match_id))];
-      const matchResult = matchIds.length ? await supabase.from("matches").select("id,match_scope").in("id", matchIds).eq("match_scope", "tournament") : { data: [] };
-      const tournamentMatchIds = new Set((matchResult.data || []).map((item: { id: string }) => item.id));
+      const matchResult = matchIds.length ? await supabase.from("matches").select("id,tournament_id,match_scope").in("id", matchIds).eq("match_scope", "tournament") : { data: [] };
+      const rawMatches = (matchResult.data || []) as { id: string; tournament_id: string | null }[];
+      const tournamentIds = [...new Set(rawMatches.map((m) => m.tournament_id).filter(Boolean) as string[])];
+      const activeTournamentsResult = tournamentIds.length
+        ? await supabase.from("tournaments").select("id").in("id", tournamentIds).is("deleted_at", null)
+        : { data: [] };
+      const activeTournamentIds = new Set((activeTournamentsResult.data || []).map((t: { id: string }) => t.id));
+      const activeMatchRows = rawMatches.filter((m) => m.tournament_id && activeTournamentIds.has(m.tournament_id));
+      const tournamentMatchIds = new Set(activeMatchRows.map((item) => item.id));
       const tournamentInningsIds = new Set(inningsRows.filter((item) => tournamentMatchIds.has(item.match_id)).map((item) => item.id));
       setBalls(ballRows.filter((ball) => tournamentInningsIds.has(ball.innings_id)));
       setMatchCount(tournamentMatchIds.size);

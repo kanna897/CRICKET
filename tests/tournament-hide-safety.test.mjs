@@ -167,3 +167,47 @@ test("registration status service-role lookup hides inactive tournaments", () =>
   assert.match(edgeFunction, /if \(!data\) \{\s*return json\(\{ found: false \}\)/);
   assert.doesNotMatch(edgeFunction, /update\(|delete\(/);
 });
+
+test("compare component strictly bounds overall performance and scoped matches by active tournaments", () => {
+  const compareFile = readFileSync(path.join(root, "components", "performance-comparison.tsx"), "utf8");
+  assert.match(compareFile, /activeTournamentIds = new Set\(tournaments\.map/);
+  assert.match(compareFile, /validMatches = matches\.filter\(\(match\) => match\.tournament_id && activeTournamentIds\.has\(match\.tournament_id\)\)/);
+  assert.match(compareFile, /scopedMatches = tournamentId/);
+  assert.match(compareFile, /activeTournamentIds\.has\(tournamentId\)/);
+  assert.match(compareFile, /activeTournamentIds\.has\(next\)/);
+});
+
+test("player profile and career filters exclude hidden tournament data", () => {
+  const playerProfile = readFileSync(path.join(root, "app", "[locale]", "(public)", "players", "[id]", "page.tsx"), "utf8");
+  const careerFilters = readFileSync(path.join(root, "components", "player-career-filters.tsx"), "utf8");
+
+  assert.match(playerProfile, /activeTournamentsResult[\s\S]*is\("deleted_at", null\)/);
+  assert.match(playerProfile, /activeTournamentIds\.has\(m\.tournament_id\)/);
+  assert.match(careerFilters, /activeTournaments = \(tournamentResult\.data/);
+  assert.match(careerFilters, /validMatches = matchRows\.filter\(\(row\) => row\.tournament_id && activeTournamentIds\.has\(row\.tournament_id\)\)/);
+});
+
+test("teams listing and team detail protect tournament-specific teams from leaking when parent is hidden", () => {
+  const teamsList = readFileSync(path.join(root, "app", "[locale]", "(public)", "teams", "page.tsx"), "utf8");
+  const teamDetail = readFileSync(path.join(root, "app", "[locale]", "(public)", "teams", "[id]", "page.tsx"), "utf8");
+
+  assert.match(teamsList, /supabase\.from\("tournaments"\)\.select\("id"\)\.is\("deleted_at", null\)/);
+  assert.match(teamsList, /!team\.tournament_id \|\| activeTournamentIds\.has\(team\.tournament_id\)/);
+  assert.match(teamDetail, /if \(teamRow\.tournament_id\)/);
+  assert.match(teamDetail, /supabase\.from\("tournaments"\)\.select\("id"\)\.eq\("id", teamRow\.tournament_id\)\.is\("deleted_at", null\)/);
+});
+
+test("points table, statistics and landing page strictly bound queries to active tournaments", () => {
+  const pointsPage = readFileSync(path.join(root, "app", "[locale]", "(public)", "points", "page.tsx"), "utf8");
+  const statsDashboard = readFileSync(path.join(root, "components", "tournament-statistics-dashboard.tsx"), "utf8");
+  const hallOfFame = readFileSync(path.join(root, "components", "hall-of-fame-dashboard.tsx"), "utf8");
+  const landingPage = readFileSync(path.join(root, "app", "[locale]", "(public)", "page.tsx"), "utf8");
+
+  assert.match(pointsPage, /supabase\.from\("tournaments"\)\.select\("id,name,logo_url"\)\.eq\("id", selectedTournament\)\.is\("deleted_at", null\)/);
+  assert.match(statsDashboard, /activeTournamentIds = new Set\(tournaments\.map/);
+  assert.match(statsDashboard, /!activeTournamentIds\.has\(selectedTournament\)/);
+  assert.match(hallOfFame, /activeTournamentIds = new Set\(tournaments\.map/);
+  assert.match(hallOfFame, /!activeTournamentIds\.has\(selectedTournament\)/);
+  assert.match(landingPage, /allActiveTournamentsResult/);
+  assert.match(landingPage, /activeTournamentIds\.has\(item\.tournament_id\)/);
+});

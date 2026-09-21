@@ -86,11 +86,15 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
     return () => { active = false; };
   }, []);
 
-  const scopedMatches = tournamentId ? matches.filter((match) => match.tournament_id === tournamentId) : matches;
+  const activeTournamentIds = new Set(tournaments.map((item) => item.id));
+  const validMatches = matches.filter((match) => match.tournament_id && activeTournamentIds.has(match.tournament_id));
+  const scopedMatches = tournamentId
+    ? (activeTournamentIds.has(tournamentId) ? validMatches.filter((match) => match.tournament_id === tournamentId) : [])
+    : validMatches;
   const scopedMatchIds = new Set(scopedMatches.map((match) => match.id));
-  const scopedInnings = tournamentId ? innings.filter((item) => scopedMatchIds.has(item.match_id)) : innings;
+  const scopedInnings = innings.filter((item) => scopedMatchIds.has(item.match_id));
   const scopedInningsIds = new Set(scopedInnings.map((item) => item.id));
-  const scopedBalls = tournamentId ? balls.filter((ball) => scopedInningsIds.has(ball.innings_id)) : balls;
+  const scopedBalls = balls.filter((ball) => scopedInningsIds.has(ball.innings_id));
   const scopedTeamIds = new Set(scopedMatches.flatMap((match) => [match.team_a_id, match.team_b_id]));
   const scopedTeams = tournamentId ? teams.filter((team) => scopedTeamIds.has(team.id)) : teams;
   const scopedPlayers = tournamentId ? players.filter((player) => !!player.team_id && scopedTeamIds.has(player.team_id)) : players;
@@ -101,7 +105,9 @@ export function PerformanceComparison({ audience }: { audience: "admin" | "publi
 
   function switchTournament(next: string) {
     setTournamentId(next);
-    const nextMatches = next ? matches.filter((match) => match.tournament_id === next) : matches;
+    const nextMatches = next
+      ? (activeTournamentIds.has(next) ? validMatches.filter((match) => match.tournament_id === next) : [])
+      : validMatches;
     const nextTeamIds = new Set(nextMatches.flatMap((match) => [match.team_a_id, match.team_b_id]));
     const rows = mode === "players"
       ? (next ? players.filter((player) => !!player.team_id && nextTeamIds.has(player.team_id)) : players)

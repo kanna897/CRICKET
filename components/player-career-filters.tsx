@@ -47,9 +47,20 @@ export function PlayerCareerFilters({ playerId }: { playerId: string }) {
       tournamentIds.length ? supabase.from("tournaments").select("id,name,ball_type").in("id", tournamentIds).is("deleted_at", null) : Promise.resolve({ data: [], error: null }),
         teamIds.length ? supabase.from("teams").select("id,name").in("id", teamIds) : Promise.resolve({ data: [], error: null }),
       ]);
+      const activeTournaments = (tournamentResult.data || []) as Tournament[];
+      const activeTournamentIds = new Set(activeTournaments.map((row) => row.id));
+      const validMatches = matchRows.filter((row) => row.tournament_id && activeTournamentIds.has(row.tournament_id));
+      const validMatchIds = new Set(validMatches.map((row) => row.id));
+      const validInnings = inningsRows.filter((row) => validMatchIds.has(row.match_id));
+      const validInningsIds = new Set(validInnings.map((row) => row.id));
+      const validBalls = ballRows.filter((ball) => validInningsIds.has(ball.innings_id));
+
       if (!active) return;
-      setBalls(ballRows); setInnings(inningsRows); setMatches(matchRows);
-      setTournaments((tournamentResult.data || []) as Tournament[]); setTeams((teamResult.data || []) as Team[]);
+      setBalls(validBalls);
+      setInnings(validInnings);
+      setMatches(validMatches);
+      setTournaments(activeTournaments);
+      setTeams((teamResult.data || []) as Team[]);
       setMessage(ballResult.error?.message || inningsResult.error?.message || matchResult.error?.message || tournamentResult.error?.message || teamResult.error?.message || "");
       setLoading(false);
     })();
