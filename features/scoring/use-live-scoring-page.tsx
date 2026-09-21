@@ -42,6 +42,7 @@ export function useLiveScoringPage() {
     const [nextBowlerOpen, setNextBowlerOpen] = useReducerState(false);
     const [newBatterOpen, setNewBatterOpen] = useReducerState(false);
     const [wicketOpen, setWicketOpen] = useReducerState(false);
+    const [isMobileWicketSelector, setIsMobileWicketSelector] = useReducerState(false);
     const [advancedDeliveryOpen, setAdvancedDeliveryOpen] = useReducerState(false);
     const [advancedRuns, setAdvancedRuns] = useReducerState(0);
     const [advancedExtras, setAdvancedExtras] = useReducerState(1);
@@ -712,7 +713,14 @@ export function useLiveScoringPage() {
             setSaving(false);
         }
     };
-    const openWicket = (type: string = "bowled") => { setWicketType(type); setPlayerOut(innings?.striker_id || ""); setNextBatter(""); setFielder(""); setWicketOpen(true); };
+    const openWicket = (type: string = "bowled", isMobile: boolean = false) => {
+        setIsMobileWicketSelector(isMobile);
+        setWicketType(type);
+        setPlayerOut(innings?.striker_id || "");
+        setNextBatter("");
+        setFielder("");
+        setWicketOpen(true);
+    };
     const saveWicket = () => {
         if (freeHitActive && wicketType !== "run_out")
             return alert("Free Hit: only a run out dismissal is allowed.");
@@ -772,7 +780,7 @@ export function useLiveScoringPage() {
             else if (command.includes("redo"))
                 void redoLastBall();
             else if (command.includes("wicket"))
-                openWicket(freeHitActive ? "run_out" : "bowled");
+                openWicket(freeHitActive ? "run_out" : "bowled", true);
             else if (runCommand)
                 void record({ runs: runCommand[1] });
             else
@@ -810,7 +818,7 @@ export function useLiveScoringPage() {
       <div className="mobile-last-six"><small>Last 6 balls</small><div>{balls.slice(-6).map((ball) => <span key={ball.id} className={ball.is_wicket ? "wicket" : ball.extras_type ? "extra" : ball.runs === 4 || ball.runs === 6 ? "boundary" : ""}>{deliveryBadgeLabel(ball)}</span>)}{!balls.length ? <em>No balls yet</em> : null}</div></div>
       <div className="mobile-record-title"><span>Record this ball</span>{offlinePending ? <b>{offlinePending} pending</b> : <b>Synced</b>}</div>
       <div className="mobile-run-grid">{[0, 1, 2, 3, 4, 6].map((run) => <button key={run} type="button" onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup}>{run}</button>)}</div>
-      <div className="mobile-event-grid"><button type="button" className="wicket" onClick={() => openWicket(freeHitActive ? "run_out" : "bowled")} disabled={saving || completed || requiresSetup}>Wicket</button><button type="button" onClick={() => openAdvancedDelivery("wide")} disabled={saving || completed || requiresSetup || !match.allow_wides}>Wide</button><button type="button" onClick={() => openAdvancedDelivery("no_ball")} disabled={saving || completed || requiresSetup || !match.allow_no_balls}>No Ball</button></div>
+      <div className="mobile-event-grid"><button type="button" className="wicket" onClick={() => openWicket(freeHitActive ? "run_out" : "bowled", true)} disabled={saving || completed || requiresSetup}>Wicket</button><button type="button" onClick={() => openAdvancedDelivery("wide")} disabled={saving || completed || requiresSetup || !match.allow_wides}>Wide</button><button type="button" onClick={() => openAdvancedDelivery("no_ball")} disabled={saving || completed || requiresSetup || !match.allow_no_balls}>No Ball</button></div>
       <div className="mobile-utility-grid"><button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup}><SlidersHorizontal />More Extras</button><button type="button" onClick={undoLastBall} disabled={!balls.length || saving || completed}><RotateCcw />Undo</button>{redoSnapshot ? <button type="button" onClick={redoLastBall} disabled={saving || completed}><RotateCw />Redo</button> : null}</div>
       <footer><span className={offlinePending ? "pending" : "online"} />{offlinePending ? `${offlinePending} ball${offlinePending === 1 ? "" : "s"} waiting to sync` : "Online · all balls synced"}</footer>
     </section>
@@ -826,56 +834,58 @@ export function useLiveScoringPage() {
     {innings?.innings_number === 2 && innings.target && <section className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-border bg-border text-center"><div className="bg-card p-3"><p className="text-xs text-muted-foreground">TARGET</p><p className="font-bold text-lg">{innings.target}</p></div><div className="bg-card p-3"><p className="text-xs text-muted-foreground">NEED</p><p className="font-bold text-lg">{Math.max(innings.target - innings.total_runs, 0)}</p></div><div className="bg-card p-3"><p className="text-xs text-muted-foreground">BALLS LEFT</p><p className="font-bold text-lg">{ballsRemaining}</p></div></section>}
     <div className="desktop-scoring-panel">
     <section className="rounded-xl border border-border bg-card p-4"><h2 className="font-semibold">Shot direction</h2><p className="mt-1 text-xs text-muted-foreground">Select the runs first. Then choose where the shot was played for an accurate Wagon Wheel and live commentary.</p></section>
-      <div className="grid lg:grid-cols-2 gap-4"><div className="space-y-3"><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold mb-3">Runs</h2><div className="grid grid-cols-3 gap-2">{[0, 1, 2, 3, 4, 6].map((run) => <button key={run} onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup} className="score-button">{run}</button>)}</div></section><div className="grid grid-cols-2 gap-2"><button onClick={undoLastBall} disabled={!balls.length || saving || completed} className="control w-full justify-center"><RotateCcw className="mr-2 h-4 w-4"/>Undo</button><button onClick={redoLastBall} disabled={!redoSnapshot || saving || completed} className="control w-full justify-center"><RotateCw className="mr-2 h-4 w-4"/>Redo</button></div><section className="grid grid-cols-2 gap-3" aria-label="Quick player changes"><button type="button" onClick={openNewBatter} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><UserPlus className="mr-2 h-5 w-5 text-primary"/>New Batter</button><button type="button" onClick={() => { setNewBowler(""); setNextBowlerOpen(true); }} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><ArrowRightLeft className="mr-2 h-5 w-5 text-primary"/>Swap Bowler</button></section></div><div className="space-y-4"><section className="bg-card border border-border rounded-xl p-4"><div className="mb-3 flex items-center justify-between gap-2"><h2 className="font-semibold">Extras</h2><button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup} className="control min-h-10 px-3 text-xs"><SlidersHorizontal className="mr-1.5 h-4 w-4"/>Advanced</button></div><div className="grid grid-cols-4 gap-2">{[["Wd", "wide"], ["NB", "no_ball"], ["B", "bye"], ["LB", "leg_bye"]].map(([label, type]) => <button key={type} onClick={() => openAdvancedDelivery(type)} disabled={saving || completed || requiresSetup || (type === "wide" && !match.allow_wides) || (type === "no_ball" && !match.allow_no_balls)} className="small-button">{label}</button>)}</div><p className="mt-2 text-[0.7rem] text-muted-foreground">Choose the exact bye, leg-bye, wide or no-ball runs in Advanced.</p></section><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold text-red-600 mb-3">Wicket</h2>{freeHitActive && <p className="mb-3 rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950">Free Hit active — only Run Out is available.</p>}<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[["bowled", "Bowled"], ["caught", "Caught"], ["lbw", "LBW"], ["stumped", "Stumping"], ["run_out", "Run Out"], ["hit_wicket", "Hit Wicket"], ["obstructing_field", "Obstructing"], ["timed_out", "Timed Out"]].map(([type, label]) => <button key={type} onClick={() => openWicket(type)} disabled={saving || completed || requiresSetup || (freeHitActive && type !== "run_out")} className="small-button text-red-600 disabled:text-muted-foreground">{label}</button>)}</div></section></div></div>
+      <div className="grid lg:grid-cols-2 gap-4"><div className="space-y-3"><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold mb-3">Runs</h2><div className="grid grid-cols-3 gap-2">{[0, 1, 2, 3, 4, 6].map((run) => <button key={run} onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup} className="score-button">{run}</button>)}</div></section><div className="grid grid-cols-2 gap-2"><button onClick={undoLastBall} disabled={!balls.length || saving || completed} className="control w-full justify-center"><RotateCcw className="mr-2 h-4 w-4"/>Undo</button><button onClick={redoLastBall} disabled={!redoSnapshot || saving || completed} className="control w-full justify-center"><RotateCw className="mr-2 h-4 w-4"/>Redo</button></div><section className="grid grid-cols-2 gap-3" aria-label="Quick player changes"><button type="button" onClick={openNewBatter} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><UserPlus className="mr-2 h-5 w-5 text-primary"/>New Batter</button><button type="button" onClick={() => { setNewBowler(""); setNextBowlerOpen(true); }} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><ArrowRightLeft className="mr-2 h-5 w-5 text-primary"/>Swap Bowler</button></section></div><div className="space-y-4"><section className="bg-card border border-border rounded-xl p-4"><div className="mb-3 flex items-center justify-between gap-2"><h2 className="font-semibold">Extras</h2><button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup} className="control min-h-10 px-3 text-xs"><SlidersHorizontal className="mr-1.5 h-4 w-4"/>Advanced</button></div><div className="grid grid-cols-4 gap-2">{[["Wd", "wide"], ["NB", "no_ball"], ["B", "bye"], ["LB", "leg_bye"]].map(([label, type]) => <button key={type} onClick={() => openAdvancedDelivery(type)} disabled={saving || completed || requiresSetup || (type === "wide" && !match.allow_wides) || (type === "no_ball" && !match.allow_no_balls)} className="small-button">{label}</button>)}</div><p className="mt-2 text-[0.7rem] text-muted-foreground">Choose the exact bye, leg-bye, wide or no-ball runs in Advanced.</p></section><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold text-red-600 mb-3">Wicket</h2>{freeHitActive && <p className="mb-3 rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950">Free Hit active — only Run Out is available.</p>}<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[["bowled", "Bowled"], ["caught", "Caught"], ["lbw", "LBW"], ["stumped", "Stumping"], ["run_out", "Run Out"], ["hit_wicket", "Hit Wicket"], ["obstructing_field", "Obstructing"], ["timed_out", "Timed Out"]].map(([type, label]) => <button key={type} onClick={() => openWicket(type, false)} disabled={saving || completed || requiresSetup || (freeHitActive && type !== "run_out")} className="small-button text-red-600 disabled:text-muted-foreground">{label}</button>)}</div></section></div></div>
     <section className="bg-card border border-border rounded-xl overflow-hidden"><div className="grid grid-cols-[90px_1fr_86px] bg-primary border-b border-primary px-4 py-2 text-sm font-bold text-primary-foreground"><span>Overs</span><span>Balls</span><span className="text-right text-primary-foreground">Runs</span></div>{currentOverBalls.length ? <div className="grid grid-cols-[90px_1fr_86px] min-h-20"><div className="border-r border-border px-4 py-4"><p className="font-medium">Ov {currentOverNumber}</p><p className="mt-2 text-sm text-muted-foreground">{innings ? `${innings.total_runs}-${innings.total_wickets}` : "0-0"}</p></div><div className="px-4 py-4 min-w-0"><p className="text-sm text-muted-foreground truncate">{playerName(currentOverBowler)} to {playerName(currentOverBatter)}</p><div className="flex flex-wrap gap-2 mt-2">{currentOverBalls.map((ball) => <span key={ball.id} title={`${ball.over_number}.${ball.ball_number}`} className={`inline-flex h-6 min-w-6 px-1 items-center justify-center rounded text-xs font-bold ${ball.is_wicket ? "bg-red-600 text-white" : ball.extras_type ? "bg-amber-500 text-white" : ball.runs === 4 || ball.runs === 6 ? "bg-sky-600 text-white" : "bg-muted text-foreground"}`}>{deliveryBadgeLabel(ball)}</span>)}</div></div><div className="border-l border-border px-4 py-4 flex items-center justify-end font-bold">{currentOverRuns}</div></div> : <div className="px-4 py-5 text-sm text-muted-foreground">No balls recorded in this over.</div>}</section>
     </div>
     {boundaryPop && <BoundaryPop key={boundaryPop.key} runs={boundaryPop.runs}/>}
     {wicketPop && <WicketPop key={wicketPop.key} type={wicketPop.type}/>}
     {hatTrickPop && <HatTrickPop key={hatTrickPop.key} bowlerName={hatTrickPop.bowlerName}/>}
     <LiveCommentary key={`${innings?.id || "new"}:${balls.length}`} inningsId={innings?.id || null}/>
-    <nav aria-label="Mobile quick scoring" className="fixed inset-x-2 bottom-2 z-40 grid grid-cols-7 gap-1 rounded-2xl border border-border bg-card/95 p-2 shadow-2xl backdrop-blur lg:hidden">{[0, 1, 2, 4, 6].map((run) => <button key={run} type="button" onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup} className="grid min-h-12 place-items-center rounded-xl bg-primary text-base font-black text-primary-foreground disabled:opacity-40">{run}</button>)}<button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup} className="grid min-h-12 place-items-center rounded-xl border border-amber-400 bg-amber-50 text-[0.65rem] font-black text-amber-950 disabled:opacity-40">EXTRA</button><button type="button" onClick={() => openWicket(freeHitActive ? "run_out" : "bowled")} disabled={saving || completed || requiresSetup} className="grid min-h-12 place-items-center rounded-xl bg-red-600 text-[0.7rem] font-black text-white disabled:opacity-40">WICKET</button></nav>
+    <nav aria-label="Mobile quick scoring" className="fixed inset-x-2 bottom-2 z-40 grid grid-cols-7 gap-1 rounded-2xl border border-border bg-card/95 p-2 shadow-2xl backdrop-blur lg:hidden">{[0, 1, 2, 4, 6].map((run) => <button key={run} type="button" onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup} className="grid min-h-12 place-items-center rounded-xl bg-primary text-base font-black text-primary-foreground disabled:opacity-40">{run}</button>)}<button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup} className="grid min-h-12 place-items-center rounded-xl border border-amber-400 bg-amber-50 text-[0.65rem] font-black text-amber-950 disabled:opacity-40">EXTRA</button><button type="button" onClick={() => openWicket(freeHitActive ? "run_out" : "bowled", true)} disabled={saving || completed || requiresSetup} className="grid min-h-12 place-items-center rounded-xl bg-red-600 text-[0.7rem] font-black text-white disabled:opacity-40">WICKET</button></nav>
     {pendingRuns !== null && <Modal title={`${pendingRuns} run${pendingRuns === 1 ? "" : "s"} — where was the shot played?`} onClose={() => setPendingRuns(null)}><p className="text-sm text-muted-foreground">Choose the shot direction to save this ball and update the Wagon Wheel.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">{([["straight", "Straight"], ["cover", "Cover"], ["point", "Point"], ["square_leg", "Square Leg"], ["midwicket", "Midwicket"], ["fine_leg", "Fine Leg"]] as const).map(([value, label]) => <button key={value} type="button" onClick={() => saveRunDirection(value)} className="small-button min-h-14 border-primary/30 text-base font-black hover:border-primary hover:bg-primary hover:text-primary-foreground">{label}</button>)}</div><button type="button" onClick={() => setPendingRuns(null)} className="control mt-4 w-full justify-center">Cancel</button></Modal>}
     {setupOpen && <Modal title={innings?.innings_number === 2 ? "Second innings setup" : "Start / correct innings"} onClose={() => setSetupOpen(false)}><Select label="Batting team" value={setup.battingTeam} onChange={(value) => setSetup({ battingTeam: value, striker: "", nonStriker: "", bowler: "" })} options={teams.map((team) => [team.id, team.name])}/><Select label="Striker" value={setup.striker} onChange={(value) => setSetup({ ...setup, striker: value })} options={battingPlayers.map((player) => [player.id, player.name])}/><Select label="Non-striker" value={setup.nonStriker} onChange={(value) => setSetup({ ...setup, nonStriker: value })} options={battingPlayers.filter((player) => player.id !== setup.striker).map((player) => [player.id, player.name])}/><Select label="First / current bowler" value={setup.bowler} onChange={(value) => setSetup({ ...setup, bowler: value })} options={bowlingPlayers.map((player) => [player.id, player.name])}/><ModalActions onCancel={() => setSetupOpen(false)} onSave={startInnings} saving={saving} label={innings?.innings_number === 2 ? "Start chase" : "Start scoring"}/></Modal>}
     {tossOpen && <Modal title="Match Toss" onClose={() => setTossOpen(false)}><Select label="Toss winner" value={tossWinner} onChange={setTossWinner} options={teams.map((team) => [team.id, team.name])}/><Select label="Decision" value={tossDecision} onChange={setTossDecision} options={[["bat", "Bat"], ["bowl", "Bowl"]]}/><ModalActions onCancel={() => setTossOpen(false)} onSave={saveToss} saving={saving} label="Save toss"/></Modal>}
     {interruptionOpen && <Modal title="Rain / interruption adjustment" onClose={() => setInterruptionOpen(false)}><p className="text-sm text-muted-foreground">Enter scorer-approved values. DLS records the official method; CrickPulse will not invent an unofficial target.</p><Select label="Target method" value={targetMethod} onChange={(value) => setTargetMethod(value as "manual" | "dls")} options={[["manual", "Manual / competition rule"], ["dls", "Official DLS target"]]}/><label className="block space-y-2 text-sm font-medium">Revised overs<input type="number" min="1" max={match.overs_per_match} value={revisedOvers} onChange={(event) => setRevisedOvers(event.target.value)} className="input"/></label>{innings?.innings_number === 2 && <label className="block space-y-2 text-sm font-medium">Revised target<input type="number" min="1" value={revisedTarget} onChange={(event) => setRevisedTarget(event.target.value)} className="input"/></label>}<label className="block space-y-2 text-sm font-medium">Interruption notes<textarea value={interruptionNotes} onChange={(event) => setInterruptionNotes(event.target.value)} className="input min-h-24" placeholder="Rain stopped play; official target supplied by tournament referee…"/></label><ModalActions onCancel={() => setInterruptionOpen(false)} onSave={saveInterruption} saving={saving} label="Apply adjustment"/></Modal>}
     {nextBowlerOpen && <Modal title="Over complete — choose next bowler" onClose={() => setNextBowlerOpen(false)}><p className="mb-3 text-sm text-muted-foreground">Select a different bowler. Maximum {maxOversPerBowler} overs per bowler in this match.</p><Select label="Next bowler" value={newBowler} onChange={setNewBowler} options={eligibleNextBowlers.map((player) => [player.id, `${player.name} (${Math.floor(legalBallsByBowler(player.id) / ballsPerOver)}.${legalBallsByBowler(player.id) % ballsPerOver} ov)`])}/><ModalActions onCancel={() => setNextBowlerOpen(false)} onSave={saveBowler} saving={saving} label="Confirm bowler"/></Modal>}
-    {wicketOpen && <Modal title={`Record Wicket — ${wicketType.replaceAll("_", " ")}`} onClose={() => setWicketOpen(false)}>
+    {wicketOpen && <Modal title={isMobileWicketSelector ? `Record Wicket — ${wicketType.replaceAll("_", " ")}` : `Wicket — ${wicketType.replaceAll("_", " ")}`} onClose={() => setWicketOpen(false)}>
       <div className="space-y-3">
-        <div>
-          <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-muted-foreground">Dismissal Type</label>
-          {freeHitActive ? (
-            <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950">Free Hit active — only Run Out is available.</p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              {[
-                ["bowled", "🎯 Bowled"],
-                ["caught", "🧤 Caught"],
-                ["lbw", "🛑 LBW"],
-                ["run_out", "⚡ Run Out"],
-                ["stumped", "🏏 Stumped"],
-                ["hit_wicket", "💥 Hit Wicket"],
-                ["obstructing_field", "Obstructing"],
-                ["timed_out", "Timed Out"],
-              ].map(([type, label]) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => {
-                    setWicketType(type);
-                    if (!["caught", "run_out", "stumped"].includes(type)) setFielder("");
-                  }}
-                  className={`rounded-lg border px-2 py-2 text-xs font-black transition ${
-                    wicketType === type
-                      ? "border-red-500 bg-red-500 text-white shadow-sm"
-                      : "border-border bg-card text-foreground hover:border-red-400"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {isMobileWicketSelector && (
+          <div>
+            <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-muted-foreground">Dismissal Type</label>
+            {freeHitActive ? (
+              <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950">Free Hit active — only Run Out is available.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {[
+                  ["bowled", "🎯 Bowled"],
+                  ["caught", "🧤 Caught"],
+                  ["lbw", "🛑 LBW"],
+                  ["run_out", "⚡ Run Out"],
+                  ["stumped", "🏏 Stumped"],
+                  ["hit_wicket", "💥 Hit Wicket"],
+                  ["obstructing_field", "Obstructing"],
+                  ["timed_out", "Timed Out"],
+                ].map(([type, label]) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      setWicketType(type);
+                      if (!["caught", "run_out", "stumped"].includes(type)) setFielder("");
+                    }}
+                    className={`rounded-lg border px-2 py-2 text-xs font-black transition ${
+                      wicketType === type
+                        ? "border-red-500 bg-red-500 text-white shadow-sm"
+                        : "border-border bg-card text-foreground hover:border-red-400"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="rounded-md bg-muted p-2.5 text-xs"><span className="text-muted-foreground">Current bowler (auto): </span><strong>{playerName(innings?.current_bowler_id || null)}</strong></div>
         <Select label="Player out" value={playerOut} onChange={setPlayerOut} options={lastManActive ? [[innings?.striker_id || "", `${playerName(innings?.striker_id || null)} (last batter)`]] : [[innings?.striker_id || "", `${playerName(innings?.striker_id || null)} (striker)`], [innings?.non_striker_id || "", `${playerName(innings?.non_striker_id || null)} (non-striker)`]]}/>
         {["caught", "run_out", "stumped"].includes(wicketType) && <Select label={wicketType === "run_out" ? "Run out completed by" : "Fielder"} value={fielder} onChange={setFielder} options={candidates(innings?.bowling_team_id || "").map((player) => [player.id, player.name])}/>}
