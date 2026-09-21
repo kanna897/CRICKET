@@ -852,29 +852,29 @@ export function useLiveScoringPage() {
         <Link href={localePath(locale, `/admin/matches/analytics/${id}`)}>📊 Info</Link>
       </nav>
 
-      <div className="mobile-score-hero">
-        <div className="mobile-team-heading">
-          <h3>{innings ? teamName(innings.batting_team_id) : "Innings"}</h3>
-          <small>{innings ? `${innings.innings_number === 1 ? "1st" : "2nd"} Innings` : "Not Started"}</small>
-        </div>
-        <div className="mobile-score-display">
-          <strong>{score}</strong>
-        </div>
-        <div className="mobile-score-meta-bar">
-          <span>Ex - {innings?.extras || 0}</span>
-          <span>Ov - {overs} / {effectiveOvers}</span>
-          <span>CRR - {currentRunRate.toFixed(2)}</span>
-        </div>
-        {innings?.innings_number === 2 && innings.target ? (
-          <div className="mobile-chase-box">
-            <p><strong>Target {innings.target}</strong> · Req. RR - {runsNeeded === 0 ? "0.0" : ballsRemaining ? requiredRunRate.toFixed(1) : "—"}</p>
-            <small>Need {runsNeeded} Runs off {ballsRemaining} balls</small>
+      <div className="mobile-unified-card">
+        <div className="mobile-score-hero-part">
+          <div className="mobile-team-heading">
+            <h3>{innings ? teamName(innings.batting_team_id) : "Innings"}</h3>
+            <small>{innings ? `${innings.innings_number === 1 ? "1st" : "2nd"} Innings` : "Not Started"}</small>
           </div>
-        ) : null}
-        {freeHitActive ? <div className="mobile-free-hit-pill">⚡ Free Hit</div> : null}
-      </div>
+          <div className="mobile-score-display">
+            <strong>{score}</strong>
+          </div>
+          <div className="mobile-score-meta-bar">
+            <span>Ex - {innings?.extras || 0}</span>
+            <span>Ov - {overs} / {effectiveOvers}</span>
+            <span>CRR - {currentRunRate.toFixed(2)}</span>
+          </div>
+          {innings?.innings_number === 2 && innings.target ? (
+            <div className="mobile-chase-box">
+              <p><strong>Target {innings.target}</strong> · Req. RR - {runsNeeded === 0 ? "0.0" : ballsRemaining ? requiredRunRate.toFixed(1) : "—"}</p>
+              <small>Need {runsNeeded} Runs off {ballsRemaining} balls</small>
+            </div>
+          ) : null}
+          {freeHitActive ? <div className="mobile-free-hit-pill">⚡ Free Hit</div> : null}
+        </div>
 
-      <div className="mobile-stats-table-card">
         <div className="mobile-table-header-row batsman-header">
           <span className="col-player">✏️ Batsman</span>
           <span className="col-stat">R</span>
@@ -885,6 +885,13 @@ export function useLiveScoringPage() {
         </div>
         <div className="mobile-table-data-row striker-row">
           <div className="col-player flex items-center gap-1.5 min-w-0">
+            {playerPhoto(innings?.striker_id || null) ? (
+              <Image unoptimized width={48} height={48} src={playerPhoto(innings?.striker_id || null)!} alt="" className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-amber-400" />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-amber-400/20 text-amber-300 font-bold text-[0.55rem] flex items-center justify-center shrink-0">
+                {playerName(innings?.striker_id || null).slice(0, 1)}
+              </div>
+            )}
             <span className="striker-pill truncate">
               {playerName(innings?.striker_id || null)} *
             </span>
@@ -901,6 +908,13 @@ export function useLiveScoringPage() {
         {!lastManActive && (
           <div className="mobile-table-data-row non-striker-row">
             <div className="col-player flex items-center gap-1.5 min-w-0">
+              {playerPhoto(innings?.non_striker_id || null) ? (
+                <Image unoptimized width={48} height={48} src={playerPhoto(innings?.non_striker_id || null)!} alt="" className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-white/30" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-white/10 text-white/80 font-bold text-[0.55rem] flex items-center justify-center shrink-0">
+                  {playerName(innings?.non_striker_id || null).slice(0, 1)}
+                </div>
+              )}
               <span className="player-name-text truncate">
                 {playerName(innings?.non_striker_id || null)}
               </span>
@@ -912,9 +926,7 @@ export function useLiveScoringPage() {
             <span className="col-stat text-[0.62rem]">{nonStrikerStats.strikeRate}</span>
           </div>
         )}
-      </div>
 
-      <div className="mobile-stats-table-card mt-1">
         <div className="mobile-table-header-row bowler-header">
           <span className="col-player">✏️ Bowler</span>
           <span className="col-stat">O</span>
@@ -925,6 +937,13 @@ export function useLiveScoringPage() {
         </div>
         <div className="mobile-table-data-row bowler-row">
           <div className="col-player flex items-center gap-1.5 min-w-0">
+            {playerPhoto(innings?.current_bowler_id || null) ? (
+              <Image unoptimized width={48} height={48} src={playerPhoto(innings?.current_bowler_id || null)!} alt="" className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-sky-400" />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-sky-400/20 text-sky-300 font-bold text-[0.55rem] flex items-center justify-center shrink-0">
+                {playerName(innings?.current_bowler_id || null).slice(0, 1)}
+              </div>
+            )}
             <span className="player-name-text truncate">
               {playerName(innings?.current_bowler_id || null)}
             </span>
