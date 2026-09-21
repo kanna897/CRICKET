@@ -1,28 +1,9 @@
--- Secure Permanent Tournament Deletion Migration
+-- Fix Permanent Tournament Deletion: ball_by_ball innings_id relation
 -- 
--- 1. Updates prevent_tournament_hard_delete trigger to guard direct client deletes
---    while allowing authorized deletion via the SECURITY DEFINER RPC.
--- 2. Defines delete_tournament_permanent(p_tournament_id) with strict authorization checks,
---    audit logging, complete foreign-key cascading order, and preservation of shared teams/players.
--- 3. Grants execute privilege strictly to authenticated users and blocks direct table deletes.
-
-create or replace function public.prevent_tournament_hard_delete()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-begin
-  if current_setting('crickpulse.allow_tournament_delete', true) = 'on' then
-    return old;
-  end if;
-  raise exception 'Direct tournament deletion is disabled. Use the authorized deletion RPC instead.';
-end;
-$$;
-
-drop trigger if exists prevent_tournament_hard_delete on public.tournaments;
-create trigger prevent_tournament_hard_delete
-before delete on public.tournaments
-for each row execute function public.prevent_tournament_hard_delete();
+-- Replaces delete_tournament_permanent(p_tournament_id) with the corrected ball_by_ball
+-- query that resolves via innings_id (foreign key) instead of non-existent match_id.
+-- Preserves all security definer protections, RLS guards, authorization checks,
+-- atomic audit logging, foreign-key cascade order, and reusable team/player preservation.
 
 create or replace function public.delete_tournament_permanent(p_tournament_id uuid)
 returns jsonb
