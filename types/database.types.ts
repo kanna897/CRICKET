@@ -1787,6 +1787,10 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: Json
       }
+      delete_match_permanent: {
+        Args: { p_match_id: string }
+        Returns: Json
+      }
       hide_tournament: {
         Args: { p_tournament_id: string }
         Returns: Json

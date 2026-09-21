@@ -11,6 +11,7 @@ import { useAdminAccess } from "@/components/admin-shell";
 import { localePath } from "@/lib/locale-path";
 import { generateMatchDayDates, generateSingleRoundRobin, scheduleRoundRobinMatches, validateSingleRoundRobin, type MatchDayMode } from "@/lib/round-robin";
 import { TournamentSchedulePoster } from "@/components/tournament-schedule-poster";
+import { DeleteMatchModal, type DeletableMatch } from "@/components/delete-match-modal";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
@@ -69,6 +70,7 @@ export default function MatchesPage() {
   const [editForm, setEditForm] = useState<MatchEditForm>({ team_a_id: "", team_b_id: "", match_date: "", match_time: "", ground: "", overs_per_match: "20" });
   const [savingEdit, setSavingEdit] = useState(false);
   const [selectedMatchDate, setSelectedMatchDate] = useState("");
+  const [deletingMatch, setDeletingMatch] = useState<DeletableMatch | null>(null);
 
   useEffect(() => {
     async function loadMatches() {
@@ -286,12 +288,22 @@ export default function MatchesPage() {
               <label className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-2 text-xs font-bold"><ShieldCheck className="h-4 w-4 text-primary" /><select aria-label="Assigned scorer" value={match.assigned_scorer_id ? "owner" : "none"} onChange={(event) => void updateScorer(match, event.target.value === "owner")} disabled={savingAssignment === match.id || match.scoring_locked} className="bg-transparent text-foreground outline-none"><option value="owner">Match Organizer</option><option value="none">Not assigned</option></select></label>
               <button type="button" onClick={() => void toggleLock(match)} disabled={savingAssignment === match.id || (!match.assigned_scorer_id && !matchOwner(match))} className={`inline-flex h-9 items-center rounded-md border px-3 text-xs font-black ${match.scoring_locked ? "border-amber-400 bg-amber-500/15 text-amber-600" : "border-input bg-background text-foreground"}`}>{match.scoring_locked ? <LockKeyhole className="mr-1 h-4 w-4" /> : <UnlockKeyhole className="mr-1 h-4 w-4" />}{match.scoring_locked ? "Scorer locked" : "Lock scorer"}</button>
               {match.match_scope === "standalone" && match.status === "completed" && <button type="button" onClick={() => void toggleStandaloneVisibility(match)} disabled={savingVisibility === match.id} className={`inline-flex h-9 items-center rounded-md border px-3 text-xs font-black disabled:opacity-50 ${match.is_public ? "border-amber-400 bg-amber-500/15 text-amber-700" : "border-emerald-400 bg-emerald-500/15 text-emerald-700"}`}>{savingVisibility === match.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin"/> : match.is_public ? <EyeOff className="mr-1 h-4 w-4"/> : <Eye className="mr-1 h-4 w-4"/>}{match.is_public ? "Hide public" : "Unhide public"}</button>}
+              <button type="button" onClick={() => setDeletingMatch({ id: match.id, match_number: match.match_number, title: match.title, team_a_name: team(match.team_a_id)?.name, team_b_name: team(match.team_b_id)?.name, match_date: match.match_date, match_time: match.match_time, status: match.status })} className="inline-flex h-9 items-center rounded-md border border-red-400/40 bg-red-500/10 px-3 text-xs font-black text-red-600 transition hover:bg-red-500/20"><Trash2 className="mr-1 h-4 w-4"/>Delete</button>
               {(!match.scoring_locked || isMasterAdmin || match.assigned_scorer_id === userId) ? <Link href={localePath(locale, `/admin/matches/score/${match.id}`)} className="inline-flex items-center rounded-md bg-primary text-primary-foreground h-9 px-3 text-sm font-medium"><PlayCircle className="w-4 h-4 mr-1" />Score</Link> : <span className="inline-flex h-9 items-center rounded-md border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800">Assigned scorer only</span>}
               <Link href={localePath(locale, `/admin/matches/teamsheet/${match.id}`)} className="inline-flex items-center rounded-md border border-input h-9 px-3 text-sm font-medium">Team Sheet</Link>
             </div>
           </div>)}
         </div>}
       </div>
+      <DeleteMatchModal
+        match={deletingMatch}
+        isOpen={Boolean(deletingMatch)}
+        onClose={() => setDeletingMatch(null)}
+        onDeleted={(deleted) => {
+          setMatches((current) => current.filter((m) => m.id !== deleted.id));
+          setMessage(`Match #${deleted.match_number || "—"} permanently deleted.`);
+        }}
+      />
     </div>
   );
 }
