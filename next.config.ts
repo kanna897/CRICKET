@@ -18,7 +18,7 @@ const contentSecurityPolicy = [
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://res.cloudinary.com https://challenges.cloudflare.com https://cdn.jsdelivr.net https://paddle-model-ecology.bj.bcebos.com https://vitals.vercel-insights.com https://*.ingest.sentry.io",
   "frame-src https://challenges.cloudflare.com",
   "worker-src 'self' blob: https://cdn.jsdelivr.net",
-  "manifest-src 'self'",
+  "manifest-src 'self' https://vercel.com",
   "media-src 'self' https://res.cloudinary.com",
   "upgrade-insecure-requests",
 ].join("; ");
