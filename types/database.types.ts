@@ -1781,7 +1781,7 @@ export type Database = {
       }
       delete_tournament_cascade: {
         Args: { p_tournament_id: string }
-        Returns: Json
+        Returns: boolean
       }
       delete_tournament_permanent: {
         Args: { p_tournament_id: string }

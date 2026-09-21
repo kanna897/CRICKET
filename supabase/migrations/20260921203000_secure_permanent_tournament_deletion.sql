@@ -50,30 +50,26 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'not_found');
   end if;
 
-  -- 1. Record Audit Log before data removal
-  begin
-    insert into public.audit_logs (
-      user_id, user_name, user_role, action, entity_type, entity_id,
-      old_values, new_values, device_browser
-    ) values (
-      actor_id, 'Tournament lifecycle', 'authorized_manager',
-      'Tournament Deleted', 'tournament', tournament_row.id,
-      jsonb_build_object(
-        'name', tournament_row.name,
-        'deleted_at', tournament_row.deleted_at,
-        'venue', tournament_row.venue,
-        'status', tournament_row.status
-      ),
-      jsonb_build_object(
-        'name', tournament_row.name,
-        'deleted_permanently', true,
-        'deleted_at', now()
-      ),
-      'database_rpc'
-    );
-  exception when others then
-    raise warning 'tournament_delete_audit_failure tournament_id=% sqlstate=% message=%', p_tournament_id, sqlstate, sqlerrm;
-  end;
+  -- 1. Record Audit Log before data removal (atomic - failure rolls back transaction)
+  insert into public.audit_logs (
+    user_id, user_name, user_role, action, entity_type, entity_id,
+    old_values, new_values, device_browser
+  ) values (
+    actor_id, 'Tournament lifecycle', 'authorized_manager',
+    'Tournament Deleted', 'tournament', tournament_row.id,
+    jsonb_build_object(
+      'name', tournament_row.name,
+      'deleted_at', tournament_row.deleted_at,
+      'venue', tournament_row.venue,
+      'status', tournament_row.status
+    ),
+    jsonb_build_object(
+      'name', tournament_row.name,
+      'deleted_permanently', true,
+      'deleted_at', now()
+    ),
+    'database_rpc'
+  );
 
   -- 2. Delete auction records in strict dependency order
   delete from public.auction_history where tournament_id = p_tournament_id;
@@ -171,13 +167,16 @@ end;
 $$;
 
 create or replace function public.delete_tournament_cascade(p_tournament_id uuid)
-returns jsonb
+returns boolean
 language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  result jsonb;
 begin
-  return public.delete_tournament_permanent(p_tournament_id);
+  result := public.delete_tournament_permanent(p_tournament_id);
+  return coalesce((result->>'ok')::boolean, false);
 end;
 $$;
 
