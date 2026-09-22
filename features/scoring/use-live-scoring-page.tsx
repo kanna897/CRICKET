@@ -57,6 +57,7 @@ export function useLiveScoringPage() {
     const [playerOut, setPlayerOut] = useReducerState("");
     const [nextBatter, setNextBatter] = useReducerState("");
     const [fielder, setFielder] = useReducerState("");
+    const [runOutRuns, setRunOutRuns] = useReducerState(0);
     const [showCelebration, setShowCelebration] = useReducerState(false);
     const [boundaryPop, setBoundaryPop] = useReducerState<{
         runs: 4 | 6;
@@ -307,7 +308,7 @@ export function useLiveScoringPage() {
     const maxOversPerBowler = Math.max(1, Math.ceil((match?.overs_per_match || 1) / 5));
     const legalBallsByBowler = (playerId: string) => balls.filter((ball) => ball.bowler_id === playerId && ball.is_legal).length;
     const eligibleNextBowlers = innings ? candidates(innings.bowling_team_id).filter((player) => player.id !== innings.current_bowler_id && legalBallsByBowler(player.id) < maxOversPerBowler * ballsPerOver) : [];
-    const dismissedPlayerIds = new Set(balls.filter((ball) => ball.is_wicket && ball.player_out_id).map((ball) => ball.player_out_id));
+    const dismissedPlayerIds = new Set(balls.filter((ball) => (ball.is_wicket || ball.dismissal_type === "retired_hurt" || ball.dismissal_type === "retired_out") && ball.player_out_id).map((ball) => ball.player_out_id));
     const eligibleNewBatters = innings ? candidates(innings.batting_team_id).filter((player) => player.id !== innings.striker_id && player.id !== innings.non_striker_id && !dismissedPlayerIds.has(player.id)) : [];
     const battingSideSize = innings ? candidates(innings.batting_team_id).length : 0;
     const wicketLimit = getWicketLimit({ squadSize: battingSideSize, configuredWickets, lastManStands: Boolean(match?.last_man_stands) });
@@ -453,9 +454,9 @@ export function useLiveScoringPage() {
                 [striker, nonStriker] = [nonStriker, striker];
             if (isOverEnd)
                 [striker, nonStriker] = [nonStriker, striker];
-            if (wicket && outId === striker)
+            if ((wicket || dismissalType === "retired_hurt") && outId === striker)
                 striker = nextBatter || "";
-            if (wicket && outId === nonStriker)
+            if ((wicket || dismissalType === "retired_hurt") && outId === nonStriker)
                 nonStriker = nextBatter || "";
             if (wicket && willActivateLastMan) {
                 const remainingBatter = outId === innings.striker_id ? innings.non_striker_id : innings.striker_id;
@@ -737,16 +738,26 @@ export function useLiveScoringPage() {
         setPlayerOut(innings?.striker_id || "");
         setNextBatter("");
         setFielder("");
+        setRunOutRuns(0);
         setWicketOpen(true);
     };
     const saveWicket = () => {
         if (freeHitActive && wicketType !== "run_out")
             return alert("Free Hit: only a run out dismissal is allowed.");
-        if (!isLastWicket && !willActivateLastMan && !nextBatter)
+        if (wicketType !== "retired_hurt" && !isLastWicket && !willActivateLastMan && !nextBatter)
             return alert("Select the next batter.");
-        if (["caught", "run_out", "stumped"].includes(wicketType) && !fielder)
+        if (wicketType === "retired_hurt" && !nextBatter && eligibleNewBatters.length > 0)
+            return alert("Select the incoming replacement batter.");
+        if (["caught", "stumped"].includes(wicketType) && !fielder)
             return alert("Select the fielder involved.");
-        record({ wicket: true, dismissalType: wicketType, outId: playerOut, fielderId: fielder || undefined });
+        const isWicket = wicketType !== "retired_hurt";
+        record({
+            wicket: isWicket,
+            dismissalType: wicketType,
+            outId: playerOut,
+            fielderId: fielder || undefined,
+            runs: wicketType === "run_out" ? runOutRuns : 0,
+        });
     };
     const openAdvancedDelivery = (preferredType?: string) => {
         setAdvancedRuns(0);
@@ -1014,7 +1025,7 @@ export function useLiveScoringPage() {
     {innings?.innings_number === 2 && innings.target && <section className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-border bg-border text-center"><div className="bg-card p-3"><p className="text-xs text-muted-foreground">TARGET</p><p className="font-bold text-lg">{innings.target}</p></div><div className="bg-card p-3"><p className="text-xs text-muted-foreground">NEED</p><p className="font-bold text-lg">{Math.max(innings.target - innings.total_runs, 0)}</p></div><div className="bg-card p-3"><p className="text-xs text-muted-foreground">BALLS LEFT</p><p className="font-bold text-lg">{ballsRemaining}</p></div></section>}
     <div className="desktop-scoring-panel">
     <section className="rounded-xl border border-border bg-card p-4"><h2 className="font-semibold">Shot direction</h2><p className="mt-1 text-xs text-muted-foreground">Select the runs first. Then choose where the shot was played for an accurate Wagon Wheel and live commentary.</p></section>
-      <div className="grid lg:grid-cols-2 gap-4"><div className="space-y-3"><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold mb-3">Runs</h2><div className="grid grid-cols-3 gap-2">{[0, 1, 2, 3, 4, 6].map((run) => <button key={run} onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup} className="score-button">{run}</button>)}</div></section><div className="grid grid-cols-2 gap-2"><button onClick={undoLastBall} disabled={!balls.length || saving || completed} className="control w-full justify-center"><RotateCcw className="mr-2 h-4 w-4"/>Undo</button><button onClick={redoLastBall} disabled={!redoSnapshot || saving || completed} className="control w-full justify-center"><RotateCw className="mr-2 h-4 w-4"/>Redo</button></div><section className="grid grid-cols-2 gap-3" aria-label="Quick player changes"><button type="button" onClick={openNewBatter} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><UserPlus className="mr-2 h-5 w-5 text-primary"/>New Batter</button><button type="button" onClick={() => { setNewBowler(""); setNextBowlerOpen(true); }} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><ArrowRightLeft className="mr-2 h-5 w-5 text-primary"/>Swap Bowler</button></section></div><div className="space-y-4"><section className="bg-card border border-border rounded-xl p-4"><div className="mb-3 flex items-center justify-between gap-2"><h2 className="font-semibold">Extras</h2><button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup} className="control min-h-10 px-3 text-xs"><SlidersHorizontal className="mr-1.5 h-4 w-4"/>Advanced</button></div><div className="grid grid-cols-4 gap-2">{[["Wd", "wide"], ["NB", "no_ball"], ["B", "bye"], ["LB", "leg_bye"]].map(([label, type]) => <button key={type} onClick={() => openAdvancedDelivery(type)} disabled={saving || completed || requiresSetup || (type === "wide" && !match.allow_wides) || (type === "no_ball" && !match.allow_no_balls)} className="small-button">{label}</button>)}</div><p className="mt-2 text-[0.7rem] text-muted-foreground">Choose the exact bye, leg-bye, wide or no-ball runs in Advanced.</p></section><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold text-red-600 mb-3">Wicket</h2>{freeHitActive && <p className="mb-3 rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950">Free Hit active — only Run Out is available.</p>}<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[["bowled", "Bowled"], ["caught", "Caught"], ["lbw", "LBW"], ["stumped", "Stumping"], ["run_out", "Run Out"], ["hit_wicket", "Hit Wicket"], ["obstructing_field", "Obstructing"], ["timed_out", "Timed Out"]].map(([type, label]) => <button key={type} onClick={() => openWicket(type, false)} disabled={saving || completed || requiresSetup || (freeHitActive && type !== "run_out")} className="small-button text-red-600 disabled:text-muted-foreground">{label}</button>)}</div></section></div></div>
+      <div className="grid lg:grid-cols-2 gap-4"><div className="space-y-3"><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold mb-3">Runs</h2><div className="grid grid-cols-3 gap-2">{[0, 1, 2, 3, 4, 6].map((run) => <button key={run} onClick={() => chooseRun(run)} disabled={saving || completed || requiresSetup} className="score-button">{run}</button>)}</div></section><div className="grid grid-cols-2 gap-2"><button onClick={undoLastBall} disabled={!balls.length || saving || completed} className="control w-full justify-center"><RotateCcw className="mr-2 h-4 w-4"/>Undo</button><button onClick={redoLastBall} disabled={!redoSnapshot || saving || completed} className="control w-full justify-center"><RotateCw className="mr-2 h-4 w-4"/>Redo</button></div><section className="grid grid-cols-2 gap-3" aria-label="Quick player changes"><button type="button" onClick={openNewBatter} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><UserPlus className="mr-2 h-5 w-5 text-primary"/>New Batter</button><button type="button" onClick={() => { setNewBowler(""); setNextBowlerOpen(true); }} disabled={!innings || saving || completed} className="control min-h-16 justify-center rounded-xl border-primary/30 bg-card text-base shadow-sm hover:border-primary"><ArrowRightLeft className="mr-2 h-5 w-5 text-primary"/>Swap Bowler</button></section></div><div className="space-y-4"><section className="bg-card border border-border rounded-xl p-4"><div className="mb-3 flex items-center justify-between gap-2"><h2 className="font-semibold">Extras</h2><button type="button" onClick={() => openAdvancedDelivery()} disabled={saving || completed || requiresSetup} className="control min-h-10 px-3 text-xs"><SlidersHorizontal className="mr-1.5 h-4 w-4"/>Advanced</button></div><div className="grid grid-cols-4 gap-2">{[["Wd", "wide"], ["NB", "no_ball"], ["B", "bye"], ["LB", "leg_bye"]].map(([label, type]) => <button key={type} onClick={() => openAdvancedDelivery(type)} disabled={saving || completed || requiresSetup || (type === "wide" && !match.allow_wides) || (type === "no_ball" && !match.allow_no_balls)} className="small-button">{label}</button>)}</div><p className="mt-2 text-[0.7rem] text-muted-foreground">Choose the exact bye, leg-bye, wide or no-ball runs in Advanced.</p></section><section className="bg-card border border-border rounded-xl p-4"><h2 className="font-semibold text-red-600 mb-3">Wicket</h2>{freeHitActive && <p className="mb-3 rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950">Free Hit active — only Run Out is available.</p>}<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[["bowled", "Bowled"], ["caught", "Caught"], ["lbw", "LBW"], ["stumped", "Stumping"], ["run_out", "Run Out"], ["hit_wicket", "Hit Wicket"], ["retired_hurt", "Retired Hurt"], ["retired_out", "Retired Out"], ["obstructing_field", "Obstructing"], ["timed_out", "Timed Out"]].map(([type, label]) => <button key={type} onClick={() => openWicket(type, false)} disabled={saving || completed || requiresSetup || (freeHitActive && type !== "run_out")} className="small-button text-red-600 disabled:text-muted-foreground">{label}</button>)}</div></section></div></div>
     <section className="bg-card border border-border rounded-xl overflow-hidden"><div className="grid grid-cols-[90px_1fr_86px] bg-primary border-b border-primary px-4 py-2 text-sm font-bold text-primary-foreground"><span>Overs</span><span>Balls</span><span className="text-right text-primary-foreground">Runs</span></div>{currentOverBalls.length ? <div className="grid grid-cols-[90px_1fr_86px] min-h-20"><div className="border-r border-border px-4 py-4"><p className="font-medium">Ov {currentOverNumber}</p><p className="mt-2 text-sm text-muted-foreground">{innings ? `${innings.total_runs}-${innings.total_wickets}` : "0-0"}</p></div><div className="px-4 py-4 min-w-0"><p className="text-sm text-muted-foreground truncate">{playerName(currentOverBowler)} to {playerName(currentOverBatter)}</p><div className="flex flex-wrap gap-2 mt-2">{currentOverBalls.map((ball) => <span key={ball.id} title={`${ball.over_number}.${ball.ball_number}`} className={`inline-flex h-6 min-w-6 px-1 items-center justify-center rounded text-xs font-bold ${ball.is_wicket ? "bg-red-600 text-white" : ball.extras_type ? "bg-amber-500 text-white" : ball.runs === 4 || ball.runs === 6 ? "bg-sky-600 text-white" : "bg-muted text-foreground"}`}>{deliveryBadgeLabel(ball)}</span>)}</div></div><div className="border-l border-border px-4 py-4 flex items-center justify-end font-bold">{currentOverRuns}</div></div> : <div className="px-4 py-5 text-sm text-muted-foreground">No balls recorded in this over.</div>}</section>
     </div>
     {boundaryPop && <BoundaryPop key={boundaryPop.key} runs={boundaryPop.runs}/>}
@@ -1043,6 +1054,8 @@ export function useLiveScoringPage() {
                   ["run_out", "⚡ Run Out"],
                   ["stumped", "🏏 Stumped"],
                   ["hit_wicket", "💥 Hit Wicket"],
+                  ["retired_hurt", "🚑 Retired Hurt"],
+                  ["retired_out", "🚪 Retired Out"],
                   ["obstructing_field", "Obstructing"],
                   ["timed_out", "Timed Out"],
                 ].map(([type, label]) => (
@@ -1068,9 +1081,38 @@ export function useLiveScoringPage() {
         )}
         <div className="rounded-md bg-muted p-2.5 text-xs"><span className="text-muted-foreground">Current bowler (auto): </span><strong>{playerName(innings?.current_bowler_id || null)}</strong></div>
         <Select label="Player out" value={playerOut} onChange={setPlayerOut} options={lastManActive ? [[innings?.striker_id || "", `${playerName(innings?.striker_id || null)} (last batter)`]] : [[innings?.striker_id || "", `${playerName(innings?.striker_id || null)} (striker)`], [innings?.non_striker_id || "", `${playerName(innings?.non_striker_id || null)} (non-striker)`]]}/>
-        {["caught", "run_out", "stumped"].includes(wicketType) && <Select label={wicketType === "run_out" ? "Run out completed by" : "Fielder"} value={fielder} onChange={setFielder} options={candidates(innings?.bowling_team_id || "").map((player) => [player.id, player.name])}/>}
-        {willActivateLastMan ? <p className="rounded-md bg-amber-50 p-3 text-sm font-bold text-amber-900">Last Man Stands activates now. The remaining batter continues alone.</p> : !isLastWicket ? <Select label="Next batter" value={nextBatter} onChange={setNextBatter} options={eligibleNewBatters.map((player) => [player.id, player.name])}/> : <p className="rounded-md bg-red-50 p-3 text-sm font-bold text-red-800">Final wicket — innings will close automatically.</p>}
-        <ModalActions onCancel={() => setWicketOpen(false)} onSave={saveWicket} saving={saving} label="Save wicket"/>
+        {wicketType === "run_out" && (
+          <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold">Runs completed before run out</label>
+              <span className="text-xs font-black text-primary">{runOutRuns} {runOutRuns === 1 ? "run" : "runs"}</span>
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {[0, 1, 2, 3, 4, 5, 6].map((run) => (
+                <button
+                  key={run}
+                  type="button"
+                  onClick={() => setRunOutRuns(run)}
+                  className={`rounded-lg border py-1.5 text-xs font-black transition ${
+                    runOutRuns === run
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-card text-foreground hover:border-primary"
+                  }`}
+                >
+                  {run}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {wicketType === "retired_hurt" && (
+          <p className="rounded-md bg-sky-50 p-2.5 text-xs font-bold text-sky-900 dark:bg-sky-950/40 dark:text-sky-200">
+            Retired Hurt: Batter retires without adding to team wickets. Choose incoming batter below.
+          </p>
+        )}
+        {["caught", "run_out", "stumped"].includes(wicketType) && <Select label={wicketType === "run_out" ? "Run out completed by (optional)" : "Fielder"} value={fielder} onChange={setFielder} options={candidates(innings?.bowling_team_id || "").map((player) => [player.id, player.name])}/>}
+        {willActivateLastMan ? <p className="rounded-md bg-amber-50 p-3 text-sm font-bold text-amber-900">Last Man Stands activates now. The remaining batter continues alone.</p> : !isLastWicket || wicketType === "retired_hurt" ? <Select label="Next batter" value={nextBatter} onChange={setNextBatter} options={eligibleNewBatters.map((player) => [player.id, player.name])}/> : <p className="rounded-md bg-red-50 p-3 text-sm font-bold text-red-800">Final wicket — innings will close automatically.</p>}
+        <ModalActions onCancel={() => setWicketOpen(false)} onSave={saveWicket} saving={saving} label={wicketType === "retired_hurt" ? "Confirm retire" : "Save wicket"}/>
       </div>
     </Modal>}
     {advancedDeliveryOpen && <Modal title="Advanced delivery" onClose={() => setAdvancedDeliveryOpen(false)}>

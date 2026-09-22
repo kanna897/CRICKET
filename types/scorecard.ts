@@ -5,6 +5,7 @@ export type ScorecardBall = {
   batsman_id: string | null;
   bowler_id: string | null;
   player_out_id?: string | null;
+  fielder_id?: string | null;
   runs: number;
   extras: number;
   extras_type: string | null;

@@ -7,7 +7,7 @@ export type CommentaryInput = {
   extras: number;
   extrasType?: "wide" | "no_ball" | "bye" | "leg_bye";
   shotZone?: "straight" | "cover" | "point" | "square_leg" | "midwicket" | "fine_leg";
-  wicketType?: "bowled" | "caught" | "lbw" | "run_out" | "stumped" | "hit_wicket";
+  wicketType?: "bowled" | "caught" | "lbw" | "run_out" | "stumped" | "hit_wicket" | "retired_hurt" | "retired_out" | "obstructing_field" | "timed_out" | string;
   teamScore: number;
   overs: string;
   requiredRuns?: number;

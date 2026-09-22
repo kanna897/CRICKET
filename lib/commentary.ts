@@ -9,13 +9,17 @@ const zoneText: Record<NonNullable<CommentaryInput["shotZone"]>, string> = {
   fine_leg: "over fine leg",
 };
 
-const dismissalText: Record<NonNullable<CommentaryInput["wicketType"]>, string> = {
+const dismissalText: Record<string, string> = {
   bowled: "bowled",
   caught: "caught",
   lbw: "lbw",
   run_out: "run out",
   stumped: "stumped",
   hit_wicket: "hit wicket",
+  retired_hurt: "retired hurt",
+  retired_out: "retired out",
+  obstructing_field: "obstructing field",
+  timed_out: "timed out",
 };
 
 function shot(input: CommentaryInput) {
@@ -48,39 +52,49 @@ function extraDelivery(input: CommentaryInput) {
     return `NO BALL! ${input.batterName} adds ${input.runs}${shot(input)}; ${total} total.`;
   }
   if (input.extrasType === "bye")
-    return input.extras === 1 ? "One bye." : `${input.extras} byes.`;
-  return input.extras === 1 ? "One leg bye." : `${input.extras} leg byes.`;
+    return total === 1 ? "Bye." : `Byes — ${total} added.`;
+  if (input.extrasType === "leg_bye")
+    return total === 1 ? "Leg bye." : `Leg byes — ${total} added.`;
+  return `${total} extra${total === 1 ? "" : "s"}.`;
 }
 
 function milestones(input: CommentaryInput) {
   const calls: string[] = [];
-  if (input.batterScore === 50)
-    calls.push(`FIFTY for ${input.batterName}!`);
-  if (input.batterScore === 100)
-    calls.push(`CENTURY for ${input.batterName}!`);
-  if (input.partnership === 50)
-    calls.push("Fifty partnership.");
-  if (input.bowlerWickets === 3)
-    calls.push(`Three wickets for ${input.bowlerName}.`);
-  if (input.bowlerWickets === 5)
-    calls.push(`FIVE wickets for ${input.bowlerName}!`);
-  if (input.inningsComplete)
-    calls.push("Innings complete.");
-  if (input.matchResult)
-    calls.push(input.matchResult);
+  if (input.batterScore >= 50 && input.batterScore - input.runs < 50)
+    calls.push(`FIFTY FOR ${input.batterName.toUpperCase()}!`);
+  if (input.batterScore >= 100 && input.batterScore - input.runs < 100)
+    calls.push(`CENTURY FOR ${input.batterName.toUpperCase()}!`);
+  if (input.partnership && input.partnership >= 50 && input.partnership - input.runs - input.extras < 50)
+    calls.push("50-run partnership up.");
+  if (input.partnership && input.partnership >= 100 && input.partnership - input.runs - input.extras < 100)
+    calls.push("Century partnership up.");
+  if (input.bowlerWickets === 3 && input.wicketType)
+    calls.push(`Three wickets in the bag for ${input.bowlerName}.`);
+  if (input.bowlerWickets >= 5 && input.wicketType)
+    calls.push(`FIVE-WICKET HAUL for ${input.bowlerName}!`);
   return calls;
 }
 
 function chase(input: CommentaryInput) {
-  if (input.requiredRuns === undefined || input.ballsRemaining === undefined || input.requiredRuns <= 0)
+  if (input.inningsComplete && input.matchResult)
+    return ` ${input.matchResult}`;
+  if (input.requiredRuns === undefined || input.ballsRemaining === undefined)
     return "";
-  return ` • Need ${input.requiredRuns} off ${input.ballsRemaining}.`;
+  if (input.requiredRuns === 0)
+    return " Target reached!";
+  return ` Need ${input.requiredRuns} from ${input.ballsRemaining} balls.`;
 }
 
 export function generateCommentary(input: CommentaryInput): string {
   let event: string;
   if (input.wicketType) {
-    event = `WICKET! ${input.batterName} ${dismissalText[input.wicketType]}${input.wicketType === "run_out" ? "" : ` by ${input.bowlerName}`}.`;
+    if (input.wicketType === "retired_hurt") {
+      event = `${input.batterName} retired hurt.`;
+    } else if (input.wicketType === "run_out" && input.runs && input.runs > 0) {
+      event = `WICKET! ${input.batterName} completed ${input.runs} run${input.runs === 1 ? "" : "s"} and was run out!`;
+    } else {
+      event = `WICKET! ${input.batterName} ${dismissalText[input.wicketType] || input.wicketType}${input.wicketType === "run_out" ? "" : ` by ${input.bowlerName}`}.`;
+    }
   } else if (input.extrasType) {
     event = extraDelivery(input);
   } else {
