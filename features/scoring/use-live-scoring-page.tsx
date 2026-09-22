@@ -751,8 +751,8 @@ export function useLiveScoringPage() {
         if (["caught", "stumped"].includes(wicketType) && !fielder)
             return alert("Select the fielder involved.");
 
-        // Special handling for Retired Hurt: batter retires without adding to total wickets and without an extra delivery
-        if (wicketType === "retired_hurt") {
+        // Special handling for Retired Hurt & Retired Out: batter retires without extra legal ball delivery
+        if (wicketType === "retired_hurt" || wicketType === "retired_out") {
             if (!innings) return;
             setSaving(true);
             try {
@@ -760,22 +760,42 @@ export function useLiveScoringPage() {
                 const nextStriker = isStriker ? (nextBatter || null) : innings.striker_id;
                 const nextNonStriker = !isStriker ? (nextBatter || null) : innings.non_striker_id;
 
-                await saveInnings({
-                    striker_id: nextStriker,
-                    non_striker_id: nextNonStriker,
+                const { data, error } = await scoringApi.recordBatterRetirement({
+                    p_innings_id: innings.id,
+                    p_player_out_id: playerOut,
+                    p_dismissal_type: wicketType,
+                    p_next_striker_id: nextStriker,
+                    p_next_non_striker_id: nextNonStriker,
                 });
 
-                // Tag the latest ball faced by this player or the last ball in innings so the scorecard displays "retired hurt"
-                const targetBall = [...balls].reverse().find((b) => b.batsman_id === playerOut) || (balls.length > 0 ? balls[balls.length - 1] : null);
-                if (targetBall) {
-                    setBalls((prev) => prev.map((b) => (b.id === targetBall.id ? { ...b, player_out_id: playerOut, dismissal_type: "retired_hurt" } : b)));
-                    try {
-                        await supabase.from("ball_by_ball").update({
-                            player_out_id: playerOut,
-                            dismissal_type: "retired_hurt",
-                        }).eq("id", targetBall.id);
-                    } catch (dbErr) {
-                        console.warn("Could not tag ball with retired_hurt in DB", dbErr);
+                if (error) {
+                    // Graceful fallback: update innings directly and tag local ball state
+                    await saveInnings({
+                        striker_id: nextStriker,
+                        non_striker_id: nextNonStriker,
+                    });
+                    const targetBall = [...balls].reverse().find((b) => b.batsman_id === playerOut) || (balls.length > 0 ? balls[balls.length - 1] : null);
+                    if (targetBall) {
+                        setBalls((prev) => prev.map((b) => (b.id === targetBall.id ? { ...b, player_out_id: playerOut, dismissal_type: wicketType } : b)));
+                        try {
+                            await supabase.from("ball_by_ball").update({
+                                player_out_id: playerOut,
+                                dismissal_type: wicketType,
+                            }).eq("id", targetBall.id);
+                        } catch (dbErr) {
+                            console.warn("Could not tag ball with dismissal_type in DB", dbErr);
+                        }
+                    }
+                } else if (data) {
+                    const res = data as { innings?: Innings; ball?: Ball };
+                    if (res.innings) setInnings(res.innings);
+                    if (res.ball) {
+                        setBalls((prev) => prev.map((b) => (b.id === res.ball!.id ? res.ball! : b)));
+                    } else {
+                        const targetBall = [...balls].reverse().find((b) => b.batsman_id === playerOut) || (balls.length > 0 ? balls[balls.length - 1] : null);
+                        if (targetBall) {
+                            setBalls((prev) => prev.map((b) => (b.id === targetBall.id ? { ...b, player_out_id: playerOut, dismissal_type: wicketType } : b)));
+                        }
                     }
                 }
 
@@ -783,8 +803,8 @@ export function useLiveScoringPage() {
                 setNextBatter("");
                 setFielder("");
             } catch (err) {
-                console.error("Retired hurt save failed", err);
-                alert(err instanceof Error ? err.message : "Unable to record retired hurt.");
+                console.error("Batter retirement save failed", err);
+                alert(err instanceof Error ? err.message : "Unable to record batter retirement.");
             } finally {
                 setSaving(false);
             }

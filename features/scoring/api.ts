@@ -81,4 +81,11 @@ export const scoringApi = {
   }) => monitorDatabaseOperation("scoring.update_match", () => supabase.from("matches").update(payload).eq("id", matchId)),
   undoDelivery: (payload: { p_innings_id: string }) =>
     monitorDatabaseOperation("scoring.undo_delivery", () => supabase.rpc("undo_last_scoring_delivery", payload)),
+  recordBatterRetirement: (payload: {
+    p_innings_id: string;
+    p_player_out_id: string;
+    p_dismissal_type: string;
+    p_next_striker_id: string | null;
+    p_next_non_striker_id: string | null;
+  }): Promise<{ data: any; error: any }> => monitorDatabaseOperation("scoring.record_batter_retirement", () => (supabase.rpc as any)("record_batter_retirement", payload)),
 };

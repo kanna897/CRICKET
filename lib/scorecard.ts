@@ -40,7 +40,7 @@ export function formatDismissal(ball: ScorecardBall | undefined, players: Scorec
 }
 
 export function buildScorecard(innings: ScorecardInnings, balls: ScorecardBall[], players: ScorecardPlayer[]): InningsScorecard {
-  const batterIds = [...new Set(balls.flatMap((ball) => [ball.batsman_id, ball.player_out_id]).filter(Boolean) as string[])];
+  const batterIds = [...new Set([innings.striker_id, innings.non_striker_id, ...balls.flatMap((ball) => [ball.batsman_id, ball.player_out_id])].filter(Boolean) as string[])];
   const bowlerIds = [...new Set(balls.map((ball) => ball.bowler_id).filter(Boolean) as string[])];
   const batting = batterIds.map((playerId) => {
     const faced = balls.filter((ball) => ball.batsman_id === playerId);
