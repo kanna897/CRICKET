@@ -3,6 +3,7 @@ export type StandingsMatch = {
   id: string; team_a_id: string; team_b_id: string; status: string; winner_id: string | null;
   overs_per_match?: number | null; balls_per_over?: number | null; wickets_per_innings?: number | null;
   revised_overs?: number | null;
+  competition_stage?: string | null; stage?: string | null;
 };
 export type StandingsInnings = { match_id: string; batting_team_id: string; bowling_team_id: string; total_runs: number; total_wickets: number; balls_bowled: number };
 export type StandingRow = { team_id: string; played: number; won: number; lost: number; tied: number; points: number; nrr: number };
@@ -21,6 +22,7 @@ export function calculateTournamentStandings(teams: StandingsTeam[], matches: St
   const completedIds = new Set<string>();
   for (const match of matches) {
     if (match.status !== "completed") continue;
+    if (match.competition_stage === "knockout" || match.stage === "playoff" || match.stage === "knockout") continue;
     completedIds.add(match.id);
     const teamA = rows.get(match.team_a_id);
     const teamB = rows.get(match.team_b_id);

@@ -33,6 +33,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .next-dev.*.log
+__pycache__/
+*.pyc
 
 # local verification artifacts
 /tmp/

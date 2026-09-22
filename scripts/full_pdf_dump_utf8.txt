@@ -1,0 +1,1369 @@
+
+======================================================================
+FILE: 00.pdf (Total Pages: 4)
+======================================================================
+
+--- PAGE 1 OF 00.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Match Report
+PRIME XI
+53-6 in 8.0 overs
+RISING TITANS
+54-2 in 5.0 overs
+Result
+RISINGTITANSwonby8wickets
+PlayerOfTheMatch
+Denojan
+Match Information
+Tournament CAppsCricketFiesta-2026
+Club Uca
+MatchTitle Match
+MatchFormat T20
+Playing 11PerSide
+Overs 8
+Venue
+Date&Time 20Sep202607:30AM
+Toss RISINGTITANSOptedToBowl
+Scorer Kayan
+MatchID eafo8831
+Match Summary
+PRIME XI 53-6 (8.0)
+MayooranS 21*(18) Thanuraj 2-12
+Mareenraj 8*(6) Abilasha 1-2
+Piragash 3(3) Thanaledsumy 1-5
+RISING TITANS 54-2 (5.0)
+Denojan 39*(17) Thenuja 1-2
+Thanaledsumy 4*(6) Thiviya 0-4
+Abilasha 2*(3) KajavathananNt 0-8
+
+--- PAGE 2 OF 00.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+1st Innings Scorecard
+PRIME XI R B 4s 6s SR
+Jenitta cThanurajbAbilasha 2 7 0 0 28.6
+Thenuja cGopiKrishnabThanaledsumy 0 2 0 0 0.0
+Thiviya RetiredHurt 1 4 0 0 25.0
+Nelaxshan bThayuran 1 2 0 0 50.0
+MayooranS notout 21 18 1 1 116.7
+Mareenraj RetiredHurt 8 6 0 1 133.3
+KajavathananNt cThayuranbThanuraj 3 6 0 0 50.0
+Piragash runout(Thayuran) 3 3 0 0 100.0
+Branavan cThayuranbThanuraj 0 1 0 0 0.0
+Extras (B5 | WD8 | NB1) 14 Overs 8.0
+Total 53/6 RunRate 6.6
+Fall Of Wickets
+3-1(Thenuja,0.5),7-2(Jenitta,1.4),13-3(Nelaxshan,3.0),46-4(KajavathananNT,7.2),53-5(Piragash,
+7.5),53-6(Branavan,8.0)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Thanaledsumy 1.0 0 5 1 5.0 4 0 0 2 1
+Abilasha 1.0 0 2 1 2.0 5 0 0 1 0
+Thayuran 2.0 0 12 1 6.0 5 0 0 2 0
+Gopikrishna 1.0 0 6 0 6.0 3 1 0 0 0
+Thanuraj 2.0 0 12 2 6.0 6 0 1 0 0
+Kowarthanan 1.0 0 11 0 11.0 3 0 1 3 0
+
+--- PAGE 3 OF 00.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+2nd Innings Scorecard
+RISING TITANS R B 4s 6s SR
+Thanaledsumy RetiredHurt 4 6 0 0 66.7
+Ladhurshika cMayooranSbThenuja 0 1 0 0 0.0
+Shangave runout(Thenuja) 0 2 0 0 0.0
+Abilasha RetiredHurt 2 3 0 0 66.7
+Thanuraj notout 1 1 0 0 100.0
+Denojan notout 39 17 0 6 229.4
+Extras (WD8) 8 Overs 5.0
+Total 54/2 RunRate 10.8
+Fall Of Wickets
+1-1(Ladhurshika,0.3),1-2(Shangave,0.5)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Thenuja 1.0 0 2 1 2.0 4 0 0 0 0
+Thiviya 1.0 0 4 0 4.0 2 0 0 0 0
+KajavathananNt 1.0 0 8 0 8.0 3 0 0 5 0
+Nelaxshan 1.0 0 8 0 8.0 4 0 1 1 0
+Jathushan 1.0 0 32 0 32.0 1 0 5 2 0
+
+--- PAGE 4 OF 00.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Over Comparison
+PRIME XI RISING TITANS
+Wd 0 0 1 0 Wd W N 1
+Jenitta 2(5)
+Thiviya 0(0)
+Thanaledsumy
+1.0-0-5-1
+Overs 1 Runs 5 Score 5-1
+0 1 W 0 W 1
+Thanaledsumy 2(3)
+Abilasha 0(0)
+Thenuja
+1.0-0-2-1
+Overs 1 Runs 2 Score 2-2
+0 0 Wd 1 W 0 0
+Thiviya 1(4)
+MayooranS 0(0)
+Abilasha
+1.0-0-2-1
+Overs 2 Runs 2 Score 7-2
+1 1 1 0 1 0
+Thanaledsumy 4(6)
+Abilasha 2(3)
+Thiviya
+1.0-0-4-0
+Overs 2 Runs 4 Score 6-2
+RH 1 1 2 Wd 0 1 W
+Nelaxshan 1(2)
+MayooranS 4(4)
+Thayuran
+1.0-0-6-1
+Overs 3 Runs 6 Score 13-3
+RH RH 0 1 1 4+Wd 0 0 1
+Thanuraj 1(1)
+Denojan 2(5)
+KajavathananNT
+1.0-0-8-0
+Overs 3 Runs 8 Score 14-2
+1 0 1 4 0 0
+MayooranS 9(8)
+Mareenraj 1(2)
+GopiKrishna
+1.0-0-6-0
+Overs 4 Runs 6 Score 19-3
+0 0 6 Wd 0 0 1
+Thanuraj 1(1)
+Denojan 9(11)
+Nelaxshan
+1.0-0-8-0
+Overs 4 Runs 8 Score 22-2
+6 0 0 1 0 1
+MayooranS 10(10)
+Mareenraj 8(6)
+Thanuraj
+1.0-0-8-0
+Overs 5 Runs 8 Score 27-3
+6 0 Wd 6 Wd 6 6 6
+Thanuraj 1(1)
+Denojan 39(17)
+Jathushan
+1.0-0-32-0
+Overs 5 Runs 32 Score 54-2
+RH Wd 2 0 1 2 1B 0
+MayooranS 13(14)
+KajavathananNT 2(2)
+Thayuran
+2.0-0-12-1
+Overs 6 Runs 7 Score 34-3
+0 1 0 6 1 Wd Wd Wd 0
+MayooranS 20(17)
+KajavathananNT 3(5)
+Kowarthanan
+1.0-0-11-0
+Overs 7 Runs 11 Score 45-3
+1 W 4B 2 1W W
+MayooranS 21(18)
+Branavan 0(1)
+Thanuraj
+2.0-0-12-2
+Overs 8 Runs 8 Score 53-6
+
+======================================================================
+FILE: 1.pdf (Total Pages: 4)
+======================================================================
+
+--- PAGE 1 OF 1.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Match Report
+ROYAL STRIKERS
+74-6 in 8.0 overs
+AVENGERS
+75-7 in 7.2 overs
+Result
+AVENGERSwonby3wickets
+PlayerOfTheMatch
+AlthafHussain
+Match Information
+Tournament CAppsCricketFiesta-2026
+Club Uca
+MatchTitle Match
+MatchFormat T20
+Playing 11PerSide
+Overs 8
+Venue
+Date&Time 20Sep202608:20AM
+Toss AVENGERSOptedToBowl
+Scorer Kayan
+MatchID vakb1540
+Match Summary
+ROYAL STRIKERS 74-6 (8.0)
+ZaxsanCroos 23*(10) Thuvakaran 2-18
+Sajilan 12(9) Kajitha 1-3
+Rashmin 8(9) AlthafHussain 1-22
+AVENGERS 75-7 (7.2)
+AlthafHussain 42(13) Sopraj 2-3
+Thuvakaran 10*(4) Krishalani 1-0
+Akeel 9(8) Janushika 1-3
+
+--- PAGE 2 OF 1.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+1st Innings Scorecard
+ROYAL STRIKERS R B 4s 6s SR
+Saruja RetiredHurt 1 4 0 0 25.0
+Reka runout(Akeel) 0 0 0 0 0.0
+Krishalani runout(Imthath) 0 1 0 0 0.0
+Janushika bKajitha 0 1 0 0 0.0
+Sajilan cSankeerthanbThuvakaran 12 9 1 1 133.3
+Rashmin cAkeelbThuvakaran 8 9 2 0 88.9
+ZaxsanCroos notout 23 10 2 1 230.0
+Anushan bAlthafHussain 3 6 0 0 50.0
+Sopraj RetiredHurt 4 4 1 0 100.0
+Pravika notout 0 6 0 0 0.0
+Extras (B4 | WD16 | NB2 | Bonus1) 22 Overs 8.0
+Total 74/6 RunRate 9.3
+Fall Of Wickets
+2-1(Reka,0.3),3-2(Krishalani,0.5),3-3(Janushika,1.0),29-4(Rashmin,3.2),47-5(Sajilan,4.0),53-6
+(Anushan,5.3)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Kajitha 1.0 0 3 1 3.0 5 0 0 2 0
+Akeel 2.0 0 14 0 7.0 6 2 0 1 1
+AlthafHussain 2.0 0 22 1 11.0 5 2 1 3 0
+Thuvakaran 1.0 0 18 2 18.0 4 1 0 10 1
+Arshad 1.0 0 12 0 12.0 3 1 1 0 0
+Powsikan 1.0 1 0 0 0.0 6 0 0 0 0
+
+--- PAGE 3 OF 1.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+2nd Innings Scorecard
+AVENGERS R B 4s 6s SR
+Sureka RetiredHurt 2 2 0 0 100.0
+Lakshiga cZaxsanCroosbJanushika 0 1 0 0 0.0
+Abinaia runout(Rashmin) 0 2 0 0 0.0
+Kajitha c&bKrishalani 1 2 0 0 50.0
+Powsikan RetiredHurt 0 5 0 0 0.0
+AlthafHussain cSoprajbAnushan 42 13 1 6 323.1
+Akeel bSajilan 9 8 0 1 112.5
+Arshad bSopraj 3 6 0 0 50.0
+Thuvakaran notout 10 4 1 1 250.0
+Sankeerthan cAnushanbSopraj 0 1 0 0 0.0
+Imthath notout 0 1 0 0 0.0
+Extras (WD7 | NB1) 8 Overs 7.2
+Total 75/7 RunRate 10.2
+Fall Of Wickets
+1-1(Lakshiga,0.2),2-2(Abinaia,0.5),3-3(Kajitha,1.1),15-4(Akeel,3.2),61-5(AlthafHussain,5.4),68-6
+(Arshad,6.4),69-7(Sankeerthan,6.5)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Janushika 1.0 0 3 1 3.0 3 0 0 0 0
+Krishalani 1.0 1 0 1 0.0 6 0 0 0 0
+Anushan 2.0 0 22 1 11.0 7 1 2 2 1
+Sajilan 1.0 0 17 1 17.0 2 0 2 3 0
+ZaxsanCroos 1.2 0 30 0 22.5 2 1 4 1 0
+Sopraj 1.0 0 3 2 3.0 5 0 0 1 0
+
+--- PAGE 4 OF 1.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Over Comparison
+ROYAL STRIKERS AVENGERS
+0 Wd Wd 0 W 1 W W
+Saruja 1(4)
+Janushika 0(1)
+Kajitha
+1.0-0-3-1
+Overs 1 Runs 3 Score 3-3
+1 W 1 0 W 1
+Sureka 2(2)
+Kajitha 1(1)
+Janushika
+1.0-0-3-1
+Overs 1 Runs 3 Score 3-2
+RH 0 4 0 0 4B N Wd 4
+Sajilan 0(0)
+Rashmin 8(7)
+Akeel
+1.0-0-10-0
+Overs 2 Runs 14 Score 17-3
+W RH 0 0 0 0 0
+Powsikan 0(5)
+AlthafHussain 0(0)
+Krishalani
+1.0-1-0-1
+Overs 2 Runs 0 Score 3-3
+0 0 6 4 0 2
+Sajilan 12(6)
+Rashmin 8(7)
+AlthafHussain
+1.0-0-12-0
+Overs 3 Runs 12 Score 29-3
+RH 2 0 N 0 0 1 0
+AlthafHussain 0(1)
+Akeel 3(6)
+Anushan
+1.0-0-4-0
+Overs 3 Runs 4 Score 7-3
+0 W 3 0 N 3+Wd Wd Wd 4 Wd Wd 1+Wd W
+Sajilan 12(9)
+ZaxsanCroos 7(2)
+Thuvakaran
+1.0-0-18-2
+Overs 4 Runs 18 Score 47-5
+Wd 6 Wd W 0 1 6 Wd 1
+AlthafHussain 7(3)
+Arshad 1(2)
+Sajilan
+1.0-0-17-1
+Overs 4 Runs 17 Score 24-4
+1 0 1 1 0 1
+ZaxsanCroos 9(4)
+Anushan 2(4)
+Akeel
+2.0-0-14-0
+Overs 5 Runs 4 Score 51-5
+Wd 6 0 6 6 4 1
+AlthafHussain 30(9)
+Arshad 1(2)
+ZaxsanCroos
+1.0-0-24-0
+Overs 5 Runs 24 Score 48-4
+1 1 W 0 1+Wd 4 Wd 1
+ZaxsanCroos 15(7)
+Sopraj 0(1)
+AlthafHussain
+2.0-0-22-1
+Overs 6 Runs 10 Score 61-6
+0 6 Wd 6 W Wd 4 0
+Arshad 1(2)
+Thuvakaran 4(2)
+Anushan
+2.0-0-22-1
+Overs 6 Runs 18 Score 66-5
+2 6 +1 0 4 0 0
+ZaxsanCroos 23(10)
+Sopraj 4(4)
+Arshad
+1.0-0-12-0
+Overs 7 Runs 13 Score 74-6
+0 2 0 W Wd W 0
+Thuvakaran 4(2)
+Imthath 0(1)
+Sopraj
+1.0-0-3-2
+Overs 7 Runs 3 Score 69-7
+RH 0 0 0 0 0 0
+ZaxsanCroos 23(10)
+Pravika 0(6)
+Powsikan
+1.0-1-0-0
+Overs 8 Runs 0 Score 74-6
+0 6
+Thuvakaran 10(4)
+Imthath 0(1)
+ZaxsanCroos
+1.2-0-30-0
+Overs 7.2 Runs 6 Score 75-7
+
+======================================================================
+FILE: 2.pdf (Total Pages: 4)
+======================================================================
+
+--- PAGE 1 OF 2.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Match Report
+ROYAL STRIKERS
+76-5 in 8.0 overs
+PRIME XI
+60-6 in 8.0 overs
+Result
+ROYALSTRIKERSwonby16
+runs
+PlayerOfTheMatch
+Sajilan
+Match Information
+Tournament CAppsCricketFiesta-2026
+Club Uca
+MatchTitle Match
+MatchFormat T20
+Playing 11PerSide
+Overs 8
+Venue
+Date&Time 20Sep202609:10AM
+Toss PRIMEXIOptedToBowl
+Scorer Kayan
+MatchID fpwr4708
+Match Summary
+ROYAL STRIKERS 76-5 (8.0)
+ZaxsanCroos 30*(18) Nelaxshan 2-7
+Anushan 19(11) Thenuja 1-1
+Sajilan 10(3) KajavathananNt 1-28
+PRIME XI 60-6 (8.0)
+Branavan 14(10) Sajilan 2-24
+Nelaxshan 13*(6) Krishalani 1-1
+KajavathananNt 9(7) ZaxsanCroos 1-9
+
+--- PAGE 2 OF 2.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+1st Innings Scorecard
+ROYAL STRIKERS R B 4s 6s SR
+Krishalani RetiredHurt 1 4 0 0 25.0
+Reka cKajavathananNTbThenuja 1 7 0 0 14.3
+Pravika RetiredHurt 0 1 0 0 0.0
+Sajilan c&bKajavathananNT 10 3 1 1 333.3
+ZaxsanCroos notout 30 18 1 1 166.7
+Anushan cMayooranSbNelaxshan 19 11 1 2 172.7
+Rashmin cPiragashbNelaxshan 4 3 1 0 133.3
+Sopraj runout(Branavan) 2 3 0 0 66.7
+Divyesh notout 0 0 0 0 0.0
+Extras (WD7 | NB2) 9 Overs 8.0
+Total 76/5 RunRate 9.5
+Fall Of Wickets
+3-1(Reka,1.5),14-2(Sajilan,2.3),48-3(Anushan,5.3),52-4(Rashmin,6.0),74-5(Sopraj,7.5)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Thiviya 1.0 0 2 0 2.0 4 0 0 0 0
+Thenuja 1.0 0 1 1 1.0 6 0 0 1 0
+KajavathananNt 2.0 0 28 1 14.0 4 3 1 2 1
+Branavan 2.0 0 21 0 10.5 3 0 1 2 0
+Piragash 1.0 0 17 0 17.0 2 0 2 0 1
+Nelaxshan 1.0 0 7 2 7.0 4 1 0 2 0
+
+--- PAGE 3 OF 2.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+2nd Innings Scorecard
+PRIME XI R B 4s 6s SR
+Thenuja cZaxsanCroosbKrishalani 1 5 0 0 20.0
+Jenitta runout(Sopraj) 0 1 0 0 0.0
+Thiviya RetiredHurt 1 5 0 0 20.0
+Anuja RetiredHurt 0 1 0 0 0.0
+MayooranS bSajilan 0 1 0 0 0.0
+Piragash bSajilan 9 9 0 1 100.0
+Branavan cSajilanbSopraj 14 10 0 2 140.0
+KajavathananNt bZaxsanCroos 9 7 0 1 128.6
+Nelaxshan notout 13 6 1 1 216.7
+Nirojan notout 4 4 0 0 100.0
+Extras (WD8 | NB1) 9 Overs 8.0
+Total 60/6 RunRate 7.5
+Fall Of Wickets
+3-1(Jenitta,0.4),4-2(Thenuja,1.5),6-3(MayooranS,2.1),32-4(Piragash,4.4),32-5(Branavan,5.3),
+44-6(KajavathananNT,6.4)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Reka 1.0 0 4 0 4.0 4 0 0 2 0
+Krishalani 1.0 0 1 1 1.0 6 0 0 1 0
+Sajilan 2.0 0 24 2 12.0 8 0 3 3 1
+Anushan 1.1 0 9 0 7.7 4 0 1 0 0
+Sopraj 2.0 0 13 1 6.5 4 0 1 0 0
+ZaxsanCroos 0.5 0 9 1 10.8 2 1 0 2 0
+
+--- PAGE 4 OF 2.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Over Comparison
+ROYAL STRIKERS PRIME XI
+0 0 1 0 1 0
+Krishalani 1(4)
+Reka 1(2)
+Thiviya
+1.0-0-2-0
+Overs 1 Runs 2 Score 2-0
+Wd 0 0 Wd 1 W 1 0
+Thenuja 1(4)
+Thiviya 1(1)
+Reka
+1.0-0-4-0
+Overs 1 Runs 4 Score 4-1
+0 Wd 0 0 0 W 0
+Krishalani 1(4)
+Pravika 0(1)
+Thenuja
+1.0-0-1-1
+Overs 2 Runs 1 Score 3-1
+0 0 0 0 W Wd 0
+Thiviya 1(5)
+Anuja 0(1)
+Krishalani
+1.0-0-1-1
+Overs 2 Runs 1 Score 5-2
+RH RH Wd 6 4 W 0 0 Wd 4
+ZaxsanCroos 0(0)
+Anushan 4(3)
+KajavathananNT
+1.0-0-16-1
+Overs 3 Runs 16 Score 19-2
+RH RH Wd W 0 0 2 6 6
+Piragash 0(0)
+Branavan 14(5)
+Sajilan
+1.0-0-15-1
+Overs 3 Runs 15 Score 20-3
+0 1 1 3 Wd 1 2
+ZaxsanCroos 6(4)
+Anushan 6(5)
+Branavan
+1.0-0-9-0
+Overs 4 Runs 9 Score 28-2
+2 0 0 1 0 0
+Piragash 3(4)
+Branavan 14(7)
+Anushan
+1.0-0-3-0
+Overs 4 Runs 3 Score 23-3
+6 1 0 2N 1 6 0
+ZaxsanCroos 9(7)
+Anushan 19(9)
+Piragash
+1.0-0-17-0
+Overs 5 Runs 17 Score 45-2
+Wd 6 Wd N 0 0 W 0 0
+Branavan 14(7)
+KajavathananNT 0(2)
+Sajilan
+2.0-0-24-2
+Overs 5 Runs 9 Score 32-4
+1 0 Wd Wd W 4 0 W
+ZaxsanCroos 10(8)
+Rashmin 4(3)
+Nelaxshan
+1.0-0-7-2
+Overs 6 Runs 7 Score 52-4
+0 0 W 1 1 0
+KajavathananNT 1(3)
+Nelaxshan 1(2)
+Sopraj
+1.0-0-2-1
+Overs 6 Runs 2 Score 34-5
+0 6 3 1 1 Wd 0
+ZaxsanCroos 20(12)
+Sopraj 1(2)
+Branavan
+2.0-0-21-0
+Overs 7 Runs 12 Score 64-4
+6 0 Wd Wd 2 W 1 4
+Nelaxshan 5(3)
+Nirojan 1(1)
+ZaxsanCroos
+0.5-0-9-1
+Overs 7 Runs 15 Score 49-6
+2 1 1 4N 0 1W 2
+ZaxsanCroos 30(18)
+Divyesh 0(0)
+KajavathananNT
+2.0-0-28-1
+Overs 8 Runs 12 Score 76-5
+1 6 1 1 1 1
+Nelaxshan 13(6)
+Nirojan 4(4)
+Sopraj
+2.0-0-13-1
+Overs 8 Runs 11 Score 60-6
+
+======================================================================
+FILE: 3.pdf (Total Pages: 4)
+======================================================================
+
+--- PAGE 1 OF 3.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Match Report
+RISING TITANS
+70-3 in 8.0 overs
+AVENGERS
+74-4 in 8.0 overs
+Result
+AVENGERSwonby6wickets
+PlayerOfTheMatch
+Thuvakaran
+Match Information
+Tournament CAppsCricketFiesta-2026
+Club Uca
+MatchTitle Match
+MatchFormat T20
+Playing 11PerSide
+Overs 8
+Venue
+Date&Time 20Sep202610:00AM
+Toss AVENGERSOptedToBowl
+Scorer Kayan
+MatchID asdt0742
+Match Summary
+RISING TITANS 70-3 (8.0)
+Denojan 29*(23) Kajitha 1-1
+Thanuraj 25*(17) Lakshiga 1-5
+Ladhurshika 2(2) Thuvakaran 0-12
+AVENGERS 74-4 (8.0)
+Thuvakaran 16*(10) Thanuraj 2-19
+Akeel 14(12) Gopikrishna 1-10
+Arshad 13(14) Thayuran 1-13
+
+--- PAGE 2 OF 3.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+1st Innings Scorecard
+RISING TITANS R B 4s 6s SR
+Abilasha RetiredHurt 1 2 0 0 50.0
+Thanaledsumy cArshadbKajitha 0 2 0 0 0.0
+Shangave runout(Thuvakaran) 1 3 0 0 33.3
+Ladhurshika cAkeelbLakshiga 2 2 0 0 100.0
+Denojan notout 29 23 2 1 126.1
+Thanuraj notout 25 17 3 0 147.1
+Extras (WD11 | NB1) 12 Overs 8.0
+Total 70/3 RunRate 8.8
+Fall Of Wickets
+0-1(Thanaledsumy,0.2),1-2(Shangave,1.0),6-3(Ladhurshika,1.3)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Kajitha 1.0 0 1 1 1.0 5 0 0 0 0
+Lakshiga 1.0 0 5 1 5.0 4 0 0 2 0
+AlthafHussain 2.0 0 18 0 9.0 2 2 0 0 0
+Akeel 2.0 0 16 0 8.0 3 0 0 4 0
+Sankeerthan 1.0 0 18 0 18.0 1 1 1 3 1
+Thuvakaran 1.0 0 12 0 12.0 2 2 0 2 0
+
+--- PAGE 3 OF 3.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+2nd Innings Scorecard
+AVENGERS R B 4s 6s SR
+Sureka RetiredHurt 6 9 1 0 66.7
+Lakshiga RetiredHurt 1 3 0 0 33.3
+Akeel cNithusanbThanuraj 14 12 1 1 116.7
+AlthafHussain bThayuran 0 1 0 0 0.0
+Arshad bThanuraj 13 14 2 0 92.9
+Thuvakaran notout 16 10 2 0 160.0
+Sankeerthan cThanurajbGopiKrishna 1 2 0 0 50.0
+Anojan notout 1 1 0 0 100.0
+Extras (WD18 | NB4) 22 Overs 8.0
+Total 74/4 RunRate 9.3
+Fall Of Wickets
+31-1(AlthafHussain,3.0),41-2(Akeel,5.0),55-3(Arshad,6.1),67-4(Sankeerthan,7.1)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Thanaledsumy 1.0 0 16 0 16.0 4 1 0 11 0
+Abilasha 1.0 0 2 0 2.0 4 0 0 0 0
+Thayuran 1.0 0 13 1 13.0 3 0 1 4 0
+Gopikrishna 2.0 0 10 1 5.0 7 1 0 1 0
+Thanuraj 2.0 0 19 2 9.5 5 2 0 0 1
+Paul 1.0 0 14 0 14.0 4 2 0 2 3
+
+--- PAGE 4 OF 3.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Over Comparison
+RISING TITANS AVENGERS
+0 W 0 0 1 W
+Abilasha 0(1)
+Shangave 1(3)
+Kajitha
+1.0-0-1-1
+Overs 1 Runs 1 Score 1-2
+Wd Wd Wd 4 Wd Wd Wd Wd Wd 0 Wd 0
+Wd Wd 0 0 1
+Sureka 5(6)
+Lakshiga 0(0)
+Thanaledsumy
+1.0-0-16-0
+Overs 1 Runs 16 Score 16-0
+Wd 1 2 Wd W RH 0 0 0
+Denojan 0(3)
+Thanuraj 0(0)
+Lakshiga
+1.0-0-5-1
+Overs 2 Runs 5 Score 6-3
+1 0 0 1 0 0
+Sureka 6(9)
+Lakshiga 1(3)
+Abilasha
+1.0-0-2-0
+Overs 2 Runs 2 Score 18-0
+1 1 1 1 0 2
+Denojan 4(7)
+Thanuraj 2(2)
+AlthafHussain
+1.0-0-6-0
+Overs 3 Runs 6 Score 12-3
+RH RH Wd 0 0 6 2 Wd 1 Wd Wd W
+Akeel 9(5)
+AlthafHussain 0(1)
+Thayuran
+1.0-0-13-1
+Overs 3 Runs 13 Score 31-1
+Wd 0 1 0 0 1 Wd Wd 1
+Denojan 5(10)
+Thanuraj 4(5)
+Akeel
+1.0-0-6-0
+Overs 4 Runs 6 Score 18-3
+0 0 0 Wd 1 1 0
+Akeel 10(10)
+Arshad 1(1)
+GopiKrishna
+1.0-0-3-0
+Overs 4 Runs 3 Score 34-1
+1 4 0 1 4 2
+Denojan 10(13)
+Thanuraj 11(8)
+AlthafHussain
+2.0-0-18-0
+Overs 5 Runs 12 Score 30-3
+2 0 0 1 4 W
+Akeel 14(12)
+Arshad 4(5)
+Thanuraj
+1.0-0-7-1
+Overs 5 Runs 7 Score 41-2
+Wd 1 N 1 Wd 2 6 4 Wd 0
+Denojan 23(18)
+Thanuraj 12(10)
+Sankeerthan
+1.0-0-18-0
+Overs 6 Runs 18 Score 48-3
+Wd 4 N 0 0 0 N Wd 4N 1 0
+Arshad 13(13)
+Thuvakaran 0(1)
+Paul
+1.0-0-14-0
+Overs 6 Runs 14 Score 55-2
+4 0 4 1+Wd 1 1 0
+Denojan 24(20)
+Thanuraj 21(14)
+Thuvakaran
+1.0-0-12-0
+Overs 7 Runs 12 Score 60-3
+W 1 0 4N 2 2 2
+Thuvakaran 10(6)
+Sankeerthan 1(1)
+Thanuraj
+2.0-0-19-2
+Overs 7 Runs 12 Score 67-3
+1 Wd 1 2 1 2 2
+Denojan 29(23)
+Thanuraj 25(17)
+Akeel
+2.0-0-16-0
+Overs 8 Runs 10 Score 70-3
+W 1 0 2 0 4
+Thuvakaran 16(10)
+Anojan 1(1)
+GopiKrishna
+2.0-0-10-1
+Overs 8 Runs 7 Score 74-4
+
+======================================================================
+FILE: 4.pdf (Total Pages: 4)
+======================================================================
+
+--- PAGE 1 OF 4.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+MatchReport
+PRIMEXI
+46-7in8.0overs
+AVENGERS
+47-7in7.2overs
+Result
+AVENGERSwonby3wickets
+PlayerOfTheMatch
+Sankeerthan
+MatchInformation
+Tournament CAppsCricketFiesta-2026
+Club Uca
+MatchTitle Match
+MatchFormat T20
+Playing 11PerSide
+Overs 8
+Venue
+Date&Time 20Sep202610:50AM
+Toss PRIMEXIOptedToBat
+Scorer Kayan
+MatchID yijk2572
+MatchSummary
+PRIMEXI 46-7(8.0)
+KajavathananNt 27(15) Sankeerthan 2-4
+Piragash 4(10) Abinaia 1-2
+Branavan 2(2) Thuvakaran 1-8
+AVENGERS 47-7(7.2)
+Arshad 8(5) KajavathananNt 3-14
+Sankeerthan 7(3) Branavan 1-9
+Harihalan 7(7) Piragash 1-13
+
+--- PAGE 2 OF 4.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+1stInningsScorecard
+PRIMEXI R B 4s 6s SR
+Thenuja cAkeelbAbinaia 1 5 0 0 20.0
+Jenitta runout(Harihalan) 0 0 0 0 0.0
+Anuja RetiredHurt 0 2 0 0 0.0
+Thiviya RetiredHurt 1 5 0 0 20.0
+Branavan cSankeerthanbAlthafHussain 2 2 0 0 100.0
+KajavathananNt cAnojanbSankeerthan 27 15 1 3 180.0
+Nelaxshan cAnojanbThuvakaran 2 7 0 0 28.6
+Piragash runout(Arshad) 4 10 0 0 40.0
+MayooranS cAlthafHussainbSankeerthan 0 1 0 0 0.0
+Nirojan notout 1 3 0 0 33.3
+Extras (WD6 | NB2) 8 Overs 8.0
+Total 46/7 RunRate 5.8
+FallOfWickets
+1-1(Jenitta,0.4),2-2(Thenuja,1.1),6-3(Branavan,2.2),27-4(Nelaxshan,4.5),44-5(KajavathananNT,
+7.2),44-6(MayooranS,7.4),46-7(Piragash,8.0)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Kajitha 1.0 0 2 0 2.0 5 0 0 1 0
+Abinaia 1.0 0 2 1 2.0 5 0 0 1 0
+AlthafHussain 2.0 0 11 1 5.5 9 0 1 2 0
+Akeel 2.0 0 19 0 9.5 6 0 2 2 0
+Thuvakaran 1.0 0 8 1 8.0 2 1 0 0 0
+Sankeerthan 1.0 0 4 2 4.0 4 0 0 0 2
+
+--- PAGE 3 OF 4.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+2ndInningsScorecard
+AVENGERS R B 4s 6s SR
+Sureka runout(KajavathananNT) 1 4 0 0 25.0
+Kajitha RetiredHurt 2 3 0 0 66.7
+Lakshiga runout(MayooranS) 0 2 0 0 0.0
+Abinaia RetiredHurt 0 3 0 0 0.0
+Sankeerthan bPiragash 7 3 0 1 233.3
+Arshad cNelaxshanbKajavathananNT 8 5 1 0 160.0
+AlthafHussain bKajavathananNT 0 1 0 0 0.0
+Thuvakaran cKajavathananNTbBranavan 4 3 0 0 133.3
+Akeel notout 7 9 0 0 77.8
+Harihalan cMayooranSbKajavathananNT 7 7 0 0 100.0
+Anojan notout 2 4 0 0 50.0
+Extras (WD9) 9 Overs 7.2
+Total 47/7 RunRate 6.4
+FallOfWickets
+5-1(Sureka,0.5),7-2(Lakshiga,1.3),16-3(Arshad,2.5),16-4(AlthafHussain,3.0),24-5(Sankeerthan,
+3.4),29-6(Thuvakaran,4.1),40-7(Harihalan,6.0)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Thenuja 1.0 0 5 0 5.0 4 0 0 3 0
+Jenitta 1.0 0 3 0 3.0 5 0 0 2 0
+KajavathananNt 2.0 0 14 3 7.0 5 1 0 0 0
+Piragash 1.0 0 13 1 13.0 2 0 1 2 0
+Branavan 2.0 0 9 1 4.5 5 0 0 1 0
+Nelaxshan 0.2 0 3 0 9.0 0 0 0 1 0
+
+--- PAGE 4 OF 4.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+OverComparison
+PRIMEXI AVENGERS
+0 0 0 1W Wd 0 0
+Thenuja 1(4)
+Anuja 0(2)
+Kajitha
+1.0-0-2-0
+Overs 1 Runs 2 Score 2-1
+0 1 1 Wd 0 Wd Wd W 0
+Kajitha 1(1)
+Lakshiga 0(1)
+Thenuja
+1.0-0-5-0
+Overs 1 Runs 5 Score 5-1
+W 0 Wd 0 0 0 1
+Anuja 0(2)
+Thiviya 1(5)
+Abinaia
+1.0-0-2-1
+Overs 2 Runs 2 Score 4-2
+Wd 0 1 W 0 0 Wd 0
+Kajitha 2(3)
+Abinaia 0(3)
+Jenitta
+1.0-0-3-0
+Overs 2 Runs 3 Score 8-2
+RH RH 2 W 0 0 0 0
+KajavathananNT 0(0)
+Nelaxshan 0(4)
+AlthafHussain
+1.0-0-2-1
+Overs 3 Runs 2 Score 6-3
+RH RH 2 2 0 4 W W
+Sankeerthan 0(0)
+AlthafHussain 0(1)
+KajavathananNT
+1.0-0-8-2
+Overs 3 Runs 8 Score 16-4
+6 1 1 0 6 0
+KajavathananNT 13(5)
+Nelaxshan 1(5)
+Akeel
+1.0-0-14-0
+Overs 4 Runs 14 Score 20-3
+6 1 1 W 0 1+Wd 3
+Thuvakaran 4(2)
+Akeel 0(1)
+Piragash
+1.0-0-13-1
+Overs 4 Runs 13 Score 29-5
+1 4 0 2 W 1
+KajavathananNT 19(8)
+Piragash 1(1)
+Thuvakaran
+1.0-0-8-1
+Overs 5 Runs 8 Score 28-4
+W 1 2 0 1 1
+Akeel 3(4)
+Harihalan 2(2)
+Branavan
+1.0-0-5-1
+Overs 5 Runs 5 Score 34-6
+Wd 0 Wd 1 0 6 0 0
+KajavathananNT 25(12)
+Piragash 2(3)
+AlthafHussain
+2.0-0-11-1
+Overs 6 Runs 9 Score 37-4
+1 1 0 2 2 W
+Akeel 4(5)
+Harihalan 7(7)
+KajavathananNT
+2.0-0-14-3
+Overs 6 Runs 6 Score 40-7
+0 0 0 1 Wd 2 Wd 0
+KajavathananNT 27(14)
+Piragash 3(7)
+Akeel
+2.0-0-19-0
+Overs 7 Runs 5 Score 42-4
+Wd 1 1 0 1 0 0
+Akeel 6(8)
+Anojan 1(3)
+Branavan
+2.0-0-9-1
+Overs 7 Runs 4 Score 44-7
+N 1 W 0 W N 0 1W
+Piragash 4(10)
+Nirojan 1(3)
+Sankeerthan
+1.0-0-4-2
+Overs 8 Runs 4 Score 46-7
+1 Wd 1
+Akeel 7(9)
+Anojan 2(4)
+Nelaxshan
+0.2-0-3-0
+Overs 7.2 Runs 3 Score 47-7
+
+======================================================================
+FILE: 5.pdf (Total Pages: 4)
+======================================================================
+
+--- PAGE 1 OF 5.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+MatchReport
+RISINGTITANS
+101-6in8.0overs
+ROYALSTRIKERS
+50-8in8.0overs
+Result
+RISINGTITANSwonby51runs
+PlayerOfTheMatch
+Thayuran
+MatchInformation
+Tournament CAppsCricketFiesta-2026
+Club Uca
+MatchTitle Match
+MatchFormat T20
+Playing 11PerSide
+Overs 8
+Venue
+Date&Time 20Sep202611:40AM
+Toss ROYALSTRIKERSOptedToBowl
+Scorer Kayan
+MatchID beng0016
+MatchSummary
+RISINGTITANS 101-6(8.0)
+Denojan 49(16) Krishalani 2-0
+Thanuraj 25(18) ZaxsanCroos 2-29
+Gopikrishna 14*(6) Janushika 1-3
+ROYALSTRIKERS 50-8(8.0)
+Anushan 11(10) Thayuran 4-20
+ZaxsanCroos 8(3) Abilasha 2-7
+Sopraj 7(6) Kowarthanan 1-5
+
+--- PAGE 2 OF 5.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+1stInningsScorecard
+RISINGTITANS R B 4s 6s SR
+Thanaledsumy c&bKrishalani 2 4 0 0 50.0
+Abilasha bJanushika 0 1 0 0 0.0
+Shangave cAnushanbKrishalani 1 3 0 0 33.3
+Ladhurshika RetiredHurt 0 0 0 0 0.0
+Thanuraj cZaxsanCroosbSopraj 25 18 2 2 138.9
+Denojan cRashminbZaxsanCroos 49 16 2 6 306.3
+Gopikrishna notout 14 6 3 0 233.3
+Thayuran cAnushanbZaxsanCroos 0 1 0 0 0.0
+Extras (WD9 | NB1) 10 Overs 8.0
+Total 101/6 RunRate 12.6
+FallOfWickets
+1-1(Abilasha,0.3),3-2(Thanaledsumy,1.1),3-3(Shangave,1.2),72-4(Thanuraj,6.2),100-5(Denojan,
+7.5),101-6(Thayuran,8.0)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Janushika 1.0 0 3 1 3.0 3 0 0 0 0
+Krishalani 1.0 1 0 2 0.0 6 0 0 0 0
+Sajilan 2.0 0 23 0 11.5 4 2 1 1 1
+Anushan 1.0 0 30 0 30.0 1 1 4 2 0
+ZaxsanCroos 2.0 0 29 2 14.5 5 2 2 6 0
+Sopraj 1.0 0 16 1 16.0 1 2 1 0 0
+
+--- PAGE 3 OF 5.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+2ndInningsScorecard
+ROYALSTRIKERS R B 4s 6s SR
+Krishalani runout(Abilasha) 0 1 0 0 0.0
+Saruja RetiredHurt 1 3 0 0 33.3
+Reka cThayuranbAbilasha 0 1 0 0 0.0
+Janushika cGopiKrishnabAbilasha 0 1 0 0 0.0
+Rashmin bThayuran 7 14 1 0 50.0
+Anushan bThayuran 11 10 1 0 110.0
+ZaxsanCroos cGopiKrishnabThayuran 8 3 0 1 266.7
+Sajilan bKowarthanan 1 3 0 0 33.3
+Sopraj cAbirajbThayuran 7 6 1 0 116.7
+Divyesh notout 1 1 0 0 100.0
+Joel notout 0 6 0 0 0.0
+Extras (WD13 | NB1) 14 Overs 8.0
+Total 50/8 RunRate 6.3
+FallOfWickets
+1-1(Krishalani,0.2),6-2(Reka,0.5),7-3(Janushika,1.0),26-4(Anushan,4.1),34-5(ZaxsanCroos,4.4),
+36-6(Sajilan,5.1),49-7(Sopraj,6.3),50-8(Rashmin,7.0)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Abilasha 1.0 0 7 2 7.0 5 0 0 6 0
+Thanuraj 2.0 0 11 0 5.5 5 1 0 1 0
+Gopikrishna 1.0 0 7 0 7.0 3 1 0 0 0
+Thayuran 2.0 0 20 4 10.0 6 1 1 4 0
+Kowarthanan 1.0 0 5 1 5.0 4 0 0 2 1
+Thanaledsumy 1.0 1 0 0 0.0 6 0 0 0 0
+
+--- PAGE 4 OF 5.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+OverComparison
+RISINGTITANS ROYALSTRIKERS
+0 1 W 1 1 0
+Thanaledsumy 2(3)
+Shangave 1(2)
+Janushika
+1.0-0-3-1
+Overs 1 Runs 3 Score 3-1
+1 W Wd Wd 0 Wd 0 Wd Wd W Wd W
+Saruja 1(3)
+Janushika 0(1)
+Abilasha
+1.0-0-7-2
+Overs 1 Runs 7 Score 7-3
+W W RH 0 0 0 0
+Thanuraj 0(4)
+Denojan 0(0)
+Krishalani
+1.0-1-0-2
+Overs 2 Runs 0 Score 3-3
+RH 4 1 1 Wd 1 0 0
+Rashmin 1(3)
+Anushan 6(3)
+Thanuraj
+1.0-0-8-0
+Overs 2 Runs 8 Score 15-3
+1 0 1 6 4 0
+Thanuraj 11(8)
+Denojan 1(2)
+Sajilan
+1.0-0-12-0
+Overs 3 Runs 12 Score 15-3
+0 0 2 1 0 4
+Rashmin 5(5)
+Anushan 9(7)
+GopiKrishna
+1.0-0-7-0
+Overs 3 Runs 7 Score 22-3
+6 Wd 6 Wd 6 0 6 4
+Thanuraj 11(8)
+Denojan 29(8)
+Anushan
+1.0-0-30-0
+Overs 4 Runs 30 Score 45-3
+1 1 1 0 0 0
+Rashmin 6(9)
+Anushan 11(9)
+Thanuraj
+2.0-0-11-0
+Overs 4 Runs 3 Score 25-3
+0 0 1 6 Wd 1 6
+Thanuraj 18(12)
+Denojan 36(10)
+ZaxsanCroos
+1.0-0-15-0
+Overs 5 Runs 15 Score 60-3
+Wd W 6 2 W 0 Wd 1
+Rashmin 6(9)
+Sajilan 1(2)
+Thayuran
+1.0-0-11-2
+Overs 5 Runs 11 Score 36-5
+1 0 1N 1 4 2 Wd 0
+Thanuraj 25(17)
+Denojan 38(12)
+Sajilan
+2.0-0-23-0
+Overs 6 Runs 11 Score 71-3
+W N 1+Wd 1 0 1 0 0
+Rashmin 7(12)
+Sopraj 1(3)
+Kowarthanan
+1.0-0-5-1
+Overs 6 Runs 5 Score 41-6
+1 W 4 1 6 4
+Denojan 49(15)
+GopiKrishna 5(2)
+Sopraj
+1.0-0-16-1
+Overs 7 Runs 16 Score 87-4
+Wd 4 Wd 2 W 0 1 W
+Rashmin 7(14)
+Divyesh 1(1)
+Thayuran
+2.0-0-20-4
+Overs 7 Runs 9 Score 50-8
+0 Wd 4 4 Wd Wd Wd 1 W Wd W
+GopiKrishna 14(6)
+Thayuran 0(1)
+ZaxsanCroos
+2.0-0-29-2
+Overs 8 Runs 14 Score 101-6
+0 0 0 0 0 0
+Divyesh 1(1)
+Joel 0(6)
+Thanaledsumy
+1.0-1-0-0
+Overs 8 Runs 0 Score 50-8
+
+======================================================================
+FILE: 6.pdf (Total Pages: 4)
+======================================================================
+
+--- PAGE 1 OF 6.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Match Report
+RISING TITANS
+90-7 in 8.0 overs
+AVENGERS
+32-8 in 8.0 overs
+Result
+RISINGTITANSwonby58runs
+PlayerOfTheMatch
+Thanuraj
+Match Information
+Tournament CAppsCricketFiesta-2026
+Club Uca
+MatchTitle Qualifier
+MatchFormat T20
+Playing 11PerSide
+Overs 8
+Venue
+Date&Time 20Sep202603:11PM
+Toss AVENGERSOptedToBowl
+Scorer Kayan
+MatchID dfrr7947
+Match Summary
+RISING TITANS 90-7 (8.0)
+Denojan 30(13) Sureka 2-7
+Thanuraj 29(14) Akeel 2-17
+Thayuran 6(5) Kajitha 1-0
+AVENGERS 32-8 (8.0)
+AlthafHussain 7(6) Thayuran 3-9
+Arshad 6(12) Kowarthanan 2-2
+Sureka 4*(8) Shangave 1-1
+
+--- PAGE 2 OF 6.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+1st Innings Scorecard
+RISING TITANS R B 4s 6s SR
+Shangave cAnojanbSureka 0 1 0 0 0.0
+Abilasha cSankeerthanbKajitha 0 3 0 0 0.0
+Thanaledsumy bSureka 5 7 0 0 71.4
+Ladhurshika RetiredHurt 0 0 0 0 0.0
+Denojan cImthathbThuvakaran 30 13 0 4 230.8
+Thanuraj cAlthafHussainbAkeel 29 14 2 2 207.1
+Gopikrishna bAlthafHussain 1 2 0 0 50.0
+Thayuran bAkeel 6 5 1 0 120.0
+Rengheson notout 1 2 0 0 50.0
+Paul notout 0 3 0 0 0.0
+Extras (B4 | WD12 | NB2) 18 Overs 8.0
+Total 90/7 RunRate 11.3
+Fall Of Wickets
+0-1(Abilasha,0.3),2-2(Shangave,1.1),7-3(Thanaledsumy,1.5),45-4(Denojan,4.5),52-5(GopiKrishna,
+5.1),80-6(Thayuran,7.1),84-7(Thanuraj,7.4)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Kajitha 1.0 1 0 1 0.0 6 0 0 0 0
+Sureka 1.0 0 7 2 7.0 3 0 0 2 0
+AlthafHussain 2.0 0 23 1 11.5 3 2 1 2 0
+Akeel 2.0 0 17 2 8.5 7 0 1 6 1
+Thuvakaran 1.0 0 23 1 23.0 1 1 2 2 1
+Sankeerthan 1.0 0 16 0 16.0 1 0 2 0 0
+
+--- PAGE 3 OF 6.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+2nd Innings Scorecard
+AVENGERS R B 4s 6s SR
+Kajitha cDenojanbShangave 0 3 0 0 0.0
+Sureka RetiredHurt 4 8 0 0 50.0
+Lakshiga RetiredHurt 0 1 0 0 0.0
+AlthafHussain cNithusanbGopiKrishna 7 6 1 0 116.7
+Akeel cThayuranbThanuraj 3 7 0 0 42.9
+Arshad bKowarthanan 6 12 0 0 50.0
+Thuvakaran cThanurajbThayuran 1 3 0 0 33.3
+Sankeerthan cNithusanbThayuran 0 1 0 0 0.0
+Anojan cThanurajbThayuran 0 1 0 0 0.0
+Harihalan cThanurajbKowarthanan 2 5 0 0 40.0
+Imthath notout 1 1 0 0 100.0
+Extras (WD8) 8 Overs 8.0
+Total 32/8 RunRate 4.0
+Fall Of Wickets
+6-1(Kajitha,1.5),19-2(AlthafHussain,3.4),21-3(Akeel,4.4),22-4(Thuvakaran,5.2),23-5(Sankeerthan,
+5.4),24-6(Anojan,5.5),31-7(Harihalan,7.3),32-8(Arshad,8.0)
+Bowler O M R W Eco 0s 4s 6s Wd NB
+Abilasha 1.0 0 5 0 5.0 4 0 0 2 0
+Shangave 1.0 0 1 1 1.0 5 0 0 0 0
+Thayuran 2.0 0 9 3 4.5 7 0 0 4 0
+Gopikrishna 1.0 0 7 1 7.0 3 1 0 1 0
+Thanuraj 2.0 0 8 1 4.0 6 0 0 1 0
+Kowarthanan 1.0 0 2 2 2.0 4 0 0 0 0
+
+--- PAGE 4 OF 6.pdf ---
+Download'STUMPS-TheCricketScorer'appfromAndroid'sPlayStoreorApple'sAppStore
+Matchreportcreatedfrom
+STUMPS
+Over Comparison
+RISING TITANS AVENGERS
+0 0 W 0 0 0
+Shangave 0(0)
+Thanaledsumy 0(3)
+Kajitha
+1.0-1-0-1
+Overs 1 Runs 0 Score 0-1
+Wd 0 2 0 1 Wd 0 0
+Kajitha 0(2)
+Sureka 3(4)
+Abilasha
+1.0-0-5-0
+Overs 1 Runs 5 Score 5-0
+Wd Wd W 1 2 2 W RH 0
+Denojan 0(1)
+Thanuraj 0(0)
+Sureka
+1.0-0-7-2
+Overs 2 Runs 7 Score 7-3
+0 0 0 1 W 0
+Sureka 4(8)
+Lakshiga 0(1)
+Shangave
+1.0-0-1-1
+Overs 2 Runs 1 Score 6-1
+1 0 Wd 1 1 6 2
+Denojan 9(5)
+Thanuraj 2(2)
+AlthafHussain
+1.0-0-12-0
+Overs 3 Runs 12 Score 19-3
+RH RH RH 1 1 0 1 Wd Wd Wd 0 0
+AlthafHussain 2(3)
+Akeel 1(3)
+Thayuran
+1.0-0-6-0
+Overs 3 Runs 6 Score 12-1
+1 Wd 6 0 1 1 0
+Denojan 16(9)
+Thanuraj 4(4)
+Akeel
+1.0-0-10-0
+Overs 4 Runs 10 Score 29-3
+Wd 4 1 1 W 0 0
+Akeel 2(4)
+Arshad 0(2)
+GopiKrishna
+1.0-0-7-1
+Overs 4 Runs 7 Score 19-2
+1 Wd 6 6 2 W Wd 1N 4
+Thanuraj 9(6)
+GopiKrishna 1(1)
+Thuvakaran
+1.0-0-23-1
+Overs 5 Runs 23 Score 52-4
+1 1 0 W 1 0
+Arshad 1(4)
+Thuvakaran 1(1)
+Thanuraj
+1.0-0-3-1
+Overs 5 Runs 3 Score 22-3
+W 0 1 Wd 4 1 4
+Thanuraj 14(8)
+Thayuran 5(3)
+AlthafHussain
+2.0-0-23-1
+Overs 6 Runs 11 Score 63-5
+0 W 1 W Wd W 1
+Arshad 2(5)
+Harihalan 1(1)
+Thayuran
+2.0-0-9-3
+Overs 6 Runs 3 Score 25-6
+6 0 1 1 6 2
+Thanuraj 29(13)
+Thayuran 6(4)
+Sankeerthan
+1.0-0-16-0
+Overs 7 Runs 16 Score 79-5
+0 0 1 0 Wd 2 1
+Arshad 5(8)
+Harihalan 2(4)
+Thanuraj
+2.0-0-8-1
+Overs 7 Runs 5 Score 30-6
+Wd W 0 Wd 1 Wd Wd W N Wd 0 4B
+Rengheson 1(2)
+Paul 0(3)
+Akeel
+2.0-0-17-2
+Overs 8 Runs 11 Score 90-7
+0 1 W 1 0 W
+Arshad 6(12)
+Imthath 1(1)
+Kowarthanan
+1.0-0-2-2
+Overs 8 Runs 2 Score 32-8
