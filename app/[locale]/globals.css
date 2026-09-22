@@ -3270,25 +3270,52 @@ html.light .public-landing {
   }
   .mobile-over-ball {
     display: grid;
-    width: 1.6rem;
-    height: 1.6rem;
+    min-width: 1.85rem;
+    height: 1.85rem;
+    padding: 0 0.35rem;
     place-items: center;
-    border-radius: 999px;
-    background: #082148;
-    border: 1px solid #1e3a8a;
-    font-size: 0.62rem;
+    border-radius: 0.45rem;
+    background: #0284c7;
+    border: 1px solid #38bdf8;
+    font-size: 0.72rem;
     font-weight: 950;
     color: #ffffff;
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
   }
   html:not(.dark) .mobile-over-ball {
+    background: #0284c7;
+    border-color: #0369a1;
+    color: #ffffff;
+  }
+  .mobile-over-ball.ball-dot {
+    background: #1e293b;
+    border-color: #475569;
+    color: #ffffff;
+  }
+  html:not(.dark) .mobile-over-ball.ball-dot {
     background: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #334155;
+    border-color: #94a3b8;
+    color: #0f172a;
   }
   .mobile-over-ball.ball-boundary {
-    background: #10b981;
+    background: #059669;
     border-color: #34d399;
+    color: #ffffff;
+  }
+  html:not(.dark) .mobile-over-ball.ball-boundary {
+    background: #10b981;
+    border-color: #059669;
+    color: #ffffff;
+  }
+  .mobile-over-ball.ball-six {
+    background: #7c3aed;
+    border-color: #a78bfa;
+    color: #ffffff;
+  }
+  html:not(.dark) .mobile-over-ball.ball-six {
+    background: #8b5cf6;
+    border-color: #7c3aed;
     color: #ffffff;
   }
   .mobile-over-ball.ball-wicket {
@@ -3296,10 +3323,21 @@ html.light .public-landing {
     border-color: #f87171;
     color: #ffffff;
   }
-  .mobile-over-ball.ball-extra {
-    background: #d97706;
-    border-color: #fbbf24;
+  html:not(.dark) .mobile-over-ball.ball-wicket {
+    background: #dc2626;
+    border-color: #b91c1c;
     color: #ffffff;
+  }
+  .mobile-over-ball.ball-extra {
+    background: #f59e0b;
+    border-color: #fbbf24;
+    color: #020817;
+    font-weight: 950;
+  }
+  html:not(.dark) .mobile-over-ball.ball-extra {
+    background: #f59e0b;
+    border-color: #d97706;
+    color: #020817;
   }
 
   /* Unified 3x5 Keypad (Stumps Style) */
