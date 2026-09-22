@@ -47,7 +47,17 @@ export function buildScorecard(innings: ScorecardInnings, balls: ScorecardBall[]
     const runs = faced.reduce((sum, ball) => sum + ball.runs, 0);
     const legalBalls = faced.filter((ball) => ball.is_legal).length;
     const dismissalBall = balls.find((ball) => ball.player_out_id === playerId && (ball.is_wicket || ball.dismissal_type === "retired_hurt" || ball.dismissal_type === "retired_out"));
-    return { playerId, name: playerName(players, playerId), runs, balls: legalBalls, fours: faced.filter((ball) => ball.runs === 4).length, sixes: faced.filter((ball) => ball.runs === 6).length, strikeRate: legalBalls ? ((runs / legalBalls) * 100).toFixed(2) : "0.00", dismissal: formatDismissal(dismissalBall, players) };
+    let dismissal = formatDismissal(dismissalBall, players);
+
+    // If not dismissed as a wicket, check if batter is currently active on the crease
+    if (!dismissalBall) {
+      const isOnCrease = playerId === innings.striker_id || playerId === innings.non_striker_id;
+      if (!isOnCrease && faced.length > 0) {
+        dismissal = "retired hurt";
+      }
+    }
+
+    return { playerId, name: playerName(players, playerId), runs, balls: legalBalls, fours: faced.filter((ball) => ball.runs === 4).length, sixes: faced.filter((ball) => ball.runs === 6).length, strikeRate: legalBalls ? ((runs / legalBalls) * 100).toFixed(2) : "0.00", dismissal };
   });
   const bowling = bowlerIds.map((playerId) => {
     const delivered = balls.filter((ball) => ball.bowler_id === playerId);
