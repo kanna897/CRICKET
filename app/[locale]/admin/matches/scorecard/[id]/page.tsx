@@ -114,8 +114,8 @@ export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolea
     const chase = cards.find(({ item }) => item.innings_number === 2);
     const firstInnings = cards.find(({ item }) => item.innings_number === 1);
     if (chase?.item.batting_team_id === match.winner_id) {
-      const squadSize = players.filter((player) => player.team_id === match.winner_id).length;
-      const wicketsRemaining = Math.max((squadSize || 11) - 1 - chase.summary.wickets, 0);
+      const maxWickets = match.wickets_per_innings || 10;
+      const wicketsRemaining = Math.max(maxWickets - chase.summary.wickets, 0);
       return `${winnerName} win by ${wicketsRemaining} wicket${wicketsRemaining === 1 ? "" : "s"}.`;
     }
     const runMargin = Math.max((firstInnings?.summary.total || 0) - (chase?.summary.total || 0), 0);

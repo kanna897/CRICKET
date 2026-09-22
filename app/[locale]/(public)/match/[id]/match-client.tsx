@@ -142,8 +142,7 @@ export function PublicLiveMatchClient() {
     if (!match.winner_id) return "Match tied.";
     if (!innings?.target || innings.innings_number !== 2) return `${teamName(match.winner_id)} won the match.`;
     if (innings.total_runs >= innings.target) {
-      const squadSize = squadRows.filter((row) => row.team_id === innings.batting_team_id).length;
-      const wicketLimit = Math.max(1, squadSize ? squadSize - 1 : 10);
+      const wicketLimit = match?.wickets_per_innings || 10;
       const margin = Math.max(wicketLimit - innings.total_wickets, 0);
       return `${teamName(match.winner_id)} win by ${margin} wicket${margin === 1 ? "" : "s"}.`;
     }
