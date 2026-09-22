@@ -13,7 +13,7 @@ import { cloudinaryLogoUrl } from "@/lib/media";
 import { isBowlerCreditedWicket, runsChargedToBowler } from "@/lib/cricket-rules";
 import { BoundaryPop, WicketPop } from "@/features/scoring/components";
 
-type Match = { id: string; team_a_id: string; team_b_id: string; overs_per_match: number; status: string; winner_id: string | null };
+type Match = { id: string; team_a_id: string; team_b_id: string; overs_per_match: number; status: string; winner_id: string | null; wickets_per_innings?: number | null };
 type Team = { id: string; name: string; logo_url: string | null };
 type Innings = { id: string; innings_number: number; batting_team_id: string; total_runs: number; total_wickets: number; balls_bowled: number; target: number | null; striker_id: string | null; non_striker_id: string | null; current_bowler_id: string | null };
 type Ball = { id: string; over_number: number; ball_number: number; runs: number; extras: number; extras_type: string | null; is_wicket: boolean; is_legal: boolean; dismissal_type: string | null; batsman_id: string | null; bowler_id: string | null };
@@ -41,7 +41,7 @@ export function PublicLiveMatchClient() {
   useEffect(() => {
     if (!id) return;
     const load = async (notify = false) => {
-      const { data: matchRow } = await supabase.from("matches").select("id,team_a_id,team_b_id,overs_per_match,status,winner_id").eq("id", id).maybeSingle();
+      const { data: matchRow } = await supabase.from("matches").select("id,team_a_id,team_b_id,overs_per_match,status,winner_id,wickets_per_innings").eq("id", id).maybeSingle();
       if (!matchRow) return;
       const [{ data: teamRows }, { data: inningsRow }, { data: matchSquadRows }] = await Promise.all([
         supabase.from("teams").select("id,name,logo_url").in("id", [matchRow.team_a_id, matchRow.team_b_id]),

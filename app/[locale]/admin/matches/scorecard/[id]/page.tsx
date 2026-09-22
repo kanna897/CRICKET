@@ -17,6 +17,7 @@ type Match = {
   id: string; status: string; player_of_match_id: string | null; player_of_match_summary: string | null;
   team_a_id: string; team_b_id: string; winner_id: string | null; tournament_id: string | null;
   match_number: number | null; toss_winner_id: string | null; toss_decision: string | null;
+  wickets_per_innings?: number | null;
 };
 
 export function MatchScorecardPage({ publicMode = false }: { publicMode?: boolean }) {
